@@ -25,14 +25,38 @@ async function openBrowser({ channel = process.env.PW_CHANNEL || undefined } = {
 
 const addDays = (iso, n) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
 
-/** Run `action` and return the parsed calendar cells of the RPC it triggers. */
+/**
+ * Run `action` and return the parsed calendar cells of the RPC it triggers.
+ * The page sometimes fires a request and supersedes it (body gone: "No data found for
+ * resource"), and sometimes gets a rejected reply (HTTP 200, null wrb.fr payload) that it then
+ * retries itself. Skip both and wait for the first usable response.
+ */
 async function capture(page, rpc, action, step, timeout = RPC_TIMEOUT_MS) {
-  const resP = page.waitForResponse((r) => r.url().includes(`FlightsFrontendService/${rpc}`), { timeout });
-  await action();
-  const res = await resP.catch((e) => { throw new Error(`${step}: no ${rpc} response (${e.message.split('\n')[0]})`); });
-  const payloads = parseBatchExecute(await res.text());
-  if (!payloads.length || payloads.every((p) => p == null)) throw new Error(`${rpc}: empty/rejected payload (HTTP ${res.status()})`);
-  return payloads.flatMap(parseCalendar);
+  const deadline = Date.now() + timeout;
+  let cells = null;
+  let unreadable = 0;
+  let rejected = 0;
+  let wake = () => {};
+  const onResponse = (r) => {
+    if (!r.url().includes(`FlightsFrontendService/${rpc}`)) return;
+    r.text().then((t) => {
+      const payloads = parseBatchExecute(t).filter((p) => p != null);
+      if (payloads.length) cells ??= payloads.flatMap(parseCalendar);
+      else rejected++;
+    }, () => { unreadable++; }).finally(() => wake());
+  };
+  page.on('response', onResponse);
+  try {
+    await action();
+    while (cells == null) {
+      const left = deadline - Date.now();
+      if (left <= 0) throw new Error(`${step}: no usable ${rpc} response within ${timeout}ms (${rejected} rejected, ${unreadable} unreadable)`);
+      await new Promise((resolve) => { wake = resolve; setTimeout(resolve, Math.min(left, 500)); });
+    }
+  } finally {
+    page.off('response', onResponse);
+  }
+  return cells;
 }
 
 /**

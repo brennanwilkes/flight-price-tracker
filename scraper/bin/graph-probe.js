@@ -28,8 +28,13 @@ async function main() {
       for (const cabin of cabins) {
         for (const tripLen of lens) {
           const t = Date.now();
+          const q = { from, to, cabin, tripLen, start, end };
           try {
-            const cells = await priceGraph(ctx, { from, to, cabin, tripLen, start, end });
+            // One retry on a fresh page; the second error is the one reported.
+            const cells = await priceGraph(ctx, q).catch((e) => {
+              console.log(`${from}-${to} ${cabin} ${tripLen}d: retrying after ${e.message}`);
+              return priceGraph(ctx, q);
+            });
             const priced = cells.filter((c) => c.price != null);
             const min = priced.reduce((m, c) => (c.price < m.price ? c : m), priced[0] ?? {});
             console.log(`${from}-${to} ${cabin} ${tripLen}d: ${cells.length} days, ${priced.length} priced (${cells[0]?.out}…${cells.at(-1)?.out}), min ${min.price ?? '-'} ${min.out ?? ''} [${Date.now() - t}ms]`);
