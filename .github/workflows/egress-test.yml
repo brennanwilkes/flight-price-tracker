@@ -52,7 +52,8 @@ jobs:
           grep -q '^vpn_ok=true' "$GITHUB_OUTPUT" || { echo "::error::VPN did not come up; not testing the vpn route on the direct IP"; exit 1; }
 
       - name: Egress IP
-        run: echo "egress ${{ matrix.egress }}: $(curl -fsS --max-time 8 https://api.ipify.org)" | tee -a "$GITHUB_STEP_SUMMARY"
+        run: |
+          echo "egress ${{ matrix.egress }}: $(curl -fsS --max-time 8 https://api.ipify.org)" | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Search page (plain HTTP)
         run: node scraper/bin/probe.js YVR ICN 2026-12-01 2026-12-15 J | head -8
