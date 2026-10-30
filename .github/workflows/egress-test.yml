@@ -1,0 +1,82 @@
+# M1 egress test: can GitHub runners (direct IP, and via ProtonVPN) drive the Google Flights
+# price graph without being blocked? Manual dispatch only; runs both egress routes side by side.
+name: Egress test
+
+on:
+  workflow_dispatch:
+    inputs:
+      routes:
+        description: Routes for the near-term volume sweep (comma-separated O-D)
+        default: YVR-ICN,YVR-TPE,YVR-HKG,YVR-NRT
+      rounds:
+        description: Times to repeat the volume sweep (more = harder test)
+        default: '1'
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash  # explicit: adds pipefail, so `| tee` doesn't hide a failed probe
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        egress: [direct, vpn]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: scraper/package-lock.json
+
+      - name: Install
+        working-directory: scraper
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: VPN up
+        id: vpn
+        if: matrix.egress == 'vpn'
+        env:
+          WG_CONF: ${{ secrets.PROTONVPN_WG_CONF }}
+        run: |
+          scripts/vpn_up.sh
+          grep -q '^vpn_ok=true' "$GITHUB_OUTPUT" || { echo "::error::VPN did not come up; not testing the vpn route on the direct IP"; exit 1; }
+
+      - name: Egress IP
+        run: echo "egress ${{ matrix.egress }}: $(curl -fsS --max-time 8 https://api.ipify.org)" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Search page (plain HTTP)
+        run: node scraper/bin/probe.js YVR ICN 2026-12-01 2026-12-15 J | head -8
+
+      - name: Price graph, target window (Sep 2027 to Feb 2028)
+        run: node scraper/bin/graph-probe.js YVR-ICN --json target.json 2>&1 | tee -a log.txt
+
+      - name: Price graph, near-term volume sweep
+        run: |
+          for i in $(seq 1 "${{ inputs.rounds }}"); do
+            echo "## round $i" | tee -a log.txt
+            node scraper/bin/graph-probe.js "${{ inputs.routes }}" --start 2026-11-15 --end 2027-05-15 --json "volume-$i.json" 2>&1 | tee -a log.txt
+          done
+
+      - name: Summary
+        if: always()
+        run: |
+          { echo '```'; grep -E '^(## |ok |.*FAILED)' log.txt || true; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egress-${{ matrix.egress }}
+          path: |
+            log.txt
+            *.json
+          retention-days: 14

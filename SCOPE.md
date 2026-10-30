@@ -124,6 +124,15 @@ state/health.json                         per-run outcome, consecutive-failure c
 > the full grid would be ~13k pages per business pass. Next: spike a headless browser (Playwright),
 > which signs its own requests, to get the calendar and booking RPCs back. Pages whose return date is
 > beyond ~330 days come back with no `ds:1` (fares not loaded), the same shape as a failed page.
+>
+> **Browser spike (same day, from haleiwa): works.** Playwright driving Chrome gets the gated RPCs
+> back (`scraper/src/gflights/browser.js`). One page load + the price graph = 60 departure days, then
+> 21 per "Scroll forward": all 182 days for one route/cabin/trip length in ~6 s, so the 72-combo
+> business grid is ~8 min, and hourly is feasible. The graph silently stops at the fare-loading horizon
+> (handled as "not loaded", not an error). Accuracy vs the search page: 7/10 exact, 2 off by $1, 1
+> stale (graph $579 low), so **graph = candidate only; confirm on the search page before alerting**.
+> Open: egress from Actions (`.github/workflows/egress-test.yml`), seller/airline-direct via browser.
+> Playwright 1.64 doesn't support Ubuntu 20.04: locally use `PW_CHANNEL=chrome` (system Chrome).
 
 **Source (as originally planned):** Google Flights' internal RPCs, `curr=CAD`, `gl=CA`, `hl=en`:
 - **Calendar** (`GetCalendarGraph`/grid) for the broad sweep: about 60 departure days per request for a
