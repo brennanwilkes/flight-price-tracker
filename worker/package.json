@@ -1,0 +1,18 @@
+{
+  "name": "flight-fare-tracker-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "//guard": "Fail unless wrangler is logged in as brennan@codexwilkes.com. Runs before every wrangler script.",
+    "guard": "node scripts/cf-guard.mjs",
+    "//cf": "Guarded wrangler passthrough: npm run cf -- whoami",
+    "cf": "node scripts/cf-guard.mjs && wrangler",
+    "predeploy": "node scripts/cf-guard.mjs",
+    "deploy": "wrangler deploy",
+    "predev": "node scripts/cf-guard.mjs",
+    "dev": "wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "4.151.0"
+  }
+}

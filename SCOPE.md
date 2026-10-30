@@ -1,0 +1,246 @@
+# Asia Flight Fare Tracker — Scope
+
+Oct 30, 2026. Companion to `~/Downloads/Asia Flight Fare Tracker — Plan.md` (the *what*: trip,
+business rules, scrape targets, outputs). This doc is the *how*: architecture, data layout,
+cadence, notifications, reuse, and the milestone 1 test plan. Where this doc and the plan
+disagree, this doc wins (decisions below were made after the plan).
+
+## Decisions (2026-10-30)
+
+| Topic | Decision |
+| --- | --- |
+| Repo | **One public repo** (`frontend/` + `worker/` + `scraper/`), meowmap/vessel-tracker style. No separate `-api` repo. Public is acceptable: dates and targets are not sensitive. |
+| Compute | **Cloud first.** GitHub Actions does all scraping and computation. lavena is a fallback egress only, used if milestone 1 shows Google blocks every cloud route. |
+| Egress | Direct runner IP + ProtonVPN WireGuard (spirit-tracker's `scripts/vpn_up.sh`), rotated per run, retry on the opposite route. |
+| Storage | **`data` branch** in the same repo, but history is **explicit append-only files**, NOT git commit history (see Data layout). No D1. |
+| Stack | Node 24, CommonJS, zero npm deps, no build step (spirit-tracker conventions). Hand-rolled Google Flights client unless the M1 spike finds a maintained Node lib worth using. |
+| Dashboard | GitHub Pages PWA, vanilla ES modules. No login, no sessions. |
+| Notifications | **Web Push only** (no email), one subscriber (Brennan), sent immediately at any hour, **one push per deal**. |
+| Scraper health | Push after **2 consecutive failed runs**, then silent until recovery. Push-subscription health is dashboard-only. |
+| Cadence | Tiered: long-leg business **hourly**; economy and short hops less often (see Cadence). |
+
+## Architecture
+
+```
+Cloudflare Worker (codexwilkes account)                       GitHub (one public repo)
+ ├─ cron "5 * * * *" ──workflow_dispatch(tier set)──────────►  Actions: sweep.yml
+ ├─ POST /subscribe   ◄── PWA (stores the one subscription      ├─ vpn_up.sh (if route=vpn)
+ │                        in KV, keyed by device id)            ├─ node scraper/bin/sweep.js
+ ├─ POST /notify      ◄── Actions (shared secret) ──────────────┤   sweep → confirm → rules → alerts
+ │    └─ RFC 8291/8292 Web Push → Apple/Google push service     ├─ commit + push data branch
+ └─ GET  /health      ──► dashboard (last push, last error)     └─ [[RUN-HEALTH]] in commit msg
+
+GitHub Pages: frontend/ PWA  ──fetch──►  raw.githubusercontent.com/<repo>/data/…  (data files)
+```
+
+- **The Worker is the clock and the push sender.** Its job is small: GitHub `schedule:` runs 2–5 h late
+  and skips runs (spirit-tracker measured 31% never fired), so the Worker cron dispatches instead
+  (`spirit-tracker-api/src/tracker_schedule.ts` pattern, `GH_DISPATCH_TOKEN` secret). It holds the
+  single push subscription in KV and sends via a port of meowmap's `worker/src/push.ts`.
+- **One Worker cron trigger.** The free plan allows 5 cron triggers *per account*, and
+  spirit-tracker-api and vessel-tracker already use some. The Worker decides which tiers are due
+  from the hour, so this project needs only one trigger. Check the account's current count before deploying.
+- **Pages deploys only when `frontend/` changes.** The dashboard fetches data straight from the
+  `data` branch via raw.githubusercontent.com (CORS-open, ~5 min CDN cache). Redeploying Pages
+  hourly to ship data would hit Pages build limits and adds nothing. Fallback if raw proves flaky:
+  jsDelivr's GitHub mirror, or spirit-tracker's Release-asset approach.
+- **Cloudflare account:** personal `brennan@codexwilkes.com` (account `a53d0d3cb40662b52e001ffd082d2f1f`)
+  ONLY, never the Text Groove work account. The meowmap/vessel-tracker repos commit only the
+  account id and CLAUDE.md prose; their real protection (a `codexwilkes` wrangler profile bound to
+  the directory) lives on another machine and isn't in git. haleiwa has no wrangler login at all
+  yet. This repo commits its own guard, in layers, all failing closed:
+  1. `account_id` pinned in `worker/wrangler.toml`. A login without access to that account errors
+     out; nothing can land on the work account.
+  2. `worker/scripts/cf-guard.mjs`: runs `wrangler whoami` and refuses unless the email is
+     `brennan@codexwilkes.com` and the account id matches. Wired as npm `pre*` hooks on every
+     script that calls wrangler (`predeploy`, `predev`, …).
+  3. Project `.claude/settings.json` PreToolUse hook: any Bash command containing `wrangler` runs
+     the guard first and is blocked on failure, and `wrangler login|logout|auth` is always blocked.
+  4. CI uses an API token scoped to the personal account (`CLOUDFLARE_API_TOKEN` +
+     `CLOUDFLARE_ACCOUNT_ID` secrets), so it's immune to whatever is logged in locally.
+  Auth on haleiwa: Brennan runs `wrangler auth create codexwilkes` from `worker/` (wrangler
+  >= 4.131 pinned there); Claude never changes auth. Done on haleiwa 2026-10-30 (wrangler 4.151.0).
+- **Cron slots: 2/5 used** (check with `node worker/scripts/cf-crons.mjs`): spirit-tracker-api
+  `25,48 * * * *`, vessel-tracker-api `0-50 * * * *`. On 2026-10-30 vessel-tracker's 4 triggers
+  were collapsed into one that branches on the minute (vessel-tracker `c7c7a5a`), freeing 3. This
+  project takes 1. Any new project shares the same 5-per-account free-plan limit: one trigger
+  per Worker, branching in code.
+
+## Repo layout
+
+```
+scraper/
+  bin/sweep.js            entry: --tiers hot,warm,cool --route direct|vpn --dry-run --maxRequests N
+  src/gflights/           Google Flights client: query encoding, calendar, shopping, booking RPCs
+  src/sweep/              plans the run's requests from config + tier + shard
+  src/store/              read/append route files, current state, ledger
+  src/rules/              cabin-by-length, "reasonable", airline-direct, tiers, new-low
+  src/trips/              trip builder (long leg + hops, layover-day rule)
+  src/alerts/             dedupe/re-alert logic, POST /notify
+  src/build/              derived views for the dashboard
+  config/                 cities.json, routes.json (incl. open-jaw pairs), tiers.json, rules.json, bag_fees.json
+worker/                   TypeScript Worker: cron dispatch, /subscribe, /notify, /health
+frontend/                 PWA: index.html, app/*.js, sw.js, manifest.webmanifest
+scripts/                  run_sweep.sh (orchestration), vpn_up.sh (from spirit-tracker)
+tests/                    plain node tests (rules + query encoding pinned to fixtures)
+.github/workflows/        sweep.yml (dispatch-only), deploy-pages.yml, deploy-worker.yml
+```
+
+## Data layout (`data` branch)
+
+Lessons from spirit-tracker: there, history *is* the commit history of `data/db/**`. That
+forced the SKU cache, `--full-reindex`, stats bundles and Release-asset workarounds, and made
+the branch impossible to squash. Here every reader opens a file and never walks git.
+
+```
+routes/<O>-<D>-<cabin>/<YYYY-MM>.csv      change log, one dir per route+cabin, one file per observation month
+    observed_at,out,ret,trip_len,price_cad,route_used
+    (a row is written only when a cell's price changes, including → empty)
+routes/<O>-<D>-<cabin>/current.json       every cell's current price + last_seen (freshness without rows)
+routes/<O>-<D>-<cabin>/detail.jsonl       detail-pass records: flights, durations, seat type, seller, direct price, typical-price label, link
+derived/                                  small files the dashboard actually loads
+    routes/<O>-<D>-<cabin>.json           daily min, rolling median, business÷economy premium
+    leaderboard.json  dest_month.json  trips.json  fare_loading.json  deals.json
+state/alerts.json                         ledger: what was alerted, at what price, when
+state/health.json                         per-run outcome, consecutive-failure count, control-route result
+```
+
+- **What a route is.** `<O>-<D>-<cabin>`, e.g. `YVR-ICN-J`, `ICN-DAD-Y`, open-jaw `YVR-HAN~SGN-J`.
+  It's a route, not a flight: the broad sweep returns only the cheapest price per date,
+  and flight numbers come only from the detail pass. About 48 long-leg directories (2 origins × 12
+  airports × 2 cabins) plus open-jaws, and about 132 short-hop directories.
+- **Monthly files** keep each append small and diff-friendly. The repo grows with the change
+  rate (unknown until M1). If it turns out to be high, compress closed months (`.csv.gz`).
+- **Concurrency:** all runs share one Actions concurrency group (`sweep`), so there is only one writer.
+
+## Scraping
+
+> **M1 finding (2026-10-30): the RPCs below are gated.** Since 2026-08, `GetCalendarGraph`,
+> `GetShoppingResults` and `GetBookingResults` need an `x-goog-batchexecute-bgr` header signed by
+> the page's own JS (documented by punitarani/fli). Plain HTTP still gets the public search page
+> (`/travel/flights?tfs=…`, ~2 MB, one date pair per fetch), whose inline `ds:1` blob carries every
+> itinerary, prices in CAD, and Google's price insight (typical range + ~60 days of daily history for
+> that pair). Verified with `scraper/bin/probe.js`. No calendar grid and no seller list that way, so
+> the full grid would be ~13k pages per business pass. Next: spike a headless browser (Playwright),
+> which signs its own requests, to get the calendar and booking RPCs back. Pages whose return date is
+> beyond ~330 days come back with no `ds:1` (fares not loaded), the same shape as a failed page.
+
+**Source (as originally planned):** Google Flights' internal RPCs, `curr=CAD`, `gl=CA`, `hl=en`:
+- **Calendar** (`GetCalendarGraph`/grid) for the broad sweep: about 60 departure days per request for a
+  fixed origin, destination, cabin and trip length. This is what makes the volume feasible.
+- **Shopping results** for the top candidates: flights, durations, stops, amenities (lie-flat).
+- **Booking results** for confirm: seller list (airline vs OTA), airline-direct price, link.
+- Checked-bag count parameter for short hops (1 bag). Where Google doesn't price the bag, add
+  `config/bag_fees.json` per airline.
+
+**Reference implementations** (read, don't depend): `punitarani/fli` (Python, uses the RPCs
+including calendar) and `AWeirdDev/fast-flights` (Python, `tfs` protobuf query encoding). M1 spike:
+check whether a maintained Node client exists. If not, hand-roll it, pinning query encoding and
+response parsing to saved fixtures in `tests/` so a format change fails loudly.
+
+**Being polite and not getting blocked:** pace requests (start at about 1 req/s with jitter). Each run
+picks an egress route (direct Azure IP, which changes per job, or VPN) and retries failures on the
+other. Keep a consistent, realistic header set per run; don't randomise per request. Send consent
+cookies as a browser would. A user-agent swap alone does little: blocking keys on rate per IP,
+cookies and TLS fingerprint. A CAPTCHA, consent wall or HTTP 429 is recorded per route in
+`state/health.json` and counts as a failure, never as "no fares".
+
+## Cadence
+
+One hourly Actions run, dispatched by the Worker at :05. It always does the hot tier and adds a
+**shard** of the slower tiers, so every run does a similar amount of work and stays well under an hour.
+
+| Tier | What | Fresh every | Approx. requests/hr |
+| --- | --- | --- | --- |
+| Control | YVR–ICN, economy, departing 14 days out | every run, **first**; empty → abort run as failed | 1 |
+| Hot | Long-leg business, round trips, all origins × airports × trip lengths | 1 h | ~290 |
+| Warm | Long-leg economy + open-jaws (both cabins) | 4–6 h (sharded) | ~60 |
+| Cool | Short-hop matrix (economy; business on 6 h+ routes) | 12 h (sharded) | ~45 |
+| Confirm | Shopping + booking for any cell that just crossed an alert threshold | immediately, same run | 0–20 |
+
+About 400 requests/hr, or roughly 10k/day, which is about 7 min of paced requests per run. Counts assume about 4 calendar
+requests per route and trip length to cover the window, **unverified until M1**. All
+intervals live in `config/tiers.json`. If M1 shows no blocking, tightening everything to hourly is a
+config change. The fare-loading period stays empty early on: Feb 2028 fares appear around March 2027.
+
+## Rules engine
+
+Implements plan §Business rules as pure functions in `scraper/src/rules/` with unit tests.
+- **Cabin by flight length** (per flight, ≥ 6 h → business) and **lie-flat** (Pacific crossing and any
+  overnight flight) need detail data, so a broad-sweep price is a *candidate* until confirm
+  passes.
+- **"Reasonable"**: ≤ 3,000 / 2,500 / 2,000 CAD round trip (good / great / exceptional), **or** ≤ 2.5×
+  economy for the same route and dates, **or** ≥ 25% below the route's tracked business median.
+- **Median and "new low" need history:** both stay disabled on a route until it has 14 days of
+  observations. Before that, Google's typical-price label is the only baseline.
+- **Airline-direct only** for ranking and alerts; OTA prices are stored for context.
+
+## Notifications
+
+Web Push from the dashboard PWA, using meowmap's push implementation.
+
+- **Setup:** open the Pages URL in Safari → Add to Home Screen → open it from the home screen → Enable
+  alerts (iOS 16.4+; must be a user tap). One subscription in Worker KV. There is no auth, so
+  anyone could technically subscribe. Accepted: alerts contain nothing sensitive.
+- **Triggers** (plan §Alerts), each confirmed airline-direct before sending:
+  1. A business fare meets "reasonable" for the first time on a route.
+  2. A route or full trip sets a new low against its own history (after the 14-day warm-up).
+  3. A long-leg business round trip under CAD 3,000.
+  4. **Scraper failed 2 runs in a row** (control route empty, all egress blocked, parse failure).
+     One push, then silent until a run succeeds; recovery shows only on the dashboard.
+- **One push per deal.** A deal is a route + cabin (or a full trip), *not* a date pair. A sale
+  that lights up 30 dates on YVR–ICN is one push, with the cheapest date and the
+  range: `YVR⇄ICN business $2,380 · exceptional` / `Korean Air · 14–28 Nov (+11 dates) · typical ~$4,100 · seen 12 min ago`.
+  Tapping it opens that deal on the dashboard (full trip, comparison to typical, booking link).
+- **All tiers buzz the same.** iOS web push has no time-sensitive or Focus breakthrough, so the
+  title carries the tier word (good / great / exceptional / new low).
+- **No repeats:** an alerted deal re-alerts only if it drops a further ≥ CAD 100 or 5%, or crosses
+  into the next tier. Ledger in `state/alerts.json`.
+- **Every push must show a notification** (iOS revokes permission otherwise): `sw.js` shows a
+  generic line if the payload can't be read (meowmap lesson).
+- **Dead subscription:** dashboard only. `/health` reports the last successful push and the last push
+  error (a 404/410 from the push service deletes the subscription). The dashboard shows a banner when
+  push is broken.
+
+## Dashboard (plan §Outputs)
+
+Vanilla ES-module PWA, one screen per view, all loading `derived/*` only:
+**Deals** (current confirmed deals, the target of each push) · **Trips** (trip builder ranking) ·
+**Leaderboard** (cheapest qualifying full trip by departure month) · **Destination × month** ·
+**Route** (history chart: business, economy, premium; drill-down loads that route's monthly CSVs) ·
+**Health** (last runs, egress per run, control route, fare-loading log, push status).
+
+## Reused from existing repos
+
+| From | Take |
+| --- | --- |
+| spirit-tracker | `run_daily.sh` orchestration shape; `data` branch + worktree; `vpn_up.sh` + opposite-egress retry; run health in commit messages (`[[FAILED-…]]` sentinels → `run: <ts> \| FAILED(n): …`); one-shot failed-job retry; 48 h flip-flop rule (Google fares bounce); vanilla SPA + PWA + `stamp_pwa.js`; zero-dep Node conventions |
+| spirit-tracker-api | Worker-cron → `workflow_dispatch` clock (`tracker_schedule.ts`) |
+| meowmap | `worker/src/push.ts` (RFC 8291/8292 on WebCrypto, RFC-pinned tests), PWA push UX and iOS rules, CI with check-before-deploy + smoke test, Cloudflare account/profile rules |
+| movie-server | `controller/lib/push.js` (Node version of the same push code): option to send from Actions directly if the Worker path is ever a problem; terse alert-copy discipline |
+| vessel-tracker | Worker ↔ Actions dispatch split; "a red gate on a cold start trains you to ignore red" smoke-test retry |
+| lavena | Fallback only: register a self-hosted runner label (`residential`) that only the scrape job targets, if cloud egress is blocked |
+
+## Milestones (revised)
+
+1. **Prototype and go/no-go (1 week).** YVR⇄ICN business + economy, all three trip lengths. Answers four questions:
+   - **Accuracy:** do calendar prices and confirm-pass seller/price match Google Flights in a browser? (Spot-check about 20 cells by hand.) If they don't match, stop.
+   - **Egress:** CAPTCHA, 429 and empty rates per route (direct / VPN), ramping YVR⇄ICN from every 4 h to hourly over the week. If both cloud routes fail, try the lavena runner.
+   - **Volume:** actual calendar coverage per request (is "about 4 per combo" right?) and the daily cell change rate (sizes the data branch).
+   - **Library:** a maintained Node client, or hand-roll?
+2. **Long-leg grid + hot tier hourly**, data branch, run health, Worker clock.
+3. **Push live early:** PWA shell + subscribe + `/notify`, with the threshold rules (triggers 3 and 4) on long-leg business. Push moves up from plan milestone 5 because catching deals early is the point.
+4. **Short-hop matrix** (cool tier), bag fees.
+5. **Trip builder + full dashboard**, median and new-low rules (by now routes have 14+ days of history).
+6. **Run until booked**, adding coverage as later months load (through about Mar 2027).
+
+## Risks and remaining open items
+
+- **Google ToS / format changes.** Personal, low-volume use. Fixtures make parse breaks loud, and trigger 4 pushes.
+- **Blocking at hourly cadence.** Unknown until M1. Mitigations in order: slower pacing, more VPN
+  configs (several ProtonVPN servers), lavena runner.
+- **Change rate.** Unknown until M1; affects repo size and how big the drill-down files are.
+- **raw.githubusercontent.com caching and rate limits** for dashboard data: fine for one user. Fallbacks noted above.
+- **Open-jaw pair list:** start with into HAN, out of SGN or BKK (and reverse); finalize after hub data is in.
+- **Bag-fee table** for budget carriers on short hops: build during milestone 4.
+- **Hub list** needs re-checking against 2027–28 YVR nonstop schedules (plan §City list).

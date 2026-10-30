@@ -1,0 +1,7 @@
+# Pinned to the PERSONAL account (brennan@codexwilkes.com). A login without access to this
+# account errors out instead of deploying to the Text Groove work account. Never remove.
+account_id = "a53d0d3cb40662b52e001ffd082d2f1f"
+
+name = "flight-fare-tracker"
+compatibility_date = "2026-10-01"
+# main = "src/index.ts"   (added when the Worker is built, milestone 2)
