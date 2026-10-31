@@ -49,7 +49,6 @@ export async function renderHealth(el, base, settings) {
     <div class="seg prio" role="radiogroup" aria-label="Priority class">
       ${[['hybrid', 'Business'], ['economy', 'Economy']].map(([c, name]) => `<button type="button" role="radio" data-prio="${c}" aria-checked="${c === settings.priority}">${name}</button>`).join('')}
     </div>
-    <p class="hint">On this device: sorts the board, opens trips, leads History.</p>
 
     <h3>Scraper</h3>
     <div class="grid">

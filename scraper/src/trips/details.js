@@ -13,7 +13,7 @@
 const { search } = require('../gflights/flights');
 
 const MIN_CONNECT_MIN = 4 * 60;
-const CONCURRENCY = 4;
+const CONCURRENCY = 6; // searches in flight; a browser fallback (~10 s) holds one of these
 const PRICE_TOL = 0.03;
 
 const at = (date, hm) => Date.parse(`${date}T${hm}:00Z`) / 60000; // minutes, local clock (comparisons only within one city)
@@ -39,13 +39,14 @@ function flightsOf(trip, homes) {
 /**
  * Fill `flights` on the given trips' tickets, and set each trip's `connects` (false when some
  * connection has no flight). A ticket with a listed flight takes its price (the graph's kept as
- * `graph`) and the trip's total is re-summed. Pass the same `cache` across calls to reuse searches.
+ * `graph`) and the trip's total is re-summed. Pass the same `cache` across calls to reuse searches;
+ * `browser` (query → GetShoppingResults payload) answers searches whose page inlined no results.
  * Returns { searches, failed, connection, none } (the last two: misses).
  */
-async function addDetails(trips, homes, cache = new Map()) {
+async function addDetails(trips, homes, cache = new Map(), browser = null) {
   const searchOnce = (q) => {
     const key = JSON.stringify(q);
-    if (!cache.has(key)) cache.set(key, search(q).catch((e) => ({ error: e.message })));
+    if (!cache.has(key)) cache.set(key, search(q, { browser }).catch((e) => ({ error: e.message })));
     return cache.get(key);
   };
   const stats = { searches: 0, failed: 0, connection: 0, none: 0 };

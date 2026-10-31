@@ -13,7 +13,11 @@ const iso = (d) => d && `${d[0]}-${String(d[1]).padStart(2, '0')}-${String(d[2])
 /** Result rows of a search page: [{ price, min, airlines, legs: [...], stops: [{ at, min }] }]. */
 function parseOptions(html) {
   const ds1 = extractBlobs(html)['ds:1'];
-  if (!ds1) return null;
+  return ds1 ? parseResults(ds1) : null;
+}
+
+/** Result rows from the page's inline ds:1 blob or a GetShoppingResults payload (same layout). */
+function parseResults(ds1) {
   const rows = [...(ds1[2]?.[0] ?? []), ...(ds1[3]?.[0] ?? [])];
   return rows.map((row) => {
     const d = row[0];
@@ -35,13 +39,20 @@ function parseOptions(html) {
   }).filter((o) => o.price != null && o.legs.length);
 }
 
-/** One search's result rows. Google now and then serves a page without them: one retry. */
-async function search(query, tries = 2) {
+/**
+ * One search's result rows. Google now and then serves a page without them: one retry. Some
+ * searches come back with none inlined although flights exist (seen: YVR⇄DAD, HAN→DAD); the
+ * page then loads them through GetShoppingResults, so with `browser` (browser.shoppingResults
+ * bound to a context) an empty answer is asked again in a real page.
+ */
+async function search(query, { browser = null, tries = 2 } = {}) {
   const r = await fetchPage(query);
   const opts = r.status === 200 ? parseOptions(r.html) : null;
+  if (opts?.length) return opts;
+  if (opts && browser) return parseResults(await browser(query));
   if (opts) return opts;
-  if (tries > 1) return search(query, tries - 1);
+  if (tries > 1) return search(query, { browser, tries: tries - 1 });
   throw new Error(r.status === 200 ? 'no results blob' : `HTTP ${r.status}`);
 }
 
-module.exports = { parseOptions, search };
+module.exports = { parseOptions, parseResults, search };

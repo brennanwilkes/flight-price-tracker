@@ -190,4 +190,19 @@ async function bookingOptions(ctx, { from, to, out, ret, cabin }) {
   }
 }
 
-module.exports = { openBrowser, priceGraph, bookingOptions, addDays };
+/**
+ * A search's results as the page loads them (GetShoppingResults), for searches whose page
+ * inlines none (gflights/flights.js). Returns the payload, laid out like the inline ds:1 blob.
+ */
+async function shoppingResults(ctx, query) {
+  const page = await ctx.newPage();
+  try {
+    const [payload] = await capture(page, 'GetShoppingResults', (p) => [p],
+      () => page.goto(pageUrl(query), { waitUntil: 'domcontentloaded', timeout: PAGE_TIMEOUT_MS }), `${query.from}-${query.to} ${query.out}`, 30_000);
+    return payload;
+  } finally {
+    await page.close();
+  }
+}
+
+module.exports = { openBrowser, priceGraph, bookingOptions, shoppingResults, addDays };

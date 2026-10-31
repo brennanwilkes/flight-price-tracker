@@ -165,10 +165,8 @@ function render() {
   const list = rows(data);
   $('#view').innerHTML = list.length
     ? `<div class="board-head"><span>Destination</span><span>Business</span><span>Economy</span></div>
-      <ol class="board">${list.map(boardRow).join('')}</ol>
-      <p class="note">Business: business class to and from Asia, economy within it. +N: other dates within 2% of the price.</p>`
+      <ol class="board">${list.map(boardRow).join('')}</ol>`
     : '<p class="note">No complete trips yet.</p>';
-  $('#stamp').textContent = `Updated ${new Date(data.generatedAt).toLocaleString('en-CA', { dateStyle: 'medium', timeStyle: 'short' })}`;
 
   // A fare tile opens that class's trip; anywhere else on the row opens the first one there is.
   for (const li of document.querySelectorAll('li[data-row]')) {

@@ -30,6 +30,7 @@ const { loadFares } = require('../src/trips/fares');
 const { buildTrips, similarCount } = require('../src/trips/build');
 const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
 const { addDetails } = require('../src/trips/details');
+const { openBrowser, shoppingResults } = require('../src/gflights/browser');
 const alertConfig = require('../config/alerts.json');
 const { tierOf } = require('../src/alerts/rules');
 
@@ -81,11 +82,15 @@ const sortRows = (rows) => rows.sort((a, b) => price(a.hybrid) - price(b.hybrid)
 async function verify(byHome, trips) {
   const t0 = Date.now();
   const cache = new Map();
+  // Searches whose page inlines no results are asked again in a real page (gflights/flights.js).
+  const { browser: chrome, ctx } = await openBrowser();
+  let browserSearches = 0;
+  const browser = (q) => { browserSearches++; return shoppingResults(ctx, q); };
   const st = { cells: 0, replaced: 0, unresolved: 0, searches: 0, failed: 0, none: 0 };
   let pending = [...byHome.values()].flatMap((rows) => rows.flatMap((r) => CLASSES.filter((c) => r[c]).map((cls) => ({ r, cls, i: 0, cand: r[cls], best: null, first: null }))));
   st.cells = pending.length;
   while (pending.length) {
-    const s = await addDetails(pending.map((p) => p.cand), config.origins, cache);
+    const s = await addDetails(pending.map((p) => p.cand), config.origins, cache, browser);
     st.searches += s.searches;
     st.failed += s.failed;
     st.error ??= s.error;
@@ -105,6 +110,8 @@ async function verify(byHome, trips) {
       return false;
     });
   }
+  await chrome.close();
+  st.browser = browserSearches;
   for (const [view, rows] of byHome) {
     for (const r of rows) delete r.cands;
     byHome.set(view, sortRows(rows.filter((r) => r.hybrid || r.economy)));
@@ -140,7 +147,7 @@ async function main() {
   let details = null;
   if (!process.argv.includes('--no-details')) {
     const s = (details = await verify(byHome, trips));
-    console.log(`details: ${s.cells} cells, ${s.replaced} moved to another trip (connects, or cheaper as listed), ${s.unresolved} with none that connects; ${s.searches} searches (${s.failed} failed${s.error ? `, e.g. ${s.error}` : ''}), ${s.none} flights not listed yet; ${s.ms}ms`);
+    console.log(`details: ${s.cells} cells, ${s.replaced} moved to another trip (connects, or cheaper as listed), ${s.unresolved} with none that connects; ${s.searches} searches (${s.browser} in a browser, ${s.failed} failed${s.error ? `, e.g. ${s.error}` : ''}), ${s.none} flights not listed yet; ${s.ms}ms`);
   } else {
     for (const rows of byHome.values()) for (const r of rows) delete r.cands;
   }
