@@ -316,3 +316,6 @@ main h3:first-child { margin-top: 8px; }
 .run.bad b { color: var(--up); }
 .run b i { font-style: normal; font-size: 10px; color: var(--muted); padding: 0 4px; border: 1px solid var(--line); border-radius: 4px; margin-left: 4px; }
 .run pre { white-space: pre-wrap; margin: 0; padding: 0 12px 10px; font: 11px var(--mono); color: var(--up); }
+/* Priority switch (Health): the trip view's segmented control. */
+.seg.prio button[aria-checked="true"] { background: var(--cell); color: var(--text); box-shadow: inset 0 0 0 1px var(--line); }
+.hint { margin: 6px 2px 0; font: 500 11px var(--mono); color: var(--muted); }

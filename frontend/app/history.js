@@ -65,15 +65,15 @@ function onGrid(list) {
 
 const charts = [];
 
-/** Render the tab into `el`. rows: the board's rows in its current view (home, month, via). */
-export async function renderHistory(el, base, home, rows) {
+/** Render the tab into `el`. rows: the board's rows in its current view (home, month, via); the priority class's chart first. */
+export async function renderHistory(el, base, home, rows, priority = 'hybrid') {
   el.innerHTML = '<p class="note">Loading…</p>';
   let Chart, series;
   try { [Chart, series] = await Promise.all([loadChartJs(), loadHistory(base)]); } catch (e) {
     el.innerHTML = `<p class="note">Couldn't load the history: ${esc(e.message)}</p>`;
     return;
   }
-  const picks = CLASSES.map(([cls, name]) => {
+  const picks = CLASSES.slice().sort(([a]) => (a === priority ? -1 : 1)).map(([cls, name]) => {
     const top = rows.filter((r) => r.cells[cls]).sort((a, b) => a.cells[cls].total - b.cells[cls].total).slice(0, MAX_SERIES)
       .map((r) => ({ r, pts: series.get(`${home},${cls},${r.in},${r.out}`) ?? [] })).filter((x) => x.pts.length);
     return { cls, name, top };

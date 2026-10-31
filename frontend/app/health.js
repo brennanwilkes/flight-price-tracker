@@ -26,8 +26,11 @@ async function get(base, file) {
   } catch { return null; }
 }
 
-/** Render the tab into `el`; base: the data branch at the dashboard's commit. */
-export async function renderHealth(el, base) {
+/**
+ * Render the tab into `el`; base: the data branch at the dashboard's commit. settings:
+ * { priority, setPriority(p) } for the priority switch.
+ */
+export async function renderHealth(el, base, settings) {
   el.innerHTML = '<p class="note">Loading…</p>';
   const [health, ledger, status, alerts] = await Promise.all([
     get(base, 'state/health.json'), get(base, 'state/alerts.json'), get(base, 'derived/status.json'), alertState(),
@@ -42,6 +45,12 @@ export async function renderHealth(el, base) {
   const deals = Object.entries(ledger?.deals ?? {}).sort((x, y) => y[1].at.localeCompare(x[1].at)).slice(0, 6);
 
   el.innerHTML = `
+    <h3>Priority</h3>
+    <div class="seg prio" role="radiogroup" aria-label="Priority class">
+      ${[['hybrid', 'Business'], ['economy', 'Economy']].map(([c, name]) => `<button type="button" role="radio" data-prio="${c}" aria-checked="${c === settings.priority}">${name}</button>`).join('')}
+    </div>
+    <p class="hint">Sorts the board, opens trips and sends alerts for this class.</p>
+
     <h3>Scraper</h3>
     <div class="grid">
       ${box('Last sweep', last ? ago(last.at) : '—', last && !last.success ? 'bad' : '')}
@@ -98,6 +107,13 @@ export async function renderHealth(el, base) {
       </ol>
     </details>`;
 
+  for (const b of el.querySelectorAll('[data-prio]')) {
+    b.addEventListener('click', async () => {
+      for (const x of el.querySelectorAll('[data-prio]')) x.setAttribute('aria-checked', String(x === b));
+      settings.priority = b.dataset.prio;
+      try { await settings.setPriority(b.dataset.prio); } catch (e) { el.querySelector('.hint').textContent = `Couldn't save: ${e.message}`; }
+    });
+  }
   const result = el.querySelector('.result');
   const act = async (b, fn) => {
     b.disabled = true;

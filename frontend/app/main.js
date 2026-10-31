@@ -11,7 +11,7 @@
 //   whose generatedAt isn't newer than what's shown (a stale API answer) is ignored.
 import { CITIES, cityName } from './cities.js';
 import { tripMap } from './map.js';
-import { sweepIfAsked } from './alerts.js';
+import { sweepIfAsked, getSettings, saveSettings } from './alerts.js';
 import { renderHealth } from './health.js';
 import { renderHistory } from './history.js';
 import { register, showBar, clearBar } from './pwa.js';
@@ -36,6 +36,9 @@ const COLUMNS = [['hybrid', 'Business'], ['economy', 'Economy']];
 // ?home= (from an alert) picks the home airport, else the last one used.
 // data: "HOME" (all trips) or "HOME-CITY" (the via filter: trips staying in CITY) → trips file.
 const state = { home: /^(YVR|YYJ)$/.test(params.get('home') ?? '') ? params.get('home') : localGet('home') ?? 'YVR', month: '', via: '', sha: null, data: {} };
+// Priority class: sorts the board, opens first, alerts (a Worker setting; this device's copy first).
+state.priority = localGet('priority') === 'economy' ? 'economy' : 'hybrid';
+const otherClass = () => (state.priority === 'hybrid' ? 'economy' : 'hybrid');
 const viewKey = () => (state.via ? `${state.home}-${state.via}` : state.home);
 const $ = (sel) => document.querySelector(sel);
 
@@ -94,7 +97,7 @@ function rows(data) {
   return data.rows
     .map((r) => ({ ...r, cells: pick(r) }))
     .filter((r) => r.cells.hybrid || r.cells.economy)
-    .sort((a, b) => price(a.cells.hybrid) - price(b.cells.hybrid) || price(a.cells.economy) - price(b.cells.economy));
+    .sort((a, b) => price(a.cells[state.priority]) - price(b.cells[state.priority]) || price(a.cells[otherClass()]) - price(b.cells[otherClass()]));
 }
 
 /** ▲/▼ and the change vs 24 h ago (overall cells only: the builder sets `was` there). */
@@ -146,13 +149,13 @@ function render() {
   for (const b of document.querySelectorAll('.toggle button')) b.setAttribute('aria-pressed', String(b.dataset.home === state.home));
   if (tab === 'health') {
     renderSheet();
-    renderHealth($('#view'), dataBase(state.sha));
+    renderHealth($('#view'), dataBase(state.sha), { priority: state.priority, setPriority });
     return;
   }
   if (tab === 'history') {
     renderSheet();
     const data = state.data[viewKey()];
-    if (data) { fillFilters(data); renderHistory($('#view'), dataBase(state.sha), state.home, rows(data)); }
+    if (data) { fillFilters(data); renderHistory($('#view'), dataBase(state.sha), state.home, rows(data), state.priority); }
     return;
   }
   const data = state.data[viewKey()];
@@ -170,7 +173,8 @@ function render() {
   // A fare tile opens that class's trip; anywhere else on the row opens the first one there is.
   for (const li of document.querySelectorAll('li[data-row]')) {
     li.addEventListener('click', (e) => {
-      const cls = e.target.closest('[data-cls]')?.dataset.cls ?? li.querySelector('[data-cls]')?.dataset.cls;
+      const cls = e.target.closest('[data-cls]')?.dataset.cls
+        ?? (li.querySelector(`[data-cls="${state.priority}"]`) ?? li.querySelector('[data-cls]'))?.dataset.cls;
       if (cls) openTrip(li.dataset.row, cls);
     });
   }
@@ -377,6 +381,19 @@ for (const b of document.querySelectorAll('.toggle button')) {
     show();
   });
 }
+/** Change the priority class here and at the Worker; the board re-sorts. */
+async function setPriority(p) {
+  state.priority = p;
+  localSet('priority', p);
+  await saveSettings({ priority: p });
+}
+// The Worker's copy wins (set on another device, or this one's last save failed).
+getSettings().then((s) => {
+  if (!s?.priority || s.priority === state.priority) return;
+  state.priority = s.priority;
+  localSet('priority', s.priority);
+  render();
+});
 sweepIfAsked((msg) => showBar('fresh', msg, () => clearBar('fresh')));
 // Switching tabs re-renders; opening or closing a trip doesn't (popstate → renderSheet).
 window.addEventListener('hashchange', () => { if (tabOf() !== state.tab) render(); });
