@@ -153,7 +153,7 @@ function render() {
   const months = [...new Set(data.rows.flatMap((r) => Object.keys(r.months)))].sort();
   $('#month').innerHTML = `<option value="">All months</option>${months.map((m) => `<option value="${m}"${m === state.month ? ' selected' : ''}>${fmtMonth(m)}</option>`).join('')}`;
   const vias = state.data[state.home]?.vias ?? [];
-  $('#via').innerHTML = `<option value="">Via any city</option>${vias.map((c) => `<option value="${c}"${c === state.via ? ' selected' : ''}>Via ${esc(cityName(c))}</option>`).join('')}`;
+  $('#via').innerHTML = `<option value="">Any city</option>${vias.map((c) => `<option value="${c}"${c === state.via ? ' selected' : ''}>Via ${esc(cityName(c))}</option>`).join('')}`;
 
   const list = rows(data);
   $('#view').innerHTML = list.length
