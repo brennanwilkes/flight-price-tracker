@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run one sweep into the `data` branch and push it.
+# Run one sweep into the `data` branch, rebuild trips (derived/), and push it.
 #
 #   EGRESS=vpn|direct scripts/run_sweep.sh [extra sweep.js args, e.g. --routes YVR-ICN]
 #
@@ -31,6 +31,8 @@ fi
 set +e
 node scraper/bin/sweep.js --data "$DATA_DIR" --egress "${EGRESS:-direct}" "$@"
 rc=$?
+# Trips from whatever fares are current, even after a failed sweep (stale cells age out).
+node scraper/bin/build-trips.js --data "$DATA_DIR" || rc=1
 set -e
 
 cd "$DATA_DIR"
