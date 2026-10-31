@@ -258,9 +258,9 @@ function layover(prev, next, flex = null, hoian = false) {
     : esc(cityName(prev.to));
   if (flightOf(next)?.miss === 'connection') return `<li class="layover bad"><span>Misses connection · ${where}</span></li>`;
   const { nights, wait } = stay(prev, next);
-  // "10 nights (4–12)": other stay lengths at about the same price (builder: flex.js).
-  const span = flex && nights > 0 ? ` <i class="span">(${Math.max(0, nights - flex[1])}–${nights + flex[2]})</i>` : '';
-  if (nights > 0) return `<li class="layover"><span>${nights} night${nights > 1 ? 's' : ''}${span} · ${where}</span></li>`;
+  // "4–12 nights": the stay lengths possible at about the same price (builder: flex.js).
+  const count = flex && nights > 0 ? `${Math.max(0, nights - flex[1])}–${nights + flex[2]} nights` : `${nights} night${nights > 1 ? 's' : ''}`;
+  if (nights > 0) return `<li class="layover"><span>${count} · ${where}</span></li>`;
   return `<li class="layover"><span>${wait != null ? `${dur(wait)} layover` : 'Same day'} · ${where}</span></li>`;
 }
 

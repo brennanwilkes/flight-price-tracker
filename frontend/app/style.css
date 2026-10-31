@@ -118,7 +118,6 @@ select, .toggle button {
 .fare .lowmarks { position: absolute; top: 3px; right: 5px; display: flex; gap: 2px; font-style: normal; font-size: 11px; line-height: 1; }
 .fare .low.same { font-size: 13px; }
 .ticket .lows { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 2px 14px; margin: 2px 0 0; font: 600 11px var(--mono); }
-.layover .span { font-style: normal; opacity: 0.75; }
 .trend.down { color: var(--eco); }
 .trend.up { color: var(--up); }
 .fare.good { background: var(--good); }

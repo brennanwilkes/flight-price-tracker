@@ -116,7 +116,7 @@ the builder searches every combination and the dashboard shows the best N.
   yet; faint gold ☆ cheapest yet for these dates; red ○ other dates were cheaper (mild); bold red ●
   these exact dates were cheaper before (bad). Tile corner on the board; the ticket stub spells out
   the earlier prices.
-- **Stay ranges:** "10 nights (4–12)": each Asia one-way moved alone, long legs fixed, within 3% of
+- **Stay ranges:** "4–12 nights" (the range replaces the count): each Asia one-way moved alone, long legs fixed, within 3% of
   the total, Hoi An minimum kept (`trips/flex.js`).
 - **The Hoi An stay is checked against real flights** (an overnight arrival can't eat a night);
   stays outside Da Nang/Hue read "Hanoi + Hoi An" or "Hanoi → Hoi An → Saigon".
