@@ -10,7 +10,10 @@ const { pageUrl, HEADERS } = require('./page');
 const { parseBatchExecute, parseCalendar, parseBooking } = require('./batchexecute');
 
 const RPC_TIMEOUT_MS = 20_000;
-const PAGE_TIMEOUT_MS = 45_000; // slow (YYJ) results pages
+// Per load. A results page that hasn't shown the Price graph button by then has usually stalled
+// for good (seen on YYJ in CI), so load it again rather than keep waiting.
+const PAGE_TIMEOUT_MS = 20_000;
+const PAGE_LOADS = 3;
 // Google computes uncached graphs on demand: YYJ ones take 2-22s+ where YVR's come back in 0.1s.
 // So wait long for a reply once the request is out, but re-click quickly if none went out.
 const GRAPH_TIMEOUT_MS = 60_000;
@@ -112,9 +115,20 @@ async function priceGraph(ctx, { from, to, cabin, tripLen = null, start, end }) 
   if (addDays(start, span) > addDays(today(), HORIZON_DAYS)) return []; // nothing loaded yet
   const page = await ctx.newPage();
   try {
-    await page.goto(pageUrl({ from, to, out: start, ret: tripLen == null ? null : addDays(start, tripLen), cabin }), { waitUntil: 'networkidle' });
+    const url = pageUrl({ from, to, out: start, ret: tripLen == null ? null : addDays(start, tripLen), cabin });
     const graphBtn = page.getByRole('button', { name: 'Price graph' }).first();
-    await graphBtn.waitFor({ timeout: PAGE_TIMEOUT_MS });
+    for (let n = 1; ; n++) {
+      await page.goto(url, { waitUntil: 'networkidle' });
+      try {
+        await graphBtn.waitFor({ timeout: PAGE_TIMEOUT_MS });
+        break;
+      } catch (e) {
+        if (n < PAGE_LOADS) continue;
+        // What the stalled page shows, for the log.
+        const text = await page.innerText('body').catch(() => '');
+        throw new Error(`no Price graph button after ${PAGE_LOADS} loads; page says: ${text.replace(/\s+/g, ' ').slice(0, 200)}`);
+      }
+    }
     const cells = new Map();
     const add = (list) => { for (const c of list) if (c.out >= start && c.out <= end) cells.set(c.out, c); };
     // A click that lands before the page has hydrated does nothing; click again rather than wait.

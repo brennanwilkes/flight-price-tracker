@@ -9,7 +9,7 @@
 // - The current commit is checked on resume and every 5 min while visible. Newer data applies at
 //   once on resume; mid-use it's a tap-to-show bar, so prices don't change under a tap. Data
 //   whose generatedAt isn't newer than what's shown (a stale API answer) is ignored.
-import { cityName } from './cities.js';
+import { CITIES, cityName } from './cities.js';
 import { tripMap } from './map.js';
 import { alertsBar, sweepButton } from './alerts.js';
 import { register, showBar, clearBar } from './pwa.js';
@@ -26,15 +26,20 @@ const TIERS = {
   economy: [[800, 'buy'], [1000, 'great'], [1300, 'good']],
 };
 const COLUMNS = [['hybrid', 'Hybrid'], ['economy', 'Full economy']];
+const TAG = { hybrid: 'J+Y', economy: 'Y' }; // fare tile labels: business long legs + economy hops, or all economy
 
-// sha: the data-branch commit the loaded files came from. open: the expanded row, as 'IN-OUT'.
-const state = { home: localGet('home') ?? 'YVR', month: '', sha: null, data: {}, open: null };
+// sha: the data-branch commit the loaded files came from. The open trip lives in the URL hash
+// (#trip=IN-OUT~class), so the back gesture closes it and an alert can link straight to one.
+const state = { home: localGet('home') ?? 'YVR', month: '', sha: null, data: {} };
 const $ = (sel) => document.querySelector(sel);
 
 function localGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
 function localSet(k, v) { try { localStorage.setItem(k, v); } catch {} }
 
 const money = (n) => `$${n.toLocaleString('en-CA')}`;
+const fmtDay = (iso) => new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
+// Board style: "SEP 05".
+const boardDate = (iso) => `${new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-CA', { month: 'short', timeZone: 'UTC' }).toUpperCase().replace('.', '')} ${iso.slice(8)}`;
 const fmtDate = (iso) => new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 // "Sep 22–Oct 13", or "Sep 3–17" within a month.
 const dateRange = (a, b) => (a.slice(0, 7) === b.slice(0, 7) ? `${fmtDate(a)}–${Number(b.slice(8))}` : `${fmtDate(a)}–${fmtDate(b)}`);
@@ -82,15 +87,35 @@ function rows(data) {
 function trend(trip) {
   if (trip.was == null || trip.was === trip.total) return '';
   const d = trip.total - trip.was;
-  return ` <span class="trend ${d < 0 ? 'down' : 'up'}" title="24 h ago: ${money(trip.was)}">${d < 0 ? '▼' : '▲'}${money(Math.abs(d))}</span>`;
+  return `<span class="trend ${d < 0 ? 'down' : 'up'}" title="24 h ago: ${money(trip.was)}">${d < 0 ? '▼' : '▲'}${Math.abs(d).toLocaleString('en-CA')}</span>`;
 }
 
-function cell(cls, trip) {
-  if (!trip) return '<td class="price none">–</td>';
-  return `<td class="price ${tier(cls, trip.total)}">
-    <b>${money(trip.total)}${trend(trip)}</b>
-    <small>${dateRange(trip.depart, trip.ret)}${trip.sameDay ? ' ⏱' : ''}</small>
-  </td>`;
+/** "SEP 05 – SEP 22" plus "+N" when other dates come within 2% (the builder's alts). */
+function dates(trip) {
+  const alts = trip.alts ? `<i class="alts" title="${trip.alts} other date${trip.alts > 1 ? 's' : ''} within 2% of this price">+${trip.alts}</i>` : '';
+  const range = trip.depart.slice(0, 7) === trip.ret.slice(0, 7) ? `${boardDate(trip.depart)}–${trip.ret.slice(8)}` : `${boardDate(trip.depart)}–${boardDate(trip.ret)}`;
+  return `${range}${alts}`;
+}
+
+function fare(cls, trip) {
+  if (!trip) return '<span class="fare none">—</span>';
+  return `<button type="button" class="fare ${tier(cls, trip.total)}" data-cls="${cls}">
+    <span class="tag">${TAG[cls]}</span><b>${money(trip.total)}</b>${trend(trip)}
+  </button>`;
+}
+
+/** One board row: destination and dates on the left, a fare tile per class on the right. */
+function boardRow(r, i) {
+  const [h, e] = [r.cells.hybrid, r.cells.economy];
+  const same = h && e && h.depart === e.depart && h.ret === e.ret;
+  // Dates beside the city: the hybrid's, and the economy's too when they differ.
+  const when = [h && [h, 'hybrid'], e && !same && [e, 'economy']].filter(Boolean)
+    .map(([t, cls]) => `<span class="when">${h && e && !same ? `<span class="tag">${TAG[cls]}</span>` : ''}${dates(t)}</span>`).join('');
+  const code = r.in === r.out ? r.in : `${r.in}<br>${r.out}`;
+  return `<li class="row${i === 0 ? ' headline' : ''}" data-row="${r.in}-${r.out}">
+    <div class="dest"><span class="code">${code}</span><span class="city">${esc(pairLabel(r))}</span>${when}</div>
+    ${COLUMNS.map(([cls]) => fare(cls, r.cells[cls])).join('')}
+  </li>`;
 }
 
 function render() {
@@ -102,28 +127,21 @@ function render() {
   $('#month').innerHTML = `<option value="">All months</option>${months.map((m) => `<option value="${m}"${m === state.month ? ' selected' : ''}>${fmtMonth(m)}</option>`).join('')}`;
 
   const list = rows(data);
-  const body = (r, i) => {
-    const key = `${r.in}-${r.out}`;
-    return `<tr data-row="${key}" class="${i === 0 ? 'headline' : ''}${state.open === key ? ' open' : ''}">
-      <th scope="row">${esc(pairLabel(r))}</th>${COLUMNS.map(([cls]) => cell(cls, r.cells[cls])).join('')}
-    </tr>${state.open === key ? `<tr class="details"><td colspan="3">${details(r)}</td></tr>` : ''}`;
-  };
   $('#view').innerHTML = list.length
-    ? `<table>
-        <thead><tr><th></th>${COLUMNS.map(([, label]) => `<th>${label}</th>`).join('')}</tr></thead>
-        <tbody>${list.map(body).join('')}</tbody>
-      </table>
-      <p class="note">⏱ = same-day connection between separate tickets; times still to verify.</p>`
+    ? `<div class="board-head"><span>Destination</span><span>Hybrid</span><span>Economy</span></div>
+      <ol class="board">${list.map(boardRow).join('')}</ol>
+      <p class="note">J+Y: business to and from Asia, economy within it. Y: economy throughout. +N: other dates within 2% of the price.</p>`
     : '<p class="note">No complete trips yet.</p>';
   $('#stamp').textContent = `Updated ${new Date(data.generatedAt).toLocaleString('en-CA', { dateStyle: 'medium', timeStyle: 'short' })}`;
 
-  for (const tr of document.querySelectorAll('tr[data-row]')) {
-    tr.addEventListener('click', () => {
-      const key = tr.dataset.row;
-      state.open = state.open === key ? null : key;
-      render();
+  // A fare tile opens that class's trip; anywhere else on the row opens the first one there is.
+  for (const li of document.querySelectorAll('li[data-row]')) {
+    li.addEventListener('click', (e) => {
+      const cls = e.target.closest('[data-cls]')?.dataset.cls ?? li.querySelector('[data-cls]')?.dataset.cls;
+      if (cls) openTrip(li.dataset.row, cls);
     });
   }
+  renderSheet();
 }
 
 /** Google Flights search for one ticket. */
@@ -135,31 +153,116 @@ function flightsLink(t) {
   return `https://www.google.com/travel/flights?q=${encodeURIComponent(q)}&curr=CAD&hl=en&gl=CA`;
 }
 
-function ticketRows(trip) {
-  // A round trip's way home goes last, after the hops.
-  const legs = trip.tickets.flatMap((t) => (t.kind === 'rt'
-    ? [{ ...t, leg: 'out' }, { ...t, leg: 'back', from: t.to, to: t.from, date: t.ret }]
-    : [t]));
-  legs.sort((a, b) => (a.leg === 'back') - (b.leg === 'back') || a.date.localeCompare(b.date));
-  return legs.map((t) => {
-    const price = t.kind === 'rt' ? (t.leg === 'out' ? `${money(t.price)} round trip` : 'same ticket') : money(t.price);
-    return `<li><details>
-      <summary><span>${fmtDate(t.date)}</span> ${esc(cityName(t.from))} → ${esc(cityName(t.to))} <em>${t.cabin === 'J' ? 'Business' : 'Economy'}</em> <b>${price}</b></summary>
-      <p>${t.from} → ${t.to}, ${t.date}${t.kind === 'rt' ? `, back ${t.ret}` : ''}. <a href="${flightsLink(t)}" target="_blank" rel="noopener">Google Flights ↗</a></p>
-    </details></li>`;
-  }).join('');
+/**
+ * The trip's flights in flying order, numbered as on the map: the way out, the hops by date,
+ * the way home. A round trip's two flights are one ticket.
+ */
+function legs(trip) {
+  const all = trip.tickets.flatMap((t) => (t.kind === 'rt'
+    ? [{ t, leg: 'out', from: t.from, to: t.to, date: t.date }, { t, leg: 'back', from: t.to, to: t.from, date: t.ret }]
+    : [{ t, from: t.from, to: t.to, date: t.date }]));
+  all.sort((a, b) => (a.leg === 'back') - (b.leg === 'back') || a.date.localeCompare(b.date));
+  return all.map((l, i) => ({ ...l, n: i + 1, cabin: l.t.cabin }));
 }
 
-function details(r) {
-  return COLUMNS.filter(([cls]) => r.cells[cls]).map(([cls, label]) => {
-    const trip = r.cells[cls];
-    return `<section class="trip">
-      <h3>${label} · ${money(trip.total)} · ${trip.days} days</h3>
-      ${tripMap(trip, state.home)}
-      <ol>${ticketRows(trip)}</ol>
-    </section>`;
-  }).join('');
+// Long hauls land the day after they leave (Asia is a day ahead); hops land the same day.
+const landsOn = (l) => (CITIES[l.from]?.lon == null || CITIES[l.to]?.lon == null ? addDay(l.date) : l.date);
+const addDay = (iso) => new Date(Date.parse(`${iso}T12:00:00Z`) + 864e5).toISOString().slice(0, 10);
+
+/** Between two legs: the nights spent in the city, or a same-day connection. */
+function layover(prev, next) {
+  const nights = (Date.parse(next.date) - Date.parse(landsOn(prev))) / 864e5;
+  const where = esc(cityName(prev.to));
+  if (nights > 0) return `<li class="layover"><span>${nights} night${nights > 1 ? 's' : ''} · ${where}</span></li>`;
+  const sameTicket = prev.t === next.t;
+  return `<li class="layover tight"><span>Same day · ${where}${sameTicket ? '' : ' · ⏱ check times'}</span></li>`;
 }
+
+/**
+ * One flight, as a boarding-pass row of boxed fields; the whole row opens it in Google Flights.
+ * Legs on one ticket (a return) carry the same ticket letter and are joined by a rail (CSS).
+ */
+function legItem(l, ticketOf) {
+  const tk = ticketOf.get(l.t);
+  const rt = l.t.kind === 'rt';
+  const price = !rt ? money(l.t.price) : l.leg === 'out' ? money(l.t.price) : '';
+  const note = !rt ? 'one way' : l.leg === 'out' ? 'return' : 'return ↩';
+  return `<li class="leg ${l.cabin === 'J' ? 'biz' : 'eco'}${rt ? ` rail rail-${l.leg}` : ''}">
+    <a href="${flightsLink(l.t)}" target="_blank" rel="noopener">
+      <span class="f n">${l.n}</span>
+      <span class="f day"><small>${new Date(`${l.date}T12:00:00Z`).toLocaleDateString('en-CA', { weekday: 'short', timeZone: 'UTC' }).toUpperCase().replace('.', '')}</small>${boardDate(l.date)}</span>
+      <span class="f route"><b>${l.from}<span class="arrow">→</span>${l.to}</b><small>${esc(cityName(l.from))} → ${esc(cityName(l.to))}</small></span>
+      <span class="f cabin">${l.cabin === 'J' ? 'BUS' : 'ECO'}</span>
+      <span class="f price"><b>${price || '<span class="incl">incl.</span>'}</b><small>${tk} · ${note}</small></span>
+    </a>
+  </li>`;
+}
+
+function openTrip(key, cls) {
+  history.pushState({ sheet: true }, '', `#trip=${key}~${cls}`);
+  renderSheet();
+}
+
+function closeTrip() {
+  if (history.state?.sheet) history.back(); // popstate re-renders
+  else { history.replaceState(null, '', location.pathname + location.search); renderSheet(); }
+}
+
+/** The full-screen trip view for #trip=IN-OUT~class, or nothing. */
+function renderSheet() {
+  const m = /^#trip=([A-Z]{3}-[A-Z]{3})~(hybrid|economy)$/.exec(location.hash);
+  const data = state.data[state.home];
+  const row = m && data && rows(data).find((r) => `${r.in}-${r.out}` === m[1]);
+  let sheet = $('#sheet');
+  if (!row) {
+    sheet?.remove();
+    document.body.classList.remove('sheet-open');
+    return;
+  }
+  const cls = row.cells[m[2]] ? m[2] : COLUMNS.find(([c]) => row.cells[c])[0];
+  const trip = row.cells[cls];
+  const list = legs(trip);
+  // Tickets lettered in the order they're first flown: A, B, C…
+  const ticketOf = new Map();
+  for (const l of list) if (!ticketOf.has(l.t)) ticketOf.set(l.t, `TKT ${String.fromCharCode(65 + ticketOf.size)}`);
+  if (!sheet) {
+    sheet = document.createElement('div');
+    sheet.id = 'sheet';
+    sheet.className = 'sheet';
+    sheet.setAttribute('role', 'dialog');
+    sheet.setAttribute('aria-modal', 'true');
+    document.body.appendChild(sheet);
+    document.body.classList.add('sheet-open');
+  }
+  sheet.setAttribute('aria-label', pairLabel(row));
+  sheet.innerHTML = `
+    <div class="sheet-bar">
+      <button type="button" class="close" aria-label="Close">✕</button>
+      <div><h2>${esc(pairLabel(row))}</h2>
+      <span>from ${esc(cityName(state.home))}${state.month ? ` · ${fmtMonth(state.month)}` : ''}</span></div>
+    </div>
+    <div class="seg" role="tablist">${COLUMNS.filter(([c]) => row.cells[c]).map(([c, label]) => `
+      <button type="button" role="tab" data-cls="${c}" aria-selected="${c === cls}">${label} <b>${money(row.cells[c].total)}</b></button>`).join('')}
+    </div>
+    <div class="sum ${tier(cls, trip.total)}">
+      <b>${money(trip.total)}</b>${trend(trip)}
+      <span>${fmtDay(trip.depart)} – ${fmtDay(trip.ret)} · ${trip.days} days · ${trip.tickets.length} tickets${trip.alts ? ` · +${trip.alts} other dates within 2%` : ''}</span>
+    </div>
+    ${tripMap(list, state.home)}
+    <ol class="legs${trip.tickets.some((t) => t.kind === 'rt') ? ' has-rail' : ''}">${list.map((l, i) => (i ? layover(list[i - 1], l) : '') + legItem(l, ticketOf)).join('')}</ol>
+    ${trip.sameDay ? '<p class="note">⏱ Includes a same-day connection between separate tickets: check the times before booking.</p>' : ''}
+    <p class="note">Prices are Google Flights' lowest for each date when last checked. Tap a flight to see it there.</p>`;
+  sheet.querySelector('.close').addEventListener('click', closeTrip);
+  for (const b of sheet.querySelectorAll('.seg button')) {
+    b.addEventListener('click', () => {
+      history.replaceState(history.state, '', `#trip=${m[1]}~${b.dataset.cls}`);
+      renderSheet();
+    });
+  }
+}
+
+window.addEventListener('popstate', renderSheet);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('#sheet')) closeTrip(); });
 
 async function show() {
   try {
@@ -175,7 +278,6 @@ async function show() {
 for (const b of document.querySelectorAll('.toggle button')) {
   b.addEventListener('click', () => {
     state.home = b.dataset.home;
-    state.open = null;
     localSet('home', state.home);
     show();
   });
@@ -208,6 +310,6 @@ async function refresh(resumed) {
 }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refresh(true); });
 setInterval(() => { if (document.visibilityState === 'visible') refresh(false); }, POLL_MS);
-$('#month').addEventListener('change', (e) => { state.month = e.target.value; state.open = null; render(); });
+$('#month').addEventListener('change', (e) => { state.month = e.target.value; render(); });
 // An alert's prices first; then anything newer than them.
 show().then(() => { if (ALERT_SHA) refresh(true); });

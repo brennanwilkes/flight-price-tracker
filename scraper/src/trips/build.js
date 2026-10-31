@@ -18,6 +18,7 @@ const MIN_DAYS = 14;
 const MAX_DAYS = 21;
 const DAD = 'DAD';
 const DAD_NIGHTS = 5;
+const SIMILAR = 0.02; // "+N" on the dashboard: other dates within 2% of the best price
 
 const addDays = (iso, n) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
 
@@ -94,14 +95,22 @@ function hasSameDay(d0, hops, backDate) {
  *   hop(from, to, date)                → price | null      (economy within Asia)
  *   departures                         → sorted ISO dates to try as day 0
  * }
- * Returns [{ home, cls: 'hybrid'|'economy', in, out, month, total, depart, ret, days, sameDay, tickets }].
+ * Returns [{ home, cls: 'hybrid'|'economy', in, out, month, total, depart, ret, days, sameDay, tickets, alts }],
+ * where alts counts the trip's other date sets (depart, ret) in its month within SIMILAR of its
+ * price. The array also carries `.dateSets`: "home|cls|in|out" → Map("depart|ret" → cheapest
+ * total), for counting across months (similarCount).
  */
 function buildTrips(fares) {
   const classes = [['hybrid', 'J'], ['economy', 'Y']];
   const best = new Map();
+  const dateSets = new Map();
   const offer = (trip) => {
     const key = `${trip.home}|${trip.cls}|${trip.in}|${trip.out}|${trip.month}`;
     if (!best.has(key) || best.get(key).total > trip.total) best.set(key, trip);
+    const route = `${trip.home}|${trip.cls}|${trip.in}|${trip.out}`;
+    if (!dateSets.has(route)) dateSets.set(route, new Map());
+    const sets = dateSets.get(route), set = `${trip.depart}|${trip.ret}`;
+    if (!(sets.get(set) <= trip.total)) sets.set(set, trip.total);
   };
 
   for (const d0 of fares.departures) {
@@ -144,7 +153,20 @@ function buildTrips(fares) {
       }
     }
   }
-  return [...best.values()].sort((a, b) => a.total - b.total);
+  const trips = [...best.values()].sort((a, b) => a.total - b.total);
+  for (const t of trips) t.alts = similarCount(dateSets, t, t.month);
+  trips.dateSets = dateSets;
+  return trips;
 }
 
-module.exports = { buildTrips, hopPlans, hasSameDay, addDays };
+/** Other date sets for trip's route and class (in `month`, or any) priced within SIMILAR of it. */
+function similarCount(dateSets, trip, month = null) {
+  let n = 0;
+  for (const [set, total] of dateSets.get(`${trip.home}|${trip.cls}|${trip.in}|${trip.out}`) ?? []) {
+    if (set === `${trip.depart}|${trip.ret}` || (month && set.slice(0, 7) !== month)) continue;
+    if (total <= trip.total * (1 + SIMILAR)) n++;
+  }
+  return n;
+}
+
+module.exports = { buildTrips, similarCount, hopPlans, hasSameDay, addDays };

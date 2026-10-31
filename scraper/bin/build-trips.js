@@ -15,7 +15,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const config = require('../config/sweep.json');
 const { loadFares } = require('../src/trips/fares');
-const { buildTrips } = require('../src/trips/build');
+const { buildTrips, similarCount } = require('../src/trips/build');
 const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
 
 const CLASSES = ['hybrid', 'economy'];
@@ -35,7 +35,7 @@ function rowsFor(home, trips) {
     const { home: _h, in: _i, out: _o, cls, month, ...trip } = t;
     row.months[month] ??= { hybrid: null, economy: null };
     row.months[month][cls] = trip;
-    if (!row[cls] || row[cls].total > trip.total) row[cls] = trip;
+    if (!row[cls] || row[cls].total > trip.total) row[cls] = { ...trip, alts: similarCount(trips.dateSets, t) };
   }
   const price = (t) => t?.total ?? Infinity;
   return [...rows.values()].sort((a, b) => price(a.hybrid) - price(b.hybrid) || price(a.economy) - price(b.economy));

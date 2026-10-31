@@ -67,3 +67,16 @@ test('same-day connection is allowed but marked; trip length stays within 14-21 
   assert.strictEqual(t.days, 14);
   assert.strictEqual(t.sameDay, true);
 });
+
+test('alts counts other date sets within 2% of the best, per month and overall', () => {
+  const { similarCount } = require('../scraper/src/trips/build');
+  const sets = new Map([['YVR|hybrid|MNL|MNL', new Map([
+    ['2027-09-05|2027-09-22', 4000], // the best
+    ['2027-09-06|2027-09-23', 4080], // +2%: counts
+    ['2027-09-07|2027-09-24', 4081], // just over
+    ['2027-10-01|2027-10-18', 4010], // other month
+  ])]]);
+  const trip = { home: 'YVR', cls: 'hybrid', in: 'MNL', out: 'MNL', total: 4000, depart: '2027-09-05', ret: '2027-09-22' };
+  assert.equal(similarCount(sets, trip, '2027-09'), 1);
+  assert.equal(similarCount(sets, trip), 2);
+});
