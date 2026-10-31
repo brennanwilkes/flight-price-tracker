@@ -14,7 +14,9 @@ const ago = (iso) => {
 };
 
 async function subscribe() {
-  const reg = await navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' });
+  // app/pwa.js registers the worker at load; it exists only on the deployed (stamped) site.
+  const reg = await navigator.serviceWorker.getRegistration();
+  if (!reg) throw new Error('no service worker (alerts work on the deployed site only)');
   if ((await Notification.requestPermission()) !== 'granted') throw new Error('notifications not allowed');
   const { publicKey } = await (await fetch(`${WORKER}/vapid`)).json();
   const sub = (await reg.pushManager.getSubscription())

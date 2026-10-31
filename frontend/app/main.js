@@ -1,11 +1,24 @@
 // Main page: one row per in/out city pair, Hybrid and Full economy columns; tap a row for the
 // trip details. Reads derived/trips-<HOME>.json from the data branch (scraper/bin/build-trips.js).
+//
+// FRESHNESS: prices on screen are never older than the server's, and never go backwards.
+// - Files are read at a data-branch commit, not the branch: raw.githubusercontent.com caches a
+//   branch URL for 5 min, a commit URL is immutable.
+// - An alert's link carries ?v=<commit> of the sweep that raised it, so opening it shows those
+//   prices (the API answering "which commit is current" is itself cached up to 60 s).
+// - The current commit is checked on resume and every 5 min while visible. Newer data applies at
+//   once on resume; mid-use it's a tap-to-show bar, so prices don't change under a tap. Data
+//   whose generatedAt isn't newer than what's shown (a stale API answer) is ignored.
 import { cityName } from './cities.js';
 import { tripMap } from './map.js';
 import { alertsBar, sweepButton } from './alerts.js';
+import { register, showBar, clearBar } from './pwa.js';
 
 const params = new URLSearchParams(location.search);
-const DATA = params.get('data') ?? 'https://raw.githubusercontent.com/brennanwilkes/flight-price-tracker/data';
+const ALERT_SHA = /^[0-9a-f]{40}$/.test(params.get('v') ?? '') ? params.get('v') : null;
+const REPO = 'brennanwilkes/flight-price-tracker';
+const DATA_OVERRIDE = params.get('data'); // local testing: a directory laid out like the data branch
+const POLL_MS = 5 * 60e3;
 
 // $ tiers per column, cheapest first. Placeholders: tune once there's a few weeks of data.
 const TIERS = {
@@ -14,7 +27,8 @@ const TIERS = {
 };
 const COLUMNS = [['hybrid', 'Hybrid'], ['economy', 'Full economy']];
 
-const state = { home: localGet('home') ?? 'YVR', month: '', data: {}, open: null };
+// sha: the data-branch commit the loaded files came from. open: the expanded row, as 'IN-OUT'.
+const state = { home: localGet('home') ?? 'YVR', month: '', sha: null, data: {}, open: null };
 const $ = (sel) => document.querySelector(sel);
 
 function localGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
@@ -29,11 +43,29 @@ const tier = (cls, total) => TIERS[cls].find(([max]) => total <= max)?.[1] ?? ''
 const pairLabel = (r) => (r.in === r.out ? cityName(r.in) : `${cityName(r.in)} → ${cityName(r.out)}`);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
 
-async function load(home) {
-  if (state.data[home]) return state.data[home];
-  const res = await fetch(`${DATA}/derived/trips-${home}.json`, { cache: 'no-cache' });
+/**
+ * The data branch's current commit. Files are then read at that commit: raw.githubusercontent.com
+ * caches a branch URL for 5 min, but a commit URL never changes. On failure (e.g. the API's
+ * 60/h limit; 304s don't count) fall back to the branch name.
+ */
+async function dataSha() {
+  if (DATA_OVERRIDE) return 'local';
+  try {
+    const res = await fetch(`https://api.github.com/repos/${REPO}/commits/data`, { cache: 'no-cache', headers: { Accept: 'application/vnd.github.sha' } });
+    if (res.ok) return (await res.text()).trim();
+  } catch {}
+  return 'data';
+}
+
+async function fetchTrips(sha, home) {
+  const base = DATA_OVERRIDE ?? `https://raw.githubusercontent.com/${REPO}/${sha}`;
+  const res = await fetch(`${base}/derived/trips-${home}.json`, { cache: 'no-cache' });
   if (!res.ok) throw new Error(`trips-${home}.json: HTTP ${res.status}`);
-  return (state.data[home] = await res.json());
+  return res.json();
+}
+
+async function load(home) {
+  return (state.data[home] ??= await fetchTrips(state.sha, home));
 }
 
 /** Rows for the current month filter, each with its two cells, sorted by hybrid then economy. */
@@ -70,9 +102,12 @@ function render() {
   $('#month').innerHTML = `<option value="">All months</option>${months.map((m) => `<option value="${m}"${m === state.month ? ' selected' : ''}>${fmtMonth(m)}</option>`).join('')}`;
 
   const list = rows(data);
-  const body = (r, i) => `<tr data-row="${i}" class="${i === 0 ? 'headline' : ''}${state.open === i ? ' open' : ''}">
+  const body = (r, i) => {
+    const key = `${r.in}-${r.out}`;
+    return `<tr data-row="${key}" class="${i === 0 ? 'headline' : ''}${state.open === key ? ' open' : ''}">
       <th scope="row">${esc(pairLabel(r))}</th>${COLUMNS.map(([cls]) => cell(cls, r.cells[cls])).join('')}
-    </tr>${state.open === i ? `<tr class="details"><td colspan="3">${details(r)}</td></tr>` : ''}`;
+    </tr>${state.open === key ? `<tr class="details"><td colspan="3">${details(r)}</td></tr>` : ''}`;
+  };
   $('#view').innerHTML = list.length
     ? `<table>
         <thead><tr><th></th>${COLUMNS.map(([, label]) => `<th>${label}</th>`).join('')}</tr></thead>
@@ -84,8 +119,8 @@ function render() {
 
   for (const tr of document.querySelectorAll('tr[data-row]')) {
     tr.addEventListener('click', () => {
-      const i = Number(tr.dataset.row);
-      state.open = state.open === i ? null : i;
+      const key = tr.dataset.row;
+      state.open = state.open === key ? null : key;
       render();
     });
   }
@@ -128,6 +163,7 @@ function details(r) {
 
 async function show() {
   try {
+    state.sha ??= ALERT_SHA ?? await dataSha();
     await load(state.home);
   } catch (e) {
     $('#view').innerHTML = `<p class="note">Couldn't load trips: ${esc(e.message)}</p>`;
@@ -146,12 +182,32 @@ for (const b of document.querySelectorAll('.toggle button')) {
 }
 alertsBar($('#alerts'));
 sweepButton($('#sweep'));
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
-// A home-screen app resumes from memory instead of reloading; after a while away, reload so
-// both the code and the prices are current.
-const loadedAt = Date.now();
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && Date.now() - loadedAt > 30 * 60e3) location.reload();
-});
+register();
+// The alert's commit is now in state; drop it from the URL so a later reload isn't pinned to it.
+if (params.has('v')) {
+  params.delete('v');
+  history.replaceState(null, '', `${location.pathname}${params.size ? `?${params}` : ''}${location.hash}`);
+}
+
+/** Newer data on the data branch → apply it (resume) or offer it (mid-use). Keeps the open row and month. */
+async function refresh(resumed) {
+  const sha = await dataSha();
+  if (sha === state.sha || sha === 'data' || sha === 'local') return;
+  let fresh;
+  try { fresh = await fetchTrips(sha, state.home); } catch { return; }
+  const shown = state.data[state.home];
+  if (shown && Date.parse(fresh.generatedAt) <= Date.parse(shown.generatedAt)) return;
+  const apply = () => {
+    state.sha = sha;
+    state.data = { [state.home]: fresh };
+    clearBar('fresh');
+    render();
+  };
+  if (resumed || !shown) apply();
+  else showBar('fresh', 'New prices are in. Tap to show them.', apply);
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refresh(true); });
+setInterval(() => { if (document.visibilityState === 'visible') refresh(false); }, POLL_MS);
 $('#month').addEventListener('change', (e) => { state.month = e.target.value; state.open = null; render(); });
-show();
+// An alert's prices first; then anything newer than them.
+show().then(() => { if (ALERT_SHA) refresh(true); });

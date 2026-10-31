@@ -5,7 +5,7 @@ name: Deploy Pages
 on:
   push:
     branches: [main]
-    paths: ['frontend/**', '.github/workflows/deploy-pages.yml']
+    paths: ['frontend/**', 'scripts/stamp-pwa.mjs', '.github/workflows/deploy-pages.yml']
   workflow_dispatch:
 
 permissions:
@@ -26,8 +26,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      # Copy, then stamp the copy: the build hash goes into sw.js and index.html (never committed).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: cp -r frontend _site && node scripts/stamp-pwa.mjs _site
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: frontend
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4
