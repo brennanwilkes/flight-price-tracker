@@ -53,6 +53,54 @@ the builder searches every combination and the dashboard shows the best N.
   on and rank by; no airline-direct or booking-page check. `bookingOptions` stays in the code for
   ad hoc checks. This supersedes "confirm", "airline-direct" and "candidate" wording below.
 
+## Decisions (2026-10-31, after the first live week; supersede anything above or below)
+
+**Prices and trips**
+- **Listed price wins.** Every leg of every shown trip is searched on Google's results page (plain
+  HTTP, ~1 s; `gflights/flights.js`). A ticket with a listed flight takes the **listed** price (the
+  graph's is kept as `graph`); the graph can be stale (seen: $4,262 on the graph, gone within an hour,
+  $5,012 listed; not a VPN effect, checked).
+- **Some searches inline no results** although flights exist (YVR⇄DAD, HAN→DAD…): those are asked
+  again in a real page (`browser.shoppingResults`, GetShoppingResults, ~10 s). "Not scheduled yet"
+  only when the browser also finds nothing.
+- **Trips must connect.** Flights are picked in flying order, each leaving ≥ 4 h after the previous
+  lands. A cell walks its candidates (builder keeps fallbacks + the cheapest "safe" trip) up to 10;
+  if none connects the **cell is dropped** (never shown as "misses connection"). Known limit: the
+  builder plans by date (long haul lands day 1), so many cells drop; fix = plan with real landing
+  days (roadmap).
+- **The builder is exact over the scraped grid** (DP over day × city × Da Nang done; any hops, any
+  order). Its limits are inputs: which cities are scraped, which round-trip lengths.
+
+**Coverage (decided 2026-10-31, being built)**
+- **Cities:** 18 **gateways** (long legs + hops): DAD ICN TPE HKG TYO MNL SIN HAN SGN BKK KUL + OSA SHA
+  BJS CAN JKT DPS CEB. 23 **hop-only** stops: REP PNH LPQ PQC CXR HUI CNX HKT KBV PEN LGK BKI, FUK CTS
+  OKA PUS CJU KHH, JOG LOP PPS MPH IAO.
+- **Hops only over real routes:** a discovery pass (plain HTTP, weekly) keeps pairs with a short
+  flight (≤ 1 stop); everything else is never scraped.
+- **Round trips at every length 14–21**, not just 14/17/21.
+- **Tiered, layered cadence:** the important/expensive stuff (YVR long legs to main cities, core
+  lengths) hourly; other lengths and new gateways ~6 h; hops 12–24 h; each graph has a max age and a
+  sweep does the most overdue work within a time budget. Be nice to Google; sweeps stay well under
+  an hour.
+
+**Dashboard**
+- **Colour means one thing each:** green/purple = price tiers; gold = business class; tickets get
+  their own palette (blue, orange, pink, cyan, yellow, grey), also on the map; layovers grey.
+- Board: city names only (no codes), "Hong Kong / Tokyo" for open jaws; each fare tile holds price,
+  dates, +N. Filters: month, **via city** (single; precomputed `derived/via/`), YVR/YYJ.
+  **Multi-city via (2–3 cities, AND)** wanted; approach not yet chosen (on-demand build recommended
+  over precomputing ~800 pairs).
+- Trip view: ticket-stub summary; map of flights actually flown (connections included), nights per
+  city; leg cards = slim header + one box per flight (dep | duration | arr, flight no./airline/
+  aircraft muted, cabin per flight).
+- Tabs: Board / History / Health (bottom bar as in `~/movie-server`). History = per class, the 8
+  cheapest routes in the board's current view (history is per route overall). Health = scraper,
+  alerts, thresholds, sweeps, flight checks, routes.
+- **Priority class (business/economy) is per device** (localStorage): sorts the board, opens trips,
+  leads History. **Alerts go out for both classes** to whoever has alerts on.
+- No filler/caveat text anywhere (Brennan: "slop").
+- iOS installed app: solid sticky header padded by the safe-area inset + 30 px (status-bar fade).
+
 **Main page (phone-first):** one row per **in/out city pair** (e.g. "in Seoul / out Manila"), sorted by
 cheapest hybrid, with the top row visually set apart as the headline ticket. Brennan wants to revisit
 the row definition once real data is in.
