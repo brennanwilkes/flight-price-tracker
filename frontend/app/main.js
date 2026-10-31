@@ -107,6 +107,30 @@ function trend(trip) {
   return `<span class="trend ${d < 0 ? 'down' : 'up'}" title="24 h ago: ${money(trip.was)}">${d < 0 ? '▼' : '▲'}${Math.abs(d).toLocaleString('en-CA')}</span>`;
 }
 
+/**
+ * Against the lowest prices ever shown (builder: lows.js): 'best' (the route's cheapest yet), 'same'
+ * (these dates were cheaper before), 'any' (other dates were cheaper), or '' (no history yet).
+ */
+function lowState(trip) {
+  const low = trip.low;
+  if (!low?.any) return '';
+  if (low.same && trip.total > low.same.total) return 'same';
+  return trip.total <= low.any.total ? 'best' : 'any';
+}
+const LOW_MARK = { best: '★', same: '●', any: '○' };
+const lowMark = (trip) => { const k = lowState(trip); return k ? `<i class="low ${k}" aria-hidden="true">${LOW_MARK[k]}</i>` : ''; };
+const shortDate = (iso) => new Date(`${iso.slice(0, 10)}T12:00:00Z`).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+/** The stub's lines about past lows: the fact, not a verdict. */
+function lowLines(trip) {
+  const k = lowState(trip);
+  if (!k) return '';
+  if (k === 'best') return `<p class="lows"><span class="low best">★ Lowest yet</span></p>`;
+  const lines = [];
+  if (k === 'same') lines.push(`<span class="low same">● These dates ${money(trip.low.same.total)} · ${shortDate(trip.low.same.at)}</span>`);
+  lines.push(`<span class="low any">○ Lowest ${money(trip.low.any.total)} · ${range(trip.low.any)}</span>`);
+  return `<p class="lows">${lines.join('')}</p>`;
+}
+
 /** "SEP 05–22" (or "SEP 28–OCT 12"). */
 const range = (t) => (t.depart.slice(0, 7) === t.ret.slice(0, 7) ? `${boardDate(t.depart)}–${t.ret.slice(8)}` : `${boardDate(t.depart)}–${boardDate(t.ret)}`);
 const alts = (t) => (t.alts ? `<i class="alts" title="${t.alts} other date${t.alts > 1 ? 's' : ''} within 2% of this price">+${t.alts}</i>` : '');
@@ -115,7 +139,7 @@ const alts = (t) => (t.alts ? `<i class="alts" title="${t.alts} other date${t.al
 function fare(cls, trip) {
   if (!trip) return '<span class="fare none">—</span>';
   return `<button type="button" class="fare ${tierOfTrip(cls, trip)}" data-cls="${cls}">
-    <b>${money(trip.total)}</b><span class="tdates">${range(trip)}${alts(trip)}</span>${trend(trip)}
+    ${lowMark(trip)}<b>${money(trip.total)}</b><span class="tdates">${range(trip)}${alts(trip)}</span>${trend(trip)}
   </button>`;
 }
 
@@ -216,13 +240,17 @@ const minutesAt = (date, hm) => Date.parse(`${date}T${hm}:00Z`) / 60e3; // local
 const flightOf = (l) => l.t.flights?.[l.leg ?? 'out'];
 
 /** Between two legs: the time in the city, from real flight times when known. */
-function layover(prev, next) {
-  const where = esc(cityName(prev.to));
+function layover(prev, next, flex = null, hoian = false) {
+  // The Hoi An stay from a city farther than Da Nang or Hue: say it's in there (build.js anchors).
+  const viaHoiAn = hoian && (prev.to !== next.from || CITIES[prev.to]?.vietnam > 0);
+  const where = viaHoiAn
+    ? (prev.to === next.from ? `${esc(cityName(prev.to))} + Hoi An` : `${esc(cityName(prev.to))} → Hoi An → ${esc(cityName(next.from))}`)
+    : esc(cityName(prev.to));
   if (flightOf(next)?.miss === 'connection') return `<li class="layover bad"><span>Misses connection · ${where}</span></li>`;
   const { nights, wait } = stay(prev, next);
-  // In at one Vietnamese city, out of another: Hoi An in between, overland (build.js).
-  if (prev.to !== next.from) return `<li class="layover"><span>${nights} nights · ${where} → ${esc(cityName(next.from))} overland</span></li>`;
-  if (nights > 0) return `<li class="layover"><span>${nights} night${nights > 1 ? 's' : ''} · ${where}</span></li>`;
+  // "10 nights (4–12)": other stay lengths at about the same price (builder: flex.js).
+  const span = flex && nights > 0 ? ` <i class="span">(${Math.max(0, nights - flex[1])}–${nights + flex[2]})</i>` : '';
+  if (nights > 0) return `<li class="layover"><span>${nights} night${nights > 1 ? 's' : ''}${span} · ${where}</span></li>`;
   return `<li class="layover"><span>${wait != null ? `${dur(wait)} layover` : 'Same day'} · ${where}</span></li>`;
 }
 
@@ -348,7 +376,7 @@ function renderSheet() {
       <button type="button" class="close" aria-label="Close">✕</button>
     </div>
     <div class="ticket ${tierOfTrip(cls, trip)}">
-      <div class="stub"><small>Total</small><b>${money(trip.total)}</b>${trend(trip)}${trip.alts ? `<span class="similar">+${trip.alts} similar dates</span>` : ''}</div>
+      <div class="stub"><small>Total</small><b>${money(trip.total)}</b>${trend(trip)}${trip.alts ? `<span class="similar">+${trip.alts} similar dates</span>` : ''}${lowLines(trip)}</div>
       <div class="span">
         <div class="cal"><small>${weekday(trip.depart)}</small><b>${boardDate(trip.depart)}</b></div>
         <div class="line"><span>${trip.days} days</span><span>${trip.tickets.length} ticket${trip.tickets.length > 1 ? "s" : ""}</span></div>
@@ -356,7 +384,7 @@ function renderSheet() {
       </div>
     </div>
     ${tripMap(flown(list, ticketOf), state.home, [...new Set(list.flatMap((l) => [l.from, l.to]))], staysOf(list))}
-    <ol class="legs${trip.tickets.some((t) => t.kind === 'rt') ? ' has-rail' : ''}">${list.map((l, i) => (i ? layover(list[i - 1], l) : '') + legItem(l, ticketOf)).join('')}</ol>
+    <ol class="legs${trip.tickets.some((t) => t.kind === 'rt') ? ' has-rail' : ''}">${list.map((l, i) => (i ? layover(list[i - 1], l, trip.flex?.find(([k]) => k === i - 1), trip.stay?.after === i - 1) : '') + legItem(l, ticketOf)).join('')}</ol>
 `;
   sheet.querySelector('.close').addEventListener('click', closeTrip);
   for (const b of sheet.querySelectorAll('.seg button')) {

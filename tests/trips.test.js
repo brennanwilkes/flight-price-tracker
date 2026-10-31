@@ -154,3 +154,34 @@ test('the Hoi An stay is checked against real flights: an overnight flight in le
   assert.deepStrictEqual(await run(day(3)), { connects: true, stay: 0 });
   assert.deepStrictEqual(await run(day(4)), { connects: false, stay: 1 }); // lands next day: 4 nights
 });
+
+test('stay ranges: a hop that can move a few days at about the same price widens the stays around it', () => {
+  const hops = { [`ICN-DAD|${day(3)}`]: 200, [`DAD-ICN|${day(8)}`]: 180 };
+  for (let n = 9; n <= 11; n++) hops[`DAD-ICN|${day(n)}`] = 185; // within 3% of a 1280 total
+  hops[`DAD-ICN|${day(12)}`] = 400;
+  hops[`ICN-DAD|${day(1)}`] = 205;
+  const fares = world({ rt: { [`YVR-ICN-Y|${D0}`]: [{ ret: day(14), price: 900 }] }, hops });
+  const t = buildTrips(fares).find((x) => !x.via && x.cls === 'economy');
+  const { flexOf } = require('../scraper/src/trips/flex');
+  // Stays: 0 = Seoul before Da Nang (lands day 1, hop day 3), 1 = Da Nang (5 nights), 2 = Seoul after.
+  // Da Nang can't get shorter (Hoi An minimum). One flight moves at a time: the hop out can wait
+  // until day 11 (Da Nang +3, Seoul after −3); the hop in can go 2 days early (Seoul before −2).
+  assert.deepStrictEqual(flexOf(t, fares), [[0, 2, 0], [1, 0, 3], [2, 3, 0]]);
+});
+
+test('lowest ever: the ledger marks any-date and same-date lows, and only records checked cells', () => {
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const path = require('node:path');
+  const { markLows } = require('../scraper/src/trips/lows');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lows-'));
+  const cell = (total, depart, connects = true) => ({ total, depart, ret: addDays(depart, 14), connects });
+  const row = (trip) => ({ in: 'MNL', out: 'MNL', hybrid: trip, economy: null, months: {} });
+  const at = '2026-11-01T00:00:00Z';
+  markLows(dir, { YVR: [row(cell(4000, '2027-09-01'))] }, at);
+  markLows(dir, { YVR: [row(cell(3900, '2027-09-05'))] }, at);
+  markLows(dir, { YVR: [row(cell(3000, '2027-09-09', false))] }, at); // not checked: not recorded
+  const r = row(cell(4100, '2027-09-01'));
+  markLows(dir, { YVR: [r] }, at, { record: false });
+  assert.deepStrictEqual(r.hybrid.low, { any: { total: 3900, depart: '2027-09-05', ret: '2027-09-19' }, same: { total: 4000, at } });
+});

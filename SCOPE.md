@@ -107,6 +107,13 @@ the builder searches every combination and the dashboard shows the best N.
 - **Priority class (business/economy) is per device** (localStorage): sorts the board, opens trips,
   leads History. **Alerts go out for both classes** to whoever has alerts on.
 - No filler/caveat text anywhere (Brennan: "slop").
+- **Lowest-ever marks** (`state/lows.json`, verified cells only, all time): ★ route's cheapest yet;
+  red ● these exact dates were cheaper before (bad); grey ○ other dates were cheaper (mild). Tile
+  corner on the board; the ticket stub spells out the earlier prices.
+- **Stay ranges:** "10 nights (4–12)": each Asia one-way moved alone, long legs fixed, within 3% of
+  the total, Hoi An minimum kept (`trips/flex.js`).
+- **The Hoi An stay is checked against real flights** (an overnight arrival can't eat a night);
+  stays outside Da Nang/Hue read "Hanoi + Hoi An" or "Hanoi → Hoi An → Saigon".
 - iOS installed app: solid sticky header padded by the safe-area inset + 30 px (status-bar fade).
 
 **Main page (phone-first):** one row per **in/out city pair** (e.g. "in Seoul / out Manila"), sorted by

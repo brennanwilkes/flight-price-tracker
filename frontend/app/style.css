@@ -106,6 +106,15 @@ select, .toggle button {
 .fare.none { color: var(--muted); font-family: var(--mono); }
 .alts { margin-left: 4px; font: normal 700 9px var(--mono); padding: 0 3px; border: 1px solid currentColor; border-radius: 4px; }
 .trend { font: 700 10px var(--mono); white-space: nowrap; }
+/* Against past lows (main.js lowState): ★ cheapest yet, ● these dates were cheaper, ○ other dates were. */
+.low { font-style: normal; }
+.low.best { color: var(--text); }
+.low.same { color: var(--up); }
+.low.any { color: var(--muted); }
+.fare .low { position: absolute; top: 3px; right: 5px; font-size: 10px; line-height: 1; }
+.ticket .lows { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 2px 14px; margin: 2px 0 0; font: 600 11px var(--mono); }
+.ticket.buy .lows .low { color: inherit; }
+.layover .span { font-style: normal; opacity: 0.75; }
 .trend.down { color: var(--eco); }
 .trend.up { color: var(--up); }
 .fare.good { background: var(--good); }

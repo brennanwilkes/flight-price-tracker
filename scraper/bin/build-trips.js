@@ -33,6 +33,8 @@ const { addDetails } = require('../src/trips/details');
 const { openBrowser, shoppingResults } = require('../src/gflights/browser');
 const alertConfig = require('../config/alerts.json');
 const { tierOf } = require('../src/alerts/rules');
+const { flexOf } = require('../src/trips/flex');
+const { markLows } = require('../src/trips/lows');
 
 const CLASSES = ['hybrid', 'economy'];
 const TRIES = 10;
@@ -152,6 +154,18 @@ async function main() {
   } else {
     for (const rows of byHome.values()) for (const r of rows) delete r.cands;
   }
+  // Stay ranges on every shown trip; lowest-ever marks (the main views record theirs first).
+  for (const rows of byHome.values()) {
+    for (const r of rows) {
+      for (const trip of [r.hybrid, r.economy, ...Object.values(r.months).flatMap((m) => [m.hybrid, m.economy])]) {
+        const flex = trip && flexOf(trip, fares);
+        if (flex?.length) trip.flex = flex;
+      }
+    }
+  }
+  const views = (main) => Object.fromEntries([...byHome].filter(([v]) => v.endsWith('|') === main).map(([v, rows]) => [v, rows]));
+  markLows(dataDir, Object.fromEntries(Object.entries(views(true)).map(([v, rows]) => [v.slice(0, -1), rows])), generatedAt);
+  for (const [v, rows] of Object.entries(views(false))) markLows(dataDir, { [v.split('|')[0]]: rows }, generatedAt, { record: false });
   fs.rmSync(path.join(dataDir, 'derived', 'via'), { recursive: true, force: true });
   fs.mkdirSync(path.join(dataDir, 'derived', 'via'), { recursive: true });
   for (const [view, rows] of byHome) {
