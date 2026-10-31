@@ -206,7 +206,7 @@ const ticketDays = (dates) => {
 };
 /**
  * The lines about past lows: the facts behind the marks. `only`: the marks worth a line (a
- * ticket spells out only what it cost before; its ★/☆ sit by the price).
+ * ticket spells out only what it cost before; its mark sits by the route).
  */
 function lowLines(x, only = null) {
   const line = {
@@ -408,8 +408,8 @@ function legItem(l, ticketOf) {
     <a href="${flightsLink(l.t)}" target="_blank" rel="noopener">
       <span class="leg-head">
         <span class="day">${dow} ${boardDate(l.date)}</span>
-        <b class="route"><span>${esc(cityName(l.from))}<span class="arrow">→</span></span> <span>${esc(cityName(l.to))}</span></b>
-        <b class="price">${price ? `${lowMark(vsLows)}${price}` : '<span class="incl">incl.</span>'}</b>
+        <b class="route"><span>${esc(cityName(l.from))}<span class="arrow">→</span></span> <span>${esc(cityName(l.to))}${first ? lowMark(vsLows) : ''}</span></b>
+        <b class="price">${price || '<span class="incl">incl.</span>'}</b>
       </span>
       ${first ? lowLines(vsLows, ['same', 'any']) : ''}
       ${segments(l)}

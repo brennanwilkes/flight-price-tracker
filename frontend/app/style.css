@@ -132,8 +132,8 @@ header { flex-wrap: wrap; }
 .fare .lowmarks { position: absolute; top: 3px; right: 5px; display: flex; gap: 2px; font-style: normal; font-size: 11px; line-height: 1; }
 .fare .low.same { font-size: 13px; }
 .ticket .lows { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 2px 14px; margin: 2px 0 0; font: 600 11px var(--mono); }
-/* A ticket's marks: by its price, and what it cost before under the route line. */
-.leg-head .lowmarks { font-style: normal; font-size: 11px; margin-right: 5px; vertical-align: 2px; }
+/* A ticket's marks: by its route, and what it cost before under the route line. */
+.leg-head .lowmarks { font-style: normal; font-size: 15px; margin-left: 6px; vertical-align: 1px; }
 .leg .lows { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 2px 14px; margin: -2px 0 0; padding: 0 8px 6px; font: 600 11px var(--mono); }
 .trend.down { color: var(--eco); }
 .trend.up { color: var(--up); }
