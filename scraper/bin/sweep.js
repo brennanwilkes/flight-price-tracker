@@ -25,6 +25,10 @@ const { airportsOf } = require('../../frontend/app/cities.js');
 const MAX_FAILED_SHARE = 0.25; // more failed combos than this = failed run
 const HEALTH_RUNS_KEPT = 200;
 const CONCURRENCY = Number(process.env.SWEEP_CONCURRENCY || 3); // pages open at once
+// While a big backlog builds up (new graphs' first scrapes), more pages at once and a bigger hop
+// network slice until every pair has been checked once; both back to normal by themselves.
+const BACKLOG = 400;
+const CONCURRENCY_BACKLOG = 5;
 
 /** Run `fn` over `items` with at most `n` in flight. */
 async function pool(items, n, fn) {
@@ -87,7 +91,8 @@ async function main() {
     if (run.control > 0) {
       // A slice of the hop network first (plain requests, ~2 min): the plan below uses it.
       if (!only) {
-        const s = await checkPairs(network, planNetwork(network, Date.now(), config.networkPerSweep),
+        const unchecked = Object.keys(network.pairs ?? {}).length < planNetwork({ pairs: {} }, Date.now(), Infinity).length;
+        const s = await checkPairs(network, planNetwork(network, Date.now(), config.networkPerSweep * (unchecked ? 2 : 1)),
           { browser: (q) => shoppingResults(ctx, q), at: observedAt });
         run.network = { ...s, routes: routesOf(network).length };
         writeJson(networkFile, network);
@@ -96,7 +101,8 @@ async function main() {
       const { start: wStart, end: wEnd } = config.window;
       const work = planSweep(config, state, network, Date.now(), only);
       run.due = work.length;
-      await pool(work, CONCURRENCY, async (q) => {
+      run.pages = work.length > BACKLOG ? Math.max(CONCURRENCY, CONCURRENCY_BACKLOG) : CONCURRENCY;
+      await pool(work, run.pages, async (q) => {
         const label = q.tripLen == null ? q.routeId : `${q.routeId} ${q.tripLen}d`;
         if (Date.now() - t0 > BUDGET_MS) { run.skipped = (run.skipped ?? 0) + 1; return; } // next sweep
         try {
