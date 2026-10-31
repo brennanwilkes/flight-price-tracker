@@ -12,6 +12,7 @@
  */
 const { search, parseResults } = require('../gflights/flights');
 const { airportsOf } = require('../../../frontend/app/cities.js');
+const { fareKey } = require('./fares');
 
 const MIN_CONNECT_MIN = 4 * 60;
 const CONCURRENCY = 6; // searches in flight; a browser fallback (~10 s) holds one of these
@@ -38,8 +39,9 @@ function flightsOf(trip) {
  * `browser` (query → GetShoppingResults payload) answers searches whose page inlined no results.
  * Returns { searches, failed, full, connection, none, stay } (full: full-list page loads; connection,
  * none: misses; stay: trips whose real flights leave the Hoi An stay short).
+ * `listed` (optional Map): each searched fare's cheapest listed price, by fareKey (fares.js).
  */
-async function addDetails(trips, cache = new Map(), browser = null) {
+async function addDetails(trips, cache = new Map(), browser = null, listed = null) {
   const searchOnce = (q) => {
     const key = JSON.stringify(q);
     if (!cache.has(key)) cache.set(key, search(q, { browser }).catch((e) => ({ error: e.message })));
@@ -85,6 +87,7 @@ async function addDetails(trips, cache = new Map(), browser = null) {
         const all = await fullOnce(f.query);
         if (!all.error && all.length) opts = all;
       }
+      if (listed && f.dir === 'out' && opts.length && (f.ticket.kind === 'ow' || f.ticket.kind === 'rt')) listed.set(fareKey(f.ticket), cheapest(opts).price);
       const ok = opts.filter(connects);
       let pick;
       if (f.dir === 'back') {

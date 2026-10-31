@@ -17,6 +17,9 @@
  * no times and can be stale, so a cell's cheapest trip may not connect or may cost more as listed.
  * Further candidates (any month for an overall cell, plus the builder's fallbacks) are checked
  * while they could still be cheaper, up to TRIES (verify), and rows re-sort on the checked totals.
+ * The listed prices found replace the graph's (state/checked.json, kept CHECKED_HOURS), and the
+ * trips are built and checked again, up to ROUNDS, until no fare lists at a new price: a hop
+ * graphed $138 on every day but listed $232 on the one picked moves to a day listed cheaper.
  *
  *   derived/fares.json   the fares the trips were built from (fares.js bundleOf), for the page's
  *                        own builds: the via filter with several cities
@@ -29,7 +32,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const config = require('../config/sweep.json');
-const { loadFares, bundleOf } = require('../src/trips/fares');
+const { loadFares, bundleOf, fareOf } = require('../src/trips/fares');
 const { buildTrips, similarCount } = require('../../frontend/app/build.js');
 const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
 const { addDetails } = require('../src/trips/details');
@@ -43,6 +46,8 @@ const { applyMulti } = require('../src/trips/multi');
 const CLASSES = ['hybrid', 'economy'];
 const TRIES = 10;
 const MULTI_BUDGET = 80; // multi-city searches per build (trips/multi.js)
+const ROUNDS = 3;
+const CHECKED_HOURS = 24;
 
 function arg(name, def) {
   const i = process.argv.indexOf(`--${name}`);
@@ -85,15 +90,11 @@ const sortRows = (rows) => rows.sort((a, b) => price(a.hybrid) - price(b.hybrid)
  * month's), keeping the cheapest that connects at listed prices, until the next candidate's graph
  * total can't beat it, or after TRIES. None connects: the cell is dropped (a row with no overall
  * cell goes too); a trip that can't be flown is not a price. Searches are shared, so a month cell
- * walking the same trips as its overall cell costs nothing more.
+ * walking the same trips as its overall cell costs nothing more. session: { cache, browser,
+ * listed } shared across rounds (main).
  */
-async function verify(byHome, trips) {
+async function verify(byHome, trips, { cache, browser, listed }) {
   const t0 = Date.now();
-  const cache = new Map();
-  // Searches whose page inlines no results are asked again in a real page (gflights/flights.js).
-  const { browser: chrome, ctx } = await openBrowser();
-  let browserSearches = 0;
-  const browser = (q, opts) => { browserSearches++; return shoppingResults(ctx, q, opts); };
   const st = { cells: 0, replaced: 0, unresolved: 0, searches: 0, failed: 0, none: 0, stay: 0 };
   const cellsOf = (r) => CLASSES.filter((c) => r[c]).flatMap((cls) => [
     { cls, cands: r.cands[cls], cand: r[cls], put: (t) => { r[cls] = t; } },
@@ -105,7 +106,7 @@ async function verify(byHome, trips) {
   let pending = [...byHome.values()].flatMap((rows) => rows.flatMap(cellsOf)).map((p) => ({ ...p, i: 0, best: null, first: null }));
   st.cells = pending.length;
   while (pending.length) {
-    const s = await addDetails(pending.map((p) => p.cand), cache, browser);
+    const s = await addDetails(pending.map((p) => p.cand), cache, browser, listed);
     st.searches += s.searches;
     st.failed += s.failed;
     st.error ??= s.error;
@@ -126,8 +127,6 @@ async function verify(byHome, trips) {
       return false;
     });
   }
-  await chrome.close();
-  st.browser = browserSearches;
   for (const [view, rows] of byHome) {
     for (const r of rows) delete r.cands;
     byHome.set(view, sortRows(rows.filter((r) => r.hybrid || r.economy)));
@@ -188,27 +187,56 @@ function freshness(dataDir) {
   });
 }
 
+/** Views: "HOME|" is the dashboard's, "HOME|CITY" the via filter's for each city (a city every trip stays in needs none). */
+function viewsOf(trips) {
+  const main = trips.filter((t) => !t.via);
+  const vias = [...new Set(trips.map((t) => t.via))].filter((c) => c && !main.every((t) => t.tickets.some((x) => x.to === c))).sort();
+  return { vias, byHome: new Map(config.origins.flatMap((home) => ['', ...vias].map((via) => [`${home}|${via}`, rowsFor(home, trips, via)]))) };
+}
+
 async function main() {
   const dataDir = arg('data');
   if (!dataDir) throw new Error('--data <dir> is required');
   const t0 = Date.now();
-  const fares = loadFares(dataDir, config);
-  const trips = buildTrips(fares);
   const generatedAt = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
-  const dayAgo = valuesAt(dataDir, new Date(Date.parse(generatedAt) - 864e5).toISOString().replace(/\.\d+Z$/, 'Z'));
-  const cells = [];
-  // Views: "HOME|" is the dashboard's, "HOME|CITY" the via filter's for each city.
-  // A city every trip stays in (Da Nang) needs no view of its own.
-  const main = trips.filter((t) => !t.via);
-  const vias = [...new Set(trips.map((t) => t.via))].filter((c) => c && !main.every((t) => t.tickets.some((x) => x.to === c))).sort();
-  const byHome = new Map(config.origins.flatMap((home) => ['', ...vias].map((via) => [`${home}|${via}`, rowsFor(home, trips, via)])));
+  const checkedFile = path.join(dataDir, 'state', 'checked.json');
+  const checkedLog = Object.fromEntries(Object.entries(fs.existsSync(checkedFile) ? JSON.parse(fs.readFileSync(checkedFile, 'utf8')) : {})
+    .filter(([, c]) => Date.parse(generatedAt) - Date.parse(c.at) < CHECKED_HOURS * 3600e3));
+  const checked = () => new Map(Object.entries(checkedLog).map(([k, c]) => [k, c.price]));
+  let fares = loadFares(dataDir, config, { checked: checked() });
+  let trips = buildTrips(fares);
+  let { vias, byHome } = viewsOf(trips);
   let details = null;
   if (!process.argv.includes('--no-details')) {
-    const s = (details = await verify(byHome, trips));
-    console.log(`details: ${s.cells} cells, ${s.replaced} moved to another trip (connects, or cheaper as listed), ${s.unresolved} with none that connects; ${s.searches} searches (${s.browser} in a browser, ${s.failed} failed${s.error ? `, e.g. ${s.error}` : ''}), ${s.none} flights not listed yet, ${s.stay} trips with a short Hoi An stay; ${s.ms}ms`);
+    // Searches whose page inlines no results are asked again in a real page (gflights/flights.js).
+    const { browser: chrome, ctx } = await openBrowser();
+    const session = { cache: new Map(), browser: (q, opts) => { details.browser++; return shoppingResults(ctx, q, opts); }, listed: new Map() };
+    details = { browser: 0, rounds: 0, searches: 0, failed: 0, ms: 0 };
+    try {
+      for (;;) {
+        const s = await verify(byHome, trips, session);
+        details = { ...s, rounds: details.rounds + 1, browser: details.browser, searches: details.searches + s.searches, failed: details.failed + s.failed, ms: details.ms + s.ms };
+        // Fares listed at another price than they were planned at: plan again with what's listed.
+        const moved = [...session.listed].filter(([k, p]) => { const was = fareOf(fares, k); return was != null && Math.abs(p - was) > Math.max(2, was * 0.01); });
+        for (const [k, price] of session.listed) checkedLog[k] = { price, at: generatedAt };
+        session.listed.clear();
+        console.log(`details round ${details.rounds}: ${s.cells} cells, ${s.replaced} moved to another trip (connects, or cheaper as listed), ${s.unresolved} with none that connects; ${s.searches} searches, ${s.none} flights not listed yet, ${s.stay} trips with a short Hoi An stay; ${moved.length} fares listed at a new price; ${s.ms}ms`);
+        if (!moved.length || details.rounds >= ROUNDS) break;
+        fares = loadFares(dataDir, config, { checked: checked() });
+        trips = buildTrips(fares);
+        ({ vias, byHome } = viewsOf(trips));
+      }
+    } finally {
+      await chrome.close();
+    }
+    fs.mkdirSync(path.dirname(checkedFile), { recursive: true });
+    fs.writeFileSync(checkedFile, JSON.stringify(checkedLog));
+    console.log(`details: ${details.searches} searches (${details.browser} in a browser, ${details.failed} failed${details.error ? `, e.g. ${details.error}` : ''}) over ${details.rounds} rounds`);
   } else {
     for (const rows of byHome.values()) for (const r of rows) delete r.cands;
   }
+  const dayAgo = valuesAt(dataDir, new Date(Date.parse(generatedAt) - 864e5).toISOString().replace(/\.\d+Z$/, 'Z'));
+  const cells = [];
   const m = await multiPass(dataDir, byHome, fares, !process.argv.includes('--no-details'));
   console.log(`multi-city: ${m.searched} searched (${m.failed} failed), ${m.merged} trips cheaper as one ticket; ${m.ms}ms`);
   if (details) details.multi = m;

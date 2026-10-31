@@ -3,6 +3,9 @@
  * (src/store/routes.js). A cell not re-seen within twice its graph's max age (≥ 48 h,
  * sweep/plan.js) is dropped: Google stopped listing it, or the sweep for it keeps failing; either
  * way it's not a price to show.
+ *
+ * `checked`: listed prices from recent flight checks (fareKey → price, build-trips.js), which
+ * replace the graph's for those fares: the graph can be stale or off ($138 graphed, $232 listed).
  */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -10,7 +13,7 @@ const { readJson } = require('../store/routes');
 const { staleAfterHours } = require('../sweep/plan');
 const { citiesWith, CITIES } = require('../../../frontend/app/cities.js');
 
-function loadFares(dataDir, config, { now = Date.now() } = {}) {
+function loadFares(dataDir, config, { now = Date.now(), checked = new Map() } = {}) {
   const homes = config.origins;
   const cities = citiesWith('gateway', 'hop');
   const network = readJson(path.join(dataDir, 'state', 'network.json'), { pairs: {} });
@@ -40,6 +43,12 @@ function loadFares(dataDir, config, { now = Date.now() } = {}) {
     }
   }
 
+  for (const [k, price] of checked) {
+    const [from, to, cabin, out, ret] = k.split('|');
+    const key = `${from}|${to}|${cabin}|${out}`;
+    if (ret) { const r = rt.get(key)?.find((x) => x.ret === ret); if (r) r.price = price; } else if (ow.has(key)) ow.set(key, price);
+  }
+
   return {
     raw: { rt, ow }, // for bundleOf
     homes,
@@ -59,6 +68,16 @@ function loadFares(dataDir, config, { now = Date.now() } = {}) {
  *   rt: { "from-to-cabin": [day, retDay, price, …] } }, days counted from `base`.
  * faresOf (frontend/app/fares.js) turns it back into what loadFares returns.
  */
+/** A ticket's fare as loadFares keys it: "from|to|cabin|date", a return's "…|ret" after. */
+const fareKey = (t) => [t.from, t.to, t.cabin, t.date, ...(t.kind === 'rt' ? [t.ret] : [])].join('|');
+
+/** The fare a key names, as loadFares priced it (null: not a fare it has). */
+function fareOf(fares, k) {
+  const [from, to, cabin, out, ret] = k.split('|');
+  const key = `${from}|${to}|${cabin}|${out}`;
+  return ret ? fares.raw.rt.get(key)?.find((x) => x.ret === ret)?.price ?? null : fares.raw.ow.get(key) ?? null;
+}
+
 function bundleOf(fares) {
   const base = fares.departures[0] ?? new Date().toISOString().slice(0, 10);
   const day = (iso) => Math.round((Date.parse(iso) - Date.parse(base)) / 864e5);
@@ -75,4 +94,4 @@ function bundleOf(fares) {
   return { homes, cities, anchors, departures, base, ow, rt };
 }
 
-module.exports = { loadFares, bundleOf };
+module.exports = { loadFares, bundleOf, fareKey, fareOf };

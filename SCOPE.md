@@ -60,6 +60,11 @@ the builder searches every combination and the dashboard shows the best N.
   HTTP, ~1 s; `gflights/flights.js`). A ticket with a listed flight takes the **listed** price (the
   graph's is kept as `graph`); the graph can be stale (seen: $4,262 on the graph, gone within an hour,
   $5,012 listed; not a VPN effect, checked).
+- **Plans use listed prices once known.** Each fare's cheapest listed price replaces its graph price
+  for 24 h (`state/checked.json`), and the build plans and checks again (up to 3 rounds) until no
+  fare lists at a new price. A cell's trip is then the cheapest over every date that fits, as far
+  as the checks have seen (seen: Bangkok→Hanoi graphed $138 every day, listed $232 on the day
+  picked and $116 a week later).
 - **Some searches inline no results** although flights exist (YVR⇄DAD, HAN→DAD…): those are asked
   again in a real page (`browser.shoppingResults`, GetShoppingResults, ~10 s). "Not scheduled yet"
   only when the browser also finds nothing.
@@ -244,6 +249,7 @@ derived/                                  small files the dashboard actually loa
     leaderboard.json  dest_month.json  trips.json  fare_loading.json  deals.json
 state/alerts.json                         ledger: what was alerted, at what price, when
 state/health.json                         per-run outcome, consecutive-failure count, control-route result
+state/checked.json                        listed prices from flight checks, by fare (24 h), planned with instead of the graph's
 ```
 
 - **What a route is.** `<O>-<D>-<cabin>`, e.g. `YVR-ICN-J`, `ICN-DAD-Y`, open-jaw `YVR-HAN~SGN-J`.
