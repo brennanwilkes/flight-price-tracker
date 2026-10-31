@@ -10,6 +10,9 @@ const CHART_JS = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.um
 const FIRST_MONTH = '2026-10'; // the first history file
 const MAX_SERIES = 8; // the categorical palette's size; more lines stop being tellable apart
 const CLASSES = [['hybrid', 'Business'], ['economy', 'Economy']];
+// Fixed y ranges, so the axis holds still as lines are shown and hidden; a price outside runs
+// along the edge, dashed.
+const RANGE = { hybrid: [3000, 6000], economy: [500, 2000] };
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
 const money = (n) => `$${Math.round(n).toLocaleString('en-CA')}`;
@@ -105,12 +108,14 @@ export async function renderHistory(el, base, home, rows, priority = 'hybrid') {
     const canvas = el.querySelector(`canvas[data-cls="${cls}"]`);
     if (!canvas) continue;
     const { times, values, held } = onGrid(top.map((x) => x.pts));
+    const [lo, hi] = RANGE[cls];
+    const clip = (y) => (y == null ? null : Math.min(hi, Math.max(lo, y)));
     const chart = new Chart(canvas, {
       type: 'line',
       data: {
         datasets: top.map(({ r, trip }, i) => ({
-          label: label(r), route: { trip }, data: values[i].map((y, j) => ({ x: times[j], y })), stepped: true, borderColor: tok(`--s${i + 1}`), borderWidth: 2,
-          segment: { borderDash: (ctx) => (held[i][ctx.p0DataIndex] ? [4, 4] : undefined) },
+          label: label(r), route: { trip }, data: values[i].map((y, j) => ({ x: times[j], y: clip(y), price: y })), stepped: true, borderColor: tok(`--s${i + 1}`), borderWidth: 2,
+          segment: { borderDash: (ctx) => (held[i][ctx.p0DataIndex] || clip(values[i][ctx.p0DataIndex]) !== values[i][ctx.p0DataIndex] ? [4, 4] : undefined) },
           pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: tok(`--s${i + 1}`), pointHoverBorderColor: tok('--panel'), pointHoverBorderWidth: 2,
         })),
       },
@@ -128,7 +133,7 @@ export async function renderHistory(el, base, home, rows, priority = 'hybrid') {
             callbacks: {
               // Route and its price at that moment; then the route's current dates (history keeps prices,
               // not dates), when it's on the board.
-              title: (items) => `${items[0].dataset.label}  ${items[0].parsed.y == null ? '—' : money(items[0].parsed.y)}`,
+              title: (items) => `${items[0].dataset.label}  ${items[0].raw.price == null ? '—' : money(items[0].raw.price)}`,
               label: (item) => (item.dataset.route.trip ? fmtDates(item.dataset.route.trip) : ''),
             },
           },
@@ -146,7 +151,7 @@ export async function renderHistory(el, base, home, rows, priority = 'hybrid') {
               },
             },
           },
-          y: { grid: { color: tok('--line') }, border: { display: false }, ticks: { color: tok('--muted'), font: { family: 'JetBrains Mono', size: 10 }, maxTicksLimit: 5, callback: (v) => money(v) } },
+          y: { min: lo, max: hi, grid: { color: tok('--line') }, border: { display: false }, ticks: { color: tok('--muted'), font: { family: 'JetBrains Mono', size: 10 }, maxTicksLimit: 5, callback: (v) => money(v) } },
         },
       },
     });

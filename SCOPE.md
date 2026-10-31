@@ -104,7 +104,8 @@ the builder searches every combination and the dashboard shows the best N.
 - Tabs: Board / History / Health (bottom bar as in `~/movie-server`). History = per class, the 8
   routes with the lowest prices ever recorded (with a via filter: among the board's routes; history
   is per route, not per month, so the month filter is hidden there). Tapping a legend entry shows only that line, tapping it
-  again brings back the rest. A sweep that didn't build a route's trip doesn't break its line: it holds the last price, dashed. Health = scraper,
+  again brings back the rest. A sweep that didn't build a route's trip doesn't break its line: it holds the last price, dashed.
+  Fixed y ranges (business $3,000–6,000, economy $500–2,000); a price outside runs dashed along the edge. Health = scraper,
   alerts, thresholds, sweeps, flight checks, routes.
 - **Priority class (business/economy) is per device** (localStorage), set by tapping the board's
   Business or Economy column head (▾ marks it): sorts the board, opens trips,
