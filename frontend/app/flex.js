@@ -1,4 +1,3 @@
-'use strict';
 /* How flexible a trip's stays are: "10 nights (4–12)" on the dashboard.
  *
  * Each economy one-way inside Asia is moved earlier or later on its own, the long legs and any
@@ -43,4 +42,4 @@ function flexOf(trip, fares) {
   return span.map(([fewer, more], k) => [k, fewer, more]).filter(([, fewer, more]) => fewer || more);
 }
 
-module.exports = { flexOf, TOLERANCE };
+export { flexOf, TOLERANCE };

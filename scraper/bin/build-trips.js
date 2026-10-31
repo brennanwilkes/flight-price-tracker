@@ -27,13 +27,13 @@ const fs = require('node:fs');
 const path = require('node:path');
 const config = require('../config/sweep.json');
 const { loadFares } = require('../src/trips/fares');
-const { buildTrips, similarCount } = require('../src/trips/build');
+const { buildTrips, similarCount } = require('../../frontend/app/build.js');
 const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
 const { addDetails } = require('../src/trips/details');
 const { openBrowser, shoppingResults } = require('../src/gflights/browser');
 const alertConfig = require('../config/alerts.json');
 const { tierOf } = require('../src/alerts/rules');
-const { flexOf } = require('../src/trips/flex');
+const { flexOf } = require('../../frontend/app/flex.js');
 const { markLows } = require('../src/trips/lows');
 const { applyMulti } = require('../src/trips/multi');
 

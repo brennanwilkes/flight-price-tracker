@@ -1,4 +1,3 @@
-'use strict';
 /* Trip builder (SCOPE.md: Trip builder and dashboard; Decisions 2026-10-31, coverage).
  *
  * A trip: a long leg home → city X (round trip, or a one-way), any tickets within Asia (economy
@@ -28,42 +27,46 @@ const addDays = (iso, n) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 864e5)
 
 /**
  * Cheapest plans within Asia from arrival city `x`, landing day 1 after departure `d0`.
- * Returns plan(y, t): the cheapest way to be in city y on day t, ready to fly home, Hoi An done and
- * no return open; { cost, hops: [{ kind: 'ow'|'rt'|'back'|'stay', from, to, date, ret?, price }] } or
- * null ('back' is a nested return's second flight, paid with its 'rt'; 'stay' marks the Hoi An stay).
+ * Returns plan(y, t): the cheapest way to be in city y on day t, ready to fly home, Hoi An done,
+ * no return open and a night in each of `need` (the via filter's cities; staysOf's sense: a night
+ * there, or either end of the Hoi An stay); { cost, hops: [{ kind: 'ow'|'rt'|'back'|'stay', from,
+ * to, date, ret?, price }] } or null ('back' is a nested return's second flight, paid with its 'rt';
+ * 'stay' marks the Hoi An stay).
  */
-function hopPlans(x, d0, fares) {
+function hopPlans(x, d0, fares, need = []) {
   const { cities, hop, anchors = { DAD: 0 } } = fares;
   const asiaRT = fares.asiaRT ?? (() => []);
-  // best[t] maps "city|done|open" → { city, done, open, cost, prev: { t, key }, hop }
-  // open: '' or "B>A@day" (fly B → A on that day, already paid).
+  const bit = (c) => (need.includes(c) ? 1 << need.indexOf(c) : 0);
+  const all = (1 << need.length) - 1;
+  // best[t] maps "city|done|open|seen" → { city, done, open, seen, cost, prev: { t, key }, hop }
+  // open: '' or "B>A@day" (fly B → A on that day, already paid); seen: bits of `need` stayed in.
   const best = Array.from({ length: MAX_DAYS + 1 }, () => new Map());
   const dueOf = (open) => (open ? Number(open.slice(open.indexOf('@') + 1)) : Infinity);
-  const put = (t, city, done, open, cost, prev, hop) => {
+  const keyOf = (city, done, open, seen) => `${city}|${done}|${open}|${seen}`;
+  const put = (t, city, done, open, seen, cost, prev, hop) => {
     if (t > MAX_DAYS || t > dueOf(open)) return false;
-    const key = `${city}|${done}|${open}`;
-    const cur = best[t].get(key);
-    if (cur && cur.cost <= cost) return false;
-    best[t].set(key, { city, done, open, cost, prev, hop });
+    // Not if a state that has seen as much or more is as cheap.
+    for (let m = seen; m <= all; m = (m + 1) | seen) if (best[t].get(keyOf(city, done, open, m))?.cost <= cost) return false;
+    best[t].set(keyOf(city, done, open, seen), { city, done, open, seen, cost, prev, hop });
     return true;
   };
   // Landing at a Vietnam anchor also offers the Hoi An stay: overland there, the nights, overland
   // to any anchor (open jaw); done on the day that leaves.
-  const land = (t, city, done, open, cost, prev, hop) => {
-    const changed = put(t, city, done, open, cost, prev, hop);
-    if (!done && city in anchors) {
+  const land = (t, city, done, open, seen, cost, prev, hop) => {
+    const changed = put(t, city, done, open, seen, cost, prev, hop);
+    if (!done && city in anchors && best[t].get(keyOf(city, done, open, seen))?.cost === cost) {
       for (const [w, g] of Object.entries(anchors)) {
-        const need = anchors[city] + HOI_AN_NIGHTS + g; // days from landing at `city` to flying out of `w`
-        put(t + need, w, 1, open, cost, { t, key: `${city}|0|${open}` }, { kind: 'stay', from: city, to: w, need });
+        const days = anchors[city] + HOI_AN_NIGHTS + g; // from landing at `city` to flying out of `w`
+        put(t + days, w, 1, open, seen | bit(city) | bit(w), cost, { t, key: keyOf(city, 0, open, seen) }, { kind: 'stay', from: city, to: w, need: days });
       }
     }
     return changed;
   };
-  land(1, x, 0, '', 0, null, null);
+  land(1, x, 0, '', 0, 0, null, null);
 
   for (let t = 1; t <= MAX_DAYS; t++) {
-    if (t > 1) {
-      for (const [key, s] of best[t - 1]) put(t, s.city, s.done, s.open, s.cost, { t: t - 1, key }, null); // stay a night
+    if (t > 1) { // stay a night
+      for (const [key, s] of best[t - 1]) put(t, s.city, s.done, s.open, s.seen | bit(s.city), s.cost, { t: t - 1, key }, null);
     }
     const date = addDays(d0, t);
     // Flights on this day, chained same-day as long as it gets cheaper (prices > 0 but a nested
@@ -77,20 +80,20 @@ function hopPlans(x, d0, fares) {
           const [b, rest] = s.open.split('>');
           const a = rest.slice(0, rest.indexOf('@'));
           if (s.city === b && dueOf(s.open) === t) {
-            if (land(t, a, s.done, '', s.cost, prev, { kind: 'back', from: b, to: a, date, price: 0 })) changed = true;
+            if (land(t, a, s.done, '', s.seen, s.cost, prev, { kind: 'back', from: b, to: a, date, price: 0 })) changed = true;
           }
           if (dueOf(s.open) === t) continue; // the return day: only the return flight
         }
         for (const to of cities) {
           if (to === s.city) continue;
           const price = hop(s.city, to, date);
-          if (price != null && land(t, to, s.done, s.open, s.cost + price, prev, { kind: 'ow', from: s.city, to, date, price })) changed = true;
+          if (price != null && land(t, to, s.done, s.open, s.seen, s.cost + price, prev, { kind: 'ow', from: s.city, to, date, price })) changed = true;
           if (s.open) continue;
           for (const r of asiaRT(s.city, to, date)) {
             const due = t + (Date.parse(r.ret) - Date.parse(date)) / 864e5;
             if (due > MAX_DAYS) continue;
             const hopRt = { kind: 'rt', from: s.city, to, date, ret: r.ret, price: r.price };
-            if (land(t, to, s.done, `${to}>${s.city}@${due}`, s.cost + r.price, prev, hopRt)) changed = true;
+            if (land(t, to, s.done, `${to}>${s.city}@${due}`, s.seen, s.cost + r.price, prev, hopRt)) changed = true;
           }
         }
       }
@@ -98,7 +101,7 @@ function hopPlans(x, d0, fares) {
   }
 
   return (y, t) => {
-    const end = best[t]?.get(`${y}|1|`);
+    const end = best[t]?.get(keyOf(y, 1, '', all));
     if (!end) return null;
     const hops = [];
     for (let s = end; s.prev; s = best[s.prev.t].get(s.prev.key)) if (s.hop) hops.push(s.hop);
@@ -285,4 +288,4 @@ function similarCount(dateSets, trip, month = null) {
   return n;
 }
 
-module.exports = { buildTrips, similarCount, hopPlans, ticketsOf, staysOf, hasSameDay, isSafe, addDays };
+export { buildTrips, similarCount, hopPlans, ticketsOf, staysOf, hasSameDay, isSafe, addDays };

@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert');
-const { buildTrips, addDays } = require('../scraper/src/trips/build');
+const { buildTrips, addDays } = require('../frontend/app/build.js');
 
 const D0 = '2027-10-01';
 const day = (n) => addDays(D0, n);
@@ -72,7 +72,7 @@ test('same-day connection is allowed but marked; trip length stays within 14-21 
 });
 
 test('alts counts other date sets within 2% of the best, per month and overall', () => {
-  const { similarCount } = require('../scraper/src/trips/build');
+  const { similarCount } = require('../frontend/app/build.js');
   const sets = new Map([['YVR|hybrid|MNL|MNL', new Map([
     ['2027-09-05|2027-09-22', 4000], // the best
     ['2027-09-06|2027-09-23', 4080], // +2%: counts
@@ -85,7 +85,7 @@ test('alts counts other date sets within 2% of the best, per month and overall',
 });
 
 test('isSafe: no flight on the day the previous one lands (long haul counted as landing day 1)', () => {
-  const { isSafe } = require('../scraper/src/trips/build');
+  const { isSafe } = require('../frontend/app/build.js');
   const hop = (date) => ({ from: 'A', to: 'B', date, price: 1 });
   assert.equal(isSafe('2027-09-01', [hop('2027-09-03'), hop('2027-09-08')], '2027-09-15'), true);
   assert.equal(isSafe('2027-09-01', [hop('2027-09-02')], '2027-09-15'), false); // hop on landing day
@@ -163,7 +163,7 @@ test('stay ranges: a hop that can move a few days at about the same price widens
   hops[`ICN-DAD|${day(1)}`] = 205;
   const fares = world({ rt: { [`YVR-ICN-Y|${D0}`]: [{ ret: day(14), price: 900 }] }, hops });
   const t = buildTrips(fares).find((x) => !x.via && x.cls === 'economy');
-  const { flexOf } = require('../scraper/src/trips/flex');
+  const { flexOf } = require('../frontend/app/flex.js');
   // Stays: 0 = Seoul before Da Nang (lands day 1, hop day 3), 1 = Da Nang (5 nights), 2 = Seoul after.
   // Da Nang can't get shorter (Hoi An minimum). One flight moves at a time: the hop out can wait
   // until day 11 (Da Nang +3, Seoul after −3); the hop in can go 2 days early (Seoul before −2).
