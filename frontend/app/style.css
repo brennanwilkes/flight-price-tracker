@@ -68,6 +68,9 @@ td.price:last-child { border-radius: 0 8px 8px 0; }
 td.price b { display: block; font-variant-numeric: tabular-nums; }
 td.price small { color: var(--muted); font-size: 12px; white-space: nowrap; }
 td.none { color: var(--muted); }
+.trend { font-size: 11px; font-weight: 600; white-space: nowrap; }
+.trend.down { color: var(--eco); }
+.trend.up { color: #c4473a; }
 td.good { background: var(--good); }
 td.great { background: var(--great); }
 td.buy { background: var(--buy); color: var(--buy-text); }

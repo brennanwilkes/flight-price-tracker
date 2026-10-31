@@ -3,9 +3,11 @@
 /* Build trips from the data branch's current fares and write what the dashboard reads:
  *
  *   derived/trips-<HOME>.json   { generatedAt, home, rows: [{ in, out, hybrid, economy, months: { "<YYYY-MM>": { hybrid, economy } } }] }
+ *   derived/history/<YYYY-MM>.csv   (src/trips/history.js)
  *
  * One row per in/out city pair; each cell is that pair's cheapest trip (null when none), overall
- * and per departure month. Rows sorted by cheapest hybrid, then cheapest economy.
+ * and per departure month. Rows sorted by cheapest hybrid, then cheapest economy. Overall cells
+ * carry `was`: the cell's total 24 h earlier, when known.
  *
  *   node scraper/bin/build-trips.js --data <dataDir>
  */
@@ -14,6 +16,9 @@ const path = require('node:path');
 const config = require('../config/sweep.json');
 const { loadFares } = require('../src/trips/fares');
 const { buildTrips } = require('../src/trips/build');
+const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
+
+const CLASSES = ['hybrid', 'economy'];
 
 function arg(name, def) {
   const i = process.argv.indexOf(`--${name}`);
@@ -43,13 +48,25 @@ function main() {
   const fares = loadFares(dataDir, config);
   const trips = buildTrips(fares);
   const generatedAt = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+  const dayAgo = valuesAt(dataDir, new Date(Date.parse(generatedAt) - 864e5).toISOString().replace(/\.\d+Z$/, 'Z'));
+  const cells = [];
   for (const home of config.origins) {
     const rows = rowsFor(home, trips);
+    for (const r of rows) {
+      for (const cls of CLASSES) {
+        if (!r[cls]) continue;
+        const cell = { home, cls, in: r.in, out: r.out, total: r[cls].total };
+        cells.push(cell);
+        const was = dayAgo.get(keyOf(cell));
+        if (was != null) r[cls].was = was;
+      }
+    }
     fs.mkdirSync(path.join(dataDir, 'derived'), { recursive: true });
     fs.writeFileSync(path.join(dataDir, 'derived', `trips-${home}.json`), JSON.stringify({ generatedAt, home, rows })); // compact: the phone loads it
     const top = rows[0]?.hybrid;
     console.log(`${home}: ${rows.length} rows${top ? `, best hybrid ${rows[0].in}/${rows[0].out} ${top.total} (${top.depart}…${top.ret})` : ''}`);
   }
-  console.log(`built ${trips.length} trips from ${fares.departures.length} departure days in ${Date.now() - t0}ms`);
+  const changed = recordHistory(dataDir, generatedAt, cells);
+  console.log(`built ${trips.length} trips, ${changed} cells changed, from ${fares.departures.length} departure days in ${Date.now() - t0}ms`);
 }
 main();

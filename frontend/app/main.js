@@ -45,10 +45,17 @@ function rows(data) {
     .sort((a, b) => price(a.cells.hybrid) - price(b.cells.hybrid) || price(a.cells.economy) - price(b.cells.economy));
 }
 
+/** ▲/▼ and the change vs 24 h ago (overall cells only: the builder sets `was` there). */
+function trend(trip) {
+  if (trip.was == null || trip.was === trip.total) return '';
+  const d = trip.total - trip.was;
+  return ` <span class="trend ${d < 0 ? 'down' : 'up'}" title="24 h ago: ${money(trip.was)}">${d < 0 ? '▼' : '▲'}${money(Math.abs(d))}</span>`;
+}
+
 function cell(cls, trip) {
   if (!trip) return '<td class="price none">–</td>';
   return `<td class="price ${tier(cls, trip.total)}">
-    <b>${money(trip.total)}</b>
+    <b>${money(trip.total)}${trend(trip)}</b>
     <small>${dateRange(trip.depart, trip.ret)}${trip.sameDay ? ' ⏱' : ''}</small>
   </td>`;
 }

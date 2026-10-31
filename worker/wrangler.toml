@@ -3,5 +3,20 @@
 account_id = "a53d0d3cb40662b52e001ffd082d2f1f"
 
 name = "flight-fare-tracker"
+main = "src/index.ts"
 compatibility_date = "2026-10-01"
-# main = "src/index.ts"   (added when the Worker is built, milestone 2)
+
+# One cron for the whole project (free plan: 5 per account). Dispatches sweep.yml.
+[triggers]
+crons = ["5 * * * *"]
+
+# Public: the PWA fetches it from GET /vapid. Private half is secret VAPID_PRIVATE_KEY.
+[vars]
+VAPID_PUBLIC_KEY = "TODO-run-gen-vapid"
+
+# TODO: create with `npm run cf -- kv namespace create PUSH` and paste the id here.
+[[kv_namespaces]]
+binding = "PUSH"
+id = "TODO-create-namespace"
+
+# Secrets (wrangler secret put): NOTIFY_SECRET, VAPID_PRIVATE_KEY, GH_DISPATCH_TOKEN
