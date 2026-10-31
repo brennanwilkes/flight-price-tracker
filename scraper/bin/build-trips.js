@@ -34,7 +34,7 @@ const alertConfig = require('../config/alerts.json');
 const { tierOf } = require('../src/alerts/rules');
 
 const CLASSES = ['hybrid', 'economy'];
-const TRIES = 6;
+const TRIES = 10;
 
 function arg(name, def) {
   const i = process.argv.indexOf(`--${name}`);
@@ -75,7 +75,8 @@ const sortRows = (rows) => rows.sort((a, b) => price(a.hybrid) - price(b.hybrid)
  * Check every row's overall cells against real flights (byHome: any map of row lists). Each
  * cell walks its candidates cheapest first (graph prices), keeping the cheapest that connects at
  * listed prices, until the next candidate's graph total can't beat it, or after TRIES. None
- * connects: the cheapest, showing its own bad connection.
+ * connects: the cell is dropped (a row with neither class goes too); a trip that can't be flown
+ * is not a price.
  */
 async function verify(byHome, trips) {
   const t0 = Date.now();
@@ -97,17 +98,16 @@ async function verify(byHome, trips) {
         p.cand = overall(next, trips);
         return true;
       }
-      const done = p.best ?? p.first;
-      done.tier = tierOf(alertConfig, p.cls, done.total);
-      p.r[p.cls] = done;
+      if (p.best) p.best.tier = tierOf(alertConfig, p.cls, p.best.total);
+      p.r[p.cls] = p.best;
       if (!p.best) st.unresolved++;
       else if (p.best !== p.first) st.replaced++;
       return false;
     });
   }
-  for (const rows of byHome.values()) {
+  for (const [view, rows] of byHome) {
     for (const r of rows) delete r.cands;
-    sortRows(rows);
+    byHome.set(view, sortRows(rows.filter((r) => r.hybrid || r.economy)));
   }
   return { ...st, ms: Date.now() - t0 };
 }

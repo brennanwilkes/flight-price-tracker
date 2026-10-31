@@ -230,44 +230,43 @@ function stay(prev, next) {
   return { nights: (Date.parse(next.date) - Date.parse(a?.legs?.at(-1).arrDate ?? landsOn(prev))) / 864e5, wait: null };
 }
 
-/** The flights inside one leg: each segment boxed, connections between them. */
+/**
+ * The flights inside one leg: each a box reading departure → arrival, times over airports with
+ * the duration between, flight number, airline and aircraft above; connections between them
+ * styled like the stays between tickets.
+ */
 function segments(l) {
   const f = flightOf(l);
   if (!f) return '';
-  if (f.miss === 'none') return '<span class="segs"><span class="seg-miss">No flights listed for this date yet: schedules not loaded this far out</span></span>';
+  if (f.miss === 'none') return '<span class="segs"><span class="seg-miss">Not scheduled yet</span></span>';
   if (f.miss) return '';
   const segs = f.legs.map((g, i) => {
     const plus = (Date.parse(g.arrDate) - Date.parse(g.depDate)) / 864e5;
-    const stop = i ? `<span class="conn">${dur(f.stops[i - 1]?.min ?? 0)} connection · ${esc(cityName(g.from) ?? g.from)} ${g.from}</span>` : '';
-    return `${stop}<span class="sg">
-      <span class="f code">${esc(g.code)}</span>
-      <span class="f times"><b>${g.from} ${g.dep}<span class="arrow">→</span>${g.to} ${g.arr}${plus ? `<sup>+${plus}</sup>` : ''}</b><small>${esc(g.airline ?? '')}${g.plane ? ` · ${esc(g.plane)}` : ''}</small></span>
-      <span class="f dur">${dur(g.min)}</span>
+    const conn = i ? `<span class="conn"><span>${dur(f.stops[i - 1]?.min ?? 0)} · ${esc(cityName(g.from))}</span></span>` : '';
+    return `${conn}<span class="sg">
+      <small class="sg-id"><b>${esc(g.code)}</b> ${esc(g.airline ?? '')}${g.plane ? ` · ${esc(g.plane)}` : ''}</small>
+      <span class="sg-end"><b>${g.dep}</b><small>${g.from}</small></span>
+      <span class="sg-dur">${dur(g.min)}</span>
+      <span class="sg-end arr"><b>${g.arr}${plus ? `<sup>+${plus}</sup>` : ''}</b><small>${g.to}</small></span>
     </span>`;
   }).join('');
-  const total = f.legs.length > 1 ? `<span class="segs-total">${dur(f.min)} total · ${f.legs.length - 1} stop${f.legs.length > 2 ? 's' : ''}</span>` : '';
-  const likely = f.likely ? '<span class="segs-total">Likely return flight: the airline\'s cheapest that day</span>' : '';
-  return `<span class="segs">${segs}${total}${likely}</span>`;
+  return `<span class="segs">${segs}</span>`;
 }
 
 /**
- * One flight, as a boarding-pass row of boxed fields with its segments below; the whole row
- * opens it in Google Flights. Each ticket has its own colour (--tk1…); a return ticket's two
- * flights are also joined by a rail down the left gutter (CSS).
+ * One flight: date, route and price, its segments below; the whole card opens it in Google
+ * Flights. Each ticket has its own colour on the card's left edge (--tk1…); a return ticket's
+ * two flights are also joined by a rail down the left gutter (CSS).
  */
 function legItem(l, ticketOf) {
   const rt = l.t.kind === 'rt';
   const price = !rt || l.leg === 'out' ? money(l.t.price) : '';
-  // The listed flight's price, when it's off from the graph's (e.g. the one that connects costs more).
-  const f = flightOf(l);
-  const listed = price && f?.price && Math.abs(f.price - l.t.price) > l.t.price * 0.03 ? `<small class="listed">listed ${money(f.price)}</small>` : '';
   const dow = new Date(`${l.date}T12:00:00Z`).toLocaleDateString('en-CA', { weekday: 'short', timeZone: 'UTC' }).toUpperCase().replace('.', '');
   return `<li class="leg ${l.cabin === 'J' ? 'biz' : 'eco'}" style="--tk: var(--tk${ticketOf.get(l.t)})">
     <a href="${flightsLink(l.t)}" target="_blank" rel="noopener">
-      <span class="f n">${l.n}</span>
       <span class="f day"><small>${dow}</small>${boardDate(l.date)}</span>
       <span class="f route"><b><span>${esc(cityName(l.from))}<span class="arrow">→</span></span> <span>${esc(cityName(l.to))}</span></b><small class="cab${l.cabin === 'J' ? ' biz' : ''}">${l.cabin === 'J' ? 'Business' : 'Economy'}</small></span>
-      <span class="f price"><b>${price || '<span class="incl">incl.</span>'}</b>${listed}</span>
+      <span class="f price"><b>${price || '<span class="incl">incl.</span>'}</b></span>
       ${segments(l)}
     </a>
   </li>`;
