@@ -36,9 +36,12 @@ function flightsOf(trip, homes) {
   const [first, last] = longs.sort((a, b) => a.date.localeCompare(b.date));
   return [one(first), ...hops.map(one), ...(last ? [one(last)] : [])];
 }
-/** Fill `flights` on the given trips' tickets. Returns { searches, failed, connection, none } (the last two: misses). */
-async function addDetails(trips, homes) {
-  const cache = new Map();
+/**
+ * Fill `flights` on the given trips' tickets, and set each trip's `connects` (false when some
+ * connection has no flight). Pass the same `cache` across calls to reuse searches.
+ * Returns { searches, failed, connection, none } (the last two: misses).
+ */
+async function addDetails(trips, homes, cache = new Map()) {
   const searchOnce = (q) => {
     const key = JSON.stringify(q);
     if (!cache.has(key)) cache.set(key, search(q).catch((e) => ({ error: e.message })));
@@ -47,18 +50,20 @@ async function addDetails(trips, homes) {
   const stats = { searches: 0, failed: 0, connection: 0, none: 0 };
 
   // Warm the cache with bounded concurrency, then pick sequentially per trip.
-  const queries = [...new Map(trips.flatMap((t) => flightsOf(t, homes)).map((f) => [JSON.stringify(f.query), f.query])).values()];
+  const queries = [...new Map(trips.flatMap((t) => flightsOf(t, homes)).map((f) => [JSON.stringify(f.query), f.query])).values()]
+    .filter((q) => !cache.has(JSON.stringify(q)));
   let next = 0;
   await Promise.all(Array.from({ length: CONCURRENCY }, async () => {
     while (next < queries.length) await searchOnce(queries[next++]);
   }));
   stats.searches = queries.length;
-  for (const r of await Promise.all([...cache.values()])) if (r.error) stats.failed++;
+  for (const q of queries) if ((await searchOnce(q)).error) stats.failed++;
 
   for (const trip of trips) {
     let landed = null; // minutes, of the previous flight's arrival
     let outAirlines = null;
     const flights = flightsOf(trip, homes);
+    trip.connects = true;
     for (const [i, f] of flights.entries()) {
       const opts = await searchOnce(f.query);
       f.ticket.flights ??= {};
@@ -82,6 +87,7 @@ async function addDetails(trips, homes) {
         const miss = opts.length ? 'connection' : 'none';
         f.ticket.flights[f.dir] = { miss };
         stats[miss]++;
+        if (miss === 'connection') trip.connects = false;
         landed = null;
         continue;
       }

@@ -1,8 +1,9 @@
 // Trip map: Natural Earth coastlines (app/land.js) in Mercator, cropped to the trip's Asian cities.
-// Long-haul legs are great circles toward home, leaving the map where they really would, with
-// the home city named at the edge. Arrowheads give each flight's direction: a hop flown both
-// ways is two arcs bending to opposite sides; a long haul flown both ways is one line, both arrows.
-import { CITIES, cityName } from './cities.js';
+// Draws each flight actually flown (connections through Manila etc. included), coloured by ticket,
+// solid for business and dashed for economy. Long hauls are great circles toward home, leaving the
+// map where they really would, with the home city named at the edge. Arrowheads give direction: a
+// hop flown both ways is two arcs bending to opposite sides.
+import { place, cityName } from './cities.js';
 import { LAND, STEP } from './land.js';
 
 const W = 640, H = 480; // viewBox; the crop is grown to this aspect
@@ -34,21 +35,23 @@ function greatCircle(a, b, n = 64) {
 }
 
 /**
- * The trip as an SVG. legs: the itinerary in flying order, [{ n, from, to, cabin }], where a code
- * without coordinates (YVR, YYJ) is home.
+ * The trip as an SVG. legs: the flights in flying order, [{ from, to, cabin, tk }], tk being the
+ * ticket's colour number; cities: the trip's own cities (any other airport is a connection). A
+ * code without coordinates (YVR, YYJ, SEA…) is off the map, toward home.
  */
-export function tripMap(legs, home) {
-  const onMap = (c) => CITIES[c]?.lon != null;
+export function tripMap(legs, home, cities) {
+  const onMap = (c) => place(c).lon != null;
+  legs = legs.filter((l) => onMap(l.from) || onMap(l.to));
   const stops = [...new Set(legs.flatMap((l) => [l.from, l.to]).filter(onMap))];
   // Each long-haul city's route home, and a point LONG_SHOWN along it that the crop must include,
   // so the line has room before it leaves the map.
   const gateways = [...new Set(legs.filter((l) => !onMap(l.from) || !onMap(l.to)).map((l) => (onMap(l.from) ? l.from : l.to)))];
-  const routes = new Map(gateways.map((c) => [c, greatCircle(CITIES[c], HOME)]));
+  const routes = new Map(gateways.map((c) => [c, greatCircle(place(c), HOME)]));
   const reach = [...routes.values()].map((pts) => pts[LONG_SHOWN]);
 
   // Crop: the cities plus padding, grown to MIN_SPAN and then to the viewBox aspect (in Mercator units).
-  const lons = [...stops.map((c) => CITIES[c].lon), ...reach.map((p) => p[0])];
-  const ys = [...stops.map((c) => mercY(CITIES[c].lat)), ...reach.map((p) => mercY(p[1]))];
+  const lons = [...stops.map((c) => place(c).lon), ...reach.map((p) => p[0])];
+  const ys = [...stops.map((c) => mercY(place(c).lat)), ...reach.map((p) => mercY(p[1]))];
   let x0 = Math.min(...lons) - PAD, x1 = Math.max(...lons) + PAD;
   let y0 = Math.min(...ys) - PAD, y1 = Math.max(...ys) + PAD;
   if (x1 - x0 < MIN_SPAN) { const g = (MIN_SPAN - (x1 - x0)) / 2; x0 -= g; x1 += g; }
@@ -56,7 +59,7 @@ export function tripMap(legs, home) {
   else { const g = ((y1 - y0) * W / H - (x1 - x0)) / 2; x0 -= g; x1 += g; }
   const k = W / (x1 - x0);
   const px = (lon, lat) => [(lon - x0) * k, (y1 - mercY(lat)) * k];
-  const pt = (c) => px(CITIES[c].lon, CITIES[c].lat);
+  const pt = (c) => px(place(c).lon, place(c).lat);
   const f = (n) => n.toFixed(1);
 
   const land = LAND.map((r) => {
@@ -68,21 +71,31 @@ export function tripMap(legs, home) {
     return `${d}Z`;
   }).join('');
 
-  const lines = [], arrows = [], exits = [], drawn = new Set();
-  for (const { from: a, to: b, cabin } of legs) {
-    const cls = cabin === 'J' ? 'biz' : 'eco';
+  const lines = [], arrows = [], exits = [], drawn = new Map(), once = new Set();
+  for (const { from: a, to: b, cabin, tk } of legs) {
+    const cls = `${cabin === 'J' ? 'biz' : 'eco'}" style="--c: var(--tk${tk})`;
     if (!onMap(a) || !onMap(b)) {
       // Long haul: the great circle toward home (from the city), until it leaves the crop.
       const city = onMap(a) ? a : b;
-      const pts = routes.get(city).map(([lon, lat]) => px(lon, lat));
+      // A second long haul from the same city (another ticket) runs alongside the first.
+      const tks = drawn.get(city) ?? [];
+      if (!tks.includes(tk)) tks.push(tk);
+      drawn.set(city, tks);
+      const k = tks.indexOf(tk);
+      const raw = routes.get(city).map(([lon, lat]) => px(lon, lat));
+      const pts = raw.map(([x, y], i) => {
+        const [p, q] = [raw[Math.max(i - 1, 0)], raw[Math.min(i + 1, raw.length - 1)]];
+        const len = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1;
+        return [x - ((q[1] - p[1]) / len) * 6 * k, y + ((q[0] - p[0]) / len) * 6 * k];
+      });
       const inside = ([x, y]) => x >= 0 && x <= W && y >= 0 && y <= H;
       const end = pts.findIndex((p) => !inside(p));
       const seen = pts.slice(0, end < 0 ? pts.length : end + 1);
-      if (!drawn.has(city)) {
-        drawn.add(city);
+      if (!once.has(`${city}|${tk}`)) { // a return ticket's two flights share one line
+        once.add(`${city}|${tk}`);
         lines.push(`<path class="leg ${cls}" d="M${seen.map(([x, y]) => `${f(x)} ${f(y)}`).join('L')}"/>`);
         const [ex, ey] = seen[seen.length - 1];
-        exits.push({ x: Math.min(Math.max(ex, 0), W), y: Math.min(Math.max(ey, 0), H) });
+        if (!k) exits.push({ x: Math.min(Math.max(ex, 0), W), y: Math.min(Math.max(ey, 0), H) });
       }
       // Inbound arrow nearer the city, outbound one further along; each points the way flown.
       const j = Math.max(1, Math.min(seen.length - 2, onMap(b) ? 1 : 3));
@@ -98,12 +111,14 @@ export function tripMap(legs, home) {
     arrows.push(arrow((p[0] + 2 * mx + q[0]) / 4, (p[1] + 2 * my + q[1]) / 4, q[0] - p[0], q[1] - p[1], cls));
   }
 
-  // City labels: right of the dot, or left when that would run off the map.
+  // City labels: right of the dot, or left when that would run off the map. Connection airports
+  // smaller and hollow.
   const dots = stops.map((c) => {
     const [x, y] = pt(c);
     const left = x > W * 0.7;
-    return `<circle class="city" cx="${f(x)}" cy="${f(y)}" r="6"/>
-      <text class="label" x="${f(x + (left ? -11 : 11))}" y="${f(y + 5)}" text-anchor="${left ? 'end' : 'start'}">${cityName(c)}</text>`;
+    const via = !cities.includes(c);
+    return `<circle class="city${via ? ' via' : ''}" cx="${f(x)}" cy="${f(y)}" r="${via ? 4.5 : 6}"/>
+      <text class="label${via ? ' via' : ''}" x="${f(x + (left ? -11 : 11))}" y="${f(y + 5)}" text-anchor="${left ? 'end' : 'start'}">${cityName(c)}</text>`;
   }).join('');
 
   // Home, named where each long-haul line leaves the map: beside the line, on the inner side,

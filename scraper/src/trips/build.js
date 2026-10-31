@@ -19,6 +19,8 @@ const MAX_DAYS = 21;
 const DAD = 'DAD';
 const DAD_NIGHTS = 5;
 const SIMILAR = 0.02; // "+N" on the dashboard: other dates within 2% of the best price
+// Fallbacks per cell, for when the detail pass finds a connection no listed flight makes.
+const FALLBACKS = 4;
 
 const addDays = (iso, n) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
 
@@ -86,6 +88,19 @@ function hasSameDay(d0, hops, backDate) {
 }
 
 /**
+ * True when no flight leaves on the day the previous one lands, counting the long haul as landing
+ * day 1 at the earliest (cheap routings often land day 2): connects whatever the times are, nearly.
+ */
+function isSafe(d0, hops, backDate) {
+  let landed = addDays(d0, 1);
+  for (const h of hops) {
+    if (h.date <= landed) return false;
+    landed = h.date;
+  }
+  return backDate > landed;
+}
+
+/**
  * Every trip worth showing, as the cheapest per (home, class, in-city, out-city, departure month).
  *
  * fares: {
@@ -95,18 +110,27 @@ function hasSameDay(d0, hops, backDate) {
  *   hop(from, to, date)                → price | null      (economy within Asia)
  *   departures                         → sorted ISO dates to try as day 0
  * }
- * Returns [{ home, cls: 'hybrid'|'economy', in, out, month, total, depart, ret, days, sameDay, tickets, alts }],
+ * Returns [{ home, cls: 'hybrid'|'economy', in, out, month, total, depart, ret, days, sameDay, safe, tickets, alts, fallbacks }],
+ * fallbacks being the next cheapest trips for the same cell plus the cheapest safe one (isSafe).
  * where alts counts the trip's other date sets (depart, ret) in its month within SIMILAR of its
  * price. The array also carries `.dateSets`: "home|cls|in|out" → Map("depart|ret" → cheapest
  * total), for counting across months (similarCount).
  */
 function buildTrips(fares) {
   const classes = [['hybrid', 'J'], ['economy', 'Y']];
-  const best = new Map();
+  const top = new Map(); // key → cheapest FALLBACKS + 1 trips, cheapest first
+  const safe = new Map(); // key → cheapest safe trip
   const dateSets = new Map();
   const offer = (trip) => {
     const key = `${trip.home}|${trip.cls}|${trip.in}|${trip.out}|${trip.month}`;
-    if (!best.has(key) || best.get(key).total > trip.total) best.set(key, trip);
+    const list = top.get(key) ?? [];
+    if (list.length <= FALLBACKS || list.at(-1).total > trip.total) {
+      const at = list.findIndex((t) => t.total > trip.total);
+      list.splice(at < 0 ? list.length : at, 0, trip);
+      if (list.length > FALLBACKS + 1) list.pop();
+      top.set(key, list);
+    }
+    if (trip.safe && !(safe.get(key)?.total <= trip.total)) safe.set(key, trip);
     const route = `${trip.home}|${trip.cls}|${trip.in}|${trip.out}`;
     if (!dateSets.has(route)) dateSets.set(route, new Map());
     const sets = dateSets.get(route), set = `${trip.depart}|${trip.ret}`;
@@ -125,7 +149,7 @@ function buildTrips(fares) {
             const p = days >= MIN_DAYS && days <= MAX_DAYS && plan(x, days);
             if (!p) continue;
             offer({
-              ...base, out: x, total: price + p.cost, ret, days, sameDay: hasSameDay(d0, p.hops, ret),
+              ...base, out: x, total: price + p.cost, ret, days, sameDay: hasSameDay(d0, p.hops, ret), safe: isSafe(d0, p.hops, ret),
               tickets: [{ kind: 'rt', from: home, to: x, date: d0, ret, cabin, price }, ...p.hops.map((h) => ({ kind: 'ow', ...h, cabin: 'Y' }))],
             });
           }
@@ -140,7 +164,7 @@ function buildTrips(fares) {
               const p = plan(y, days);
               if (!p) continue;
               offer({
-                ...base, out: y, total: outPrice + p.cost + backPrice, ret, days, sameDay: hasSameDay(d0, p.hops, ret),
+                ...base, out: y, total: outPrice + p.cost + backPrice, ret, days, sameDay: hasSameDay(d0, p.hops, ret), safe: isSafe(d0, p.hops, ret),
                 tickets: [
                   { kind: 'ow', from: home, to: x, date: d0, cabin, price: outPrice },
                   ...p.hops.map((h) => ({ kind: 'ow', ...h, cabin: 'Y' })),
@@ -153,7 +177,11 @@ function buildTrips(fares) {
       }
     }
   }
-  const trips = [...best.values()].sort((a, b) => a.total - b.total);
+  const trips = [...top].map(([key, [first, ...rest]]) => {
+    const s = safe.get(key);
+    first.fallbacks = s && !rest.includes(s) && s !== first ? [...rest, s] : rest;
+    return first;
+  }).sort((a, b) => a.total - b.total);
   for (const t of trips) t.alts = similarCount(dateSets, t, t.month);
   trips.dateSets = dateSets;
   return trips;
@@ -169,4 +197,4 @@ function similarCount(dateSets, trip, month = null) {
   return n;
 }
 
-module.exports = { buildTrips, similarCount, hopPlans, hasSameDay, addDays };
+module.exports = { buildTrips, similarCount, hopPlans, hasSameDay, isSafe, addDays };

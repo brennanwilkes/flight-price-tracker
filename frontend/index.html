@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- No viewport-fit=cover: in an installed iOS app it lays the page out under the clock, where iOS
+       blurs and fades it (seen in ~/movie-server). Without it the page starts below the status bar. -->
   <meta name="theme-color" content="#16181d">
   <!-- Filled by scripts/stamp-pwa.mjs at deploy; app/pwa.js registers the worker only when stamped. -->
   <meta name="fl-build" content="__BUILD__">

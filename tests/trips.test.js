@@ -80,3 +80,12 @@ test('alts counts other date sets within 2% of the best, per month and overall',
   assert.equal(similarCount(sets, trip, '2027-09'), 1);
   assert.equal(similarCount(sets, trip), 2);
 });
+
+test('isSafe: no flight on the day the previous one lands (long haul counted as landing day 1)', () => {
+  const { isSafe } = require('../scraper/src/trips/build');
+  const hop = (date) => ({ from: 'A', to: 'B', date, price: 1 });
+  assert.equal(isSafe('2027-09-01', [hop('2027-09-03'), hop('2027-09-08')], '2027-09-15'), true);
+  assert.equal(isSafe('2027-09-01', [hop('2027-09-02')], '2027-09-15'), false); // hop on landing day
+  assert.equal(isSafe('2027-09-01', [hop('2027-09-03'), hop('2027-09-03')], '2027-09-15'), false); // same-day chain
+  assert.equal(isSafe('2027-09-01', [hop('2027-09-15')], '2027-09-15'), false); // home the day of the last hop
+});
