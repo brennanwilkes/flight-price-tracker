@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#16181d">
+  <title>Asia Fares</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="app/style.css">
+  <script type="module" src="app/main.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Asia Fares</h1>
+    <select id="month" aria-label="Departure month"><option value="">All months</option></select>
+    <div class="toggle" role="group" aria-label="Home airport">
+      <button data-home="YVR" aria-pressed="true">Van</button>
+      <button data-home="YYJ" aria-pressed="false">Vic</button>
+    </div>
+  </header>
+  <main id="view"><p class="note">Loading…</p></main>
+  <footer id="stamp"></footer>
+</body>
+</html>

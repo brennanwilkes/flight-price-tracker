@@ -9,11 +9,11 @@
  *
  *   node scraper/bin/build-trips.js --data <dataDir>
  */
+const fs = require('node:fs');
 const path = require('node:path');
 const config = require('../config/sweep.json');
 const { loadFares } = require('../src/trips/fares');
 const { buildTrips } = require('../src/trips/build');
-const { writeJson } = require('../src/store/routes');
 
 function arg(name, def) {
   const i = process.argv.indexOf(`--${name}`);
@@ -45,7 +45,8 @@ function main() {
   const generatedAt = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   for (const home of config.origins) {
     const rows = rowsFor(home, trips);
-    writeJson(path.join(dataDir, 'derived', `trips-${home}.json`), { generatedAt, home, rows });
+    fs.mkdirSync(path.join(dataDir, 'derived'), { recursive: true });
+    fs.writeFileSync(path.join(dataDir, 'derived', `trips-${home}.json`), JSON.stringify({ generatedAt, home, rows })); // compact: the phone loads it
     const top = rows[0]?.hybrid;
     console.log(`${home}: ${rows.length} rows${top ? `, best hybrid ${rows[0].in}/${rows[0].out} ${top.total} (${top.depart}…${top.ret})` : ''}`);
   }

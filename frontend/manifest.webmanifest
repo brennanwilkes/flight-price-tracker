@@ -1,0 +1,8 @@
+{
+  "name": "Asia Fares",
+  "short_name": "Fares",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#16181d",
+  "theme_color": "#16181d"
+}
