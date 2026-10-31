@@ -287,7 +287,6 @@ body { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
 .tabs a[aria-current] { color: var(--amber); }
 body[data-tab="health"] header > *, body:not([data-tab="board"]) footer { display: none; }
 body[data-tab="health"] header { padding-bottom: 0; }
-body[data-tab="history"] #month { display: none; } /* history is per route, not per month */
 .pwaBar { bottom: calc(76px + env(safe-area-inset-bottom)); }
 /* Installed iOS app (as movie-server / spirit-tracker): full height from the first layout so the
    bar doesn't park above the bottom on short tabs, and no whole-page bounce dragging it along. */

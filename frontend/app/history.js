@@ -2,7 +2,7 @@
 // a cell's total changes). Business and economy sit an order of magnitude apart, so each class
 // gets its own chart (one axis each); in each, the MAX_SERIES routes with the lowest prices ever
 // recorded, one stepped line per route (a price holds until the next change). History is kept per
-// route overall, not per month; the via filter picks the routes (those on the board), not the values.
+// route overall, so the month and via filters pick the routes, not the values.
 // Chart.js is loaded from cdnjs the first time the tab opens.
 import { cityName } from './cities.js';
 
@@ -72,10 +72,11 @@ function onGrid(list) {
 const charts = [];
 
 /**
- * Render the tab into `el`. rows: the board's rows under a via filter, or null for every route ever
- * recorded; the priority class's chart first.
+ * Render the tab into `el`; the priority class's chart first. view: { rows: the board's rows in its
+ * current view (month, via), all: every row on the board, via: a via filter is on }. A route on the
+ * board shows when it has a trip in the view; one no longer on the board, unless a via filter is on.
  */
-export async function renderHistory(el, base, home, rows, priority = 'hybrid') {
+export async function renderHistory(el, base, home, view, priority = 'hybrid') {
   el.innerHTML = '<p class="note">Loading…</p>';
   let Chart, series;
   try { [Chart, series] = await Promise.all([loadChartJs(), loadHistory(base)]); } catch (e) {
@@ -83,12 +84,15 @@ export async function renderHistory(el, base, home, rows, priority = 'hybrid') {
     return;
   }
   const picks = CLASSES.slice().sort(([a]) => (a === priority ? -1 : 1)).map(([cls, name]) => {
-    const board = new Map((rows ?? []).map((r) => [`${r.in},${r.out}`, r]));
+    const shown = new Map(view.rows.map((r) => [`${r.in},${r.out}`, r.cells[cls]]));
+    const onBoard = new Set(view.all.map((r) => `${r.in},${r.out}`));
     const top = [...series].flatMap(([key, pts]) => {
       const [h, c, inn, out] = key.split(',');
+      const route = `${inn},${out}`;
       const low = Math.min(...pts.map(([, y]) => y ?? Infinity));
-      if (h !== home || c !== cls || low === Infinity || (rows && !board.has(`${inn},${out}`))) return [];
-      return [{ r: { in: inn, out }, trip: board.get(`${inn},${out}`)?.cells[cls], pts, low }];
+      if (h !== home || c !== cls || low === Infinity) return [];
+      if ((onBoard.has(route) || view.via) && !shown.get(route)) return [];
+      return [{ r: { in: inn, out }, trip: shown.get(route), pts, low }];
     }).sort((a, b) => a.low - b.low).slice(0, MAX_SERIES);
     return { cls, name, top };
   });

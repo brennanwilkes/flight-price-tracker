@@ -269,7 +269,7 @@ function render() {
   if (tab === 'history') {
     renderSheet();
     const data = state.data[viewKey()];
-    if (data) { fillFilters(data); renderHistory($('#view'), dataBase(state.sha), state.home, state.vias.length ? data.rows.map((r) => ({ ...r, cells: r })) : null, state.priority); }
+    if (data) { fillFilters(data); renderHistory($('#view'), dataBase(state.sha), state.home, { rows: rows(data), all: data.rows, via: state.vias.length > 0 }, state.priority); }
     return;
   }
   const data = state.data[viewKey()];

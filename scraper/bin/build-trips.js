@@ -12,11 +12,11 @@
  *   derived/via/trips-<HOME>-<CITY>.json   the same rows (no `was`), each cell the cheapest trip
  *                                           staying in CITY: the dashboard's via filter
  *
- * Every row's overall cells get the actual flights on each ticket
+ * Every cell, overall and per month, gets the actual flights on each ticket
  * (src/trips/details.js; skipped with --no-details), and the listed prices: the price graph has
  * no times and can be stale, so a cell's cheapest trip may not connect or may cost more as listed.
- * Further candidates (any month, plus the builder's fallbacks) are checked while they could still
- * be cheaper, up to TRIES (verify), and rows re-sort on the checked totals.
+ * Further candidates (any month for an overall cell, plus the builder's fallbacks) are checked
+ * while they could still be cheaper, up to TRIES (verify), and rows re-sort on the checked totals.
  *
  *   derived/fares.json   the fares the trips were built from (fares.js bundleOf), for the page's
  *                        own builds: the via filter with several cities
@@ -73,18 +73,19 @@ function rowsFor(home, trips, via = '') {
 // A trip as the dashboard stores it, without the builder's keys.
 // tier: the price tier word (config/alerts.json), shared with the alerts.
 const strip = ({ home, in: _i, out: _o, cls, month, safe, fallbacks, via, ...trip }) => ({ ...trip, tier: tierOf(alertConfig, cls, trip.total) });
-// An overall cell: its own copy of the tickets (flight details go there, not on the month twin)
-// and +N counted across months.
-const overall = (t, trips) => t && { ...strip(t), tickets: t.tickets.map((x) => ({ ...x })), alts: t.via ? 0 : similarCount(trips.dateSets, t) };
+// A checked cell: its own copy of the tickets (flight details go there; a trip can be both an
+// overall and a month cell) and +N counted across months, or in `month`.
+const overall = (t, trips, month = null) => t && { ...strip(t), tickets: t.tickets.map((x) => ({ ...x })), alts: t.via ? 0 : similarCount(trips.dateSets, t, month) };
 const price = (t) => t?.total ?? Infinity;
 const sortRows = (rows) => rows.sort((a, b) => price(a.hybrid) - price(b.hybrid) || price(a.economy) - price(b.economy));
 
 /**
- * Check every row's overall cells against real flights (byHome: any map of row lists). Each
- * cell walks its candidates cheapest first (graph prices), keeping the cheapest that connects at
- * listed prices, until the next candidate's graph total can't beat it, or after TRIES. None
- * connects: the cell is dropped (a row with neither class goes too); a trip that can't be flown
- * is not a price.
+ * Check every row's cells, overall and per month, against real flights (byHome: any map of row
+ * lists). Each cell walks its candidates cheapest first (graph prices; a month cell only that
+ * month's), keeping the cheapest that connects at listed prices, until the next candidate's graph
+ * total can't beat it, or after TRIES. None connects: the cell is dropped (a row with no overall
+ * cell goes too); a trip that can't be flown is not a price. Searches are shared, so a month cell
+ * walking the same trips as its overall cell costs nothing more.
  */
 async function verify(byHome, trips) {
   const t0 = Date.now();
@@ -94,7 +95,14 @@ async function verify(byHome, trips) {
   let browserSearches = 0;
   const browser = (q, opts) => { browserSearches++; return shoppingResults(ctx, q, opts); };
   const st = { cells: 0, replaced: 0, unresolved: 0, searches: 0, failed: 0, none: 0, stay: 0 };
-  let pending = [...byHome.values()].flatMap((rows) => rows.flatMap((r) => CLASSES.filter((c) => r[c]).map((cls) => ({ r, cls, i: 0, cand: r[cls], best: null, first: null }))));
+  const cellsOf = (r) => CLASSES.filter((c) => r[c]).flatMap((cls) => [
+    { cls, cands: r.cands[cls], cand: r[cls], put: (t) => { r[cls] = t; } },
+    ...Object.entries(r.months).filter(([, m]) => m[cls]).map(([month, m]) => {
+      const cands = r.cands[cls].filter((t) => t.depart.startsWith(month));
+      return { cls, month, cands, cand: overall(cands[0], trips, month), put: (t) => { m[cls] = t; } };
+    }),
+  ]);
+  let pending = [...byHome.values()].flatMap((rows) => rows.flatMap(cellsOf)).map((p) => ({ ...p, i: 0, best: null, first: null }));
   st.cells = pending.length;
   while (pending.length) {
     const s = await addDetails(pending.map((p) => p.cand), cache, browser);
@@ -106,13 +114,13 @@ async function verify(byHome, trips) {
     pending = pending.filter((p) => {
       p.first ??= p.cand;
       if (p.cand.connects && !(p.best?.total <= p.cand.total)) p.best = p.cand;
-      const next = p.r.cands[p.cls][++p.i];
+      const next = p.cands[++p.i];
       if (next && p.i < TRIES && !(p.best && next.total >= p.best.total)) {
-        p.cand = overall(next, trips);
+        p.cand = overall(next, trips, p.month);
         return true;
       }
       if (p.best) p.best.tier = tierOf(alertConfig, p.cls, p.best.total);
-      p.r[p.cls] = p.best;
+      p.put(p.best);
       if (!p.best) st.unresolved++;
       else if (p.best !== p.first) st.replaced++;
       return false;
@@ -128,13 +136,15 @@ async function verify(byHome, trips) {
 }
 
 /**
- * Multi-city single tickets (trips/multi.js) for the shown cells: the main views searched, most
- * promising first (an open jaw estimated at the cheaper return to either end, which is about what
- * airlines charge); the via views take the cached prices only. Re-tiers and re-sorts the rows.
+ * Multi-city single tickets (trips/multi.js) for the shown cells: the main views' overall cells
+ * searched, most promising first (an open jaw estimated at the cheaper return to either end, which
+ * is about what airlines charge); the via views and the month cells take the cached prices only.
+ * Re-tiers and re-sorts the rows.
  */
 async function multiPass(dataDir, byHome, fares, search) {
-  const cellsOf = (main) => [...byHome].filter(([v]) => v.endsWith('|') === main)
-    .flatMap(([, rows]) => rows.flatMap((r) => CLASSES.map((cls) => r[cls] && Object.assign(r[cls], { cls })).filter(Boolean))); // groupsOf reads cls
+  const monthCells = (r) => Object.values(r.months).flatMap((m) => CLASSES.map((cls) => m[cls] && Object.assign(m[cls], { cls })));
+  const cellsOf = (main, months = false) => [...byHome].filter(([v]) => v.endsWith('|') === main)
+    .flatMap(([, rows]) => rows.flatMap((r) => [...CLASSES.map((cls) => r[cls] && Object.assign(r[cls], { cls })), ...(months ? monthCells(r) : [])]).filter(Boolean)); // groupsOf reads cls
   const homes = fares.homes;
   const estimate = (t) => {
     const long = t.tickets.filter((x) => homes.includes(x.from) || homes.includes(x.to));
@@ -156,9 +166,9 @@ async function multiPass(dataDir, byHome, fares, search) {
     const byClass = CLASSES.map((c) => cellsOf(true).filter((t) => t.cls === c).sort((a, b) => estimate(a) - estimate(b)));
     const main = byClass[0].flatMap((t, i) => [t, byClass[1][i]]).concat(byClass[1].slice(byClass[0].length)).filter(Boolean);
     const st = await applyMulti(dataDir, main, homes, browser, { budget: MULTI_BUDGET });
-    await applyMulti(dataDir, cellsOf(false), homes, null);
+    await applyMulti(dataDir, [...cellsOf(false, true), ...cellsOf(true, true).filter((t) => !main.includes(t))], homes, null);
     for (const [view, rows] of byHome) {
-      for (const r of rows) for (const cls of CLASSES) if (r[cls]) { delete r[cls].cls; r[cls].tier = tierOf(alertConfig, cls, r[cls].total); }
+      for (const t of rows.flatMap((r) => [r.hybrid, r.economy, ...monthCells(r)])) if (t) { t.tier = tierOf(alertConfig, t.cls, t.total); delete t.cls; }
       byHome.set(view, sortRows(rows));
     }
     return { ...st, ms: Date.now() - t0 };
