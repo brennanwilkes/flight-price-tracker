@@ -10,6 +10,7 @@ const { pageUrl, HEADERS } = require('./page');
 const { parseBatchExecute, parseCalendar, parseBooking } = require('./batchexecute');
 
 const RPC_TIMEOUT_MS = 20_000;
+const PAGE_TIMEOUT_MS = 45_000; // slow (YYJ) results pages
 // Google computes uncached graphs on demand: YYJ ones take 2-22s+ where YVR's come back in 0.1s.
 // So wait long for a reply once the request is out, but re-click quickly if none went out.
 const GRAPH_TIMEOUT_MS = 60_000;
@@ -17,7 +18,6 @@ const SENT_TIMEOUT_MS = 6_000;
 // Airlines load fares ~330 days out; the graph silently stops fetching there.
 // Measured 2026-10-30: last loaded return date = today + 329.
 const HORIZON_DAYS = 330;
-const HORIZON_SLACK_DAYS = 15;
 const today = () => new Date().toISOString().slice(0, 10);
 class NothingSent extends Error {}
 
@@ -103,8 +103,9 @@ async function clickAndSend(page, button, rpc) {
  * Prices for every departure day in [start, end]: round trip at one trip length, or one-way
  * when tripLen is null.
  * One page load; the first GetCalendarGraph covers 60 days (from start - 7), each "Scroll
- * forward" 21 more. The graph stops at the fare-loading horizon (~330 days out): there the
- * forward button sends nothing, so a short result near the horizon is "not loaded yet", not an error.
+ * forward" 21 more. Where the graph ends (the fare-loading horizon, ~330 days out, or sooner
+ * on some one-ways) the forward button looks the same but sends nothing: that's the end of
+ * the data, not an error.
  */
 async function priceGraph(ctx, { from, to, cabin, tripLen = null, start, end }) {
   const span = tripLen ?? 0; // one-way when tripLen is null
@@ -113,7 +114,7 @@ async function priceGraph(ctx, { from, to, cabin, tripLen = null, start, end }) 
   try {
     await page.goto(pageUrl({ from, to, out: start, ret: tripLen == null ? null : addDays(start, tripLen), cabin }), { waitUntil: 'networkidle' });
     const graphBtn = page.getByRole('button', { name: 'Price graph' }).first();
-    await graphBtn.waitFor({ timeout: RPC_TIMEOUT_MS });
+    await graphBtn.waitFor({ timeout: PAGE_TIMEOUT_MS });
     const cells = new Map();
     const add = (list) => { for (const c of list) if (c.out >= start && c.out <= end) cells.set(c.out, c); };
     // A click that lands before the page has hydrated does nothing; click again rather than wait.
@@ -123,17 +124,15 @@ async function priceGraph(ctx, { from, to, cabin, tripLen = null, start, end }) 
       if (!(await clickAndSend(page, graphBtn, 'GetCalendarGraph'))) throw new Error('open graph: two clicks sent no request');
     }, 'open graph', GRAPH_TIMEOUT_MS));
     const fwd = page.getByRole('button', { name: 'Scroll forward' });
-    // The forward button looks the same at the horizon; it just stops fetching.
-    const horizon = addDays(today(), HORIZON_DAYS - HORIZON_SLACK_DAYS);
     let last = [...cells.keys()].at(-1) ?? start;
     for (let i = 0; i < 12 && last < end; i++) {
       if (addDays(last, span) >= addDays(today(), HORIZON_DAYS - 2)) break; // at the horizon already
       try {
         add(await capture(page, 'GetCalendarGraph', parseCalendar, async () => {
-          if (!(await clickAndSend(page, fwd, 'GetCalendarGraph'))) throw new NothingSent(`scroll ${i + 1}: click sent no request`);
+          if (!(await clickAndSend(page, fwd, 'GetCalendarGraph'))) throw new NothingSent();
         }, `scroll ${i + 1}`, GRAPH_TIMEOUT_MS));
       } catch (e) {
-        if (e instanceof NothingSent && addDays(last, span) >= horizon) break;
+        if (e instanceof NothingSent) break; // end of the graph
         throw e;
       }
       last = [...cells.keys()].sort().at(-1);
