@@ -120,6 +120,6 @@ export async function renderHealth(el, base, settings) {
     try { result.textContent = (await fn()) ?? ''; } catch (e) { result.textContent = e.message; }
     b.disabled = false;
   };
-  el.querySelector('[data-act="enable"]')?.addEventListener('click', (e) => act(e.target, async () => { await subscribe(); renderHealth(el, base); }));
+  el.querySelector('[data-act="enable"]')?.addEventListener('click', (e) => act(e.target, async () => { await subscribe(); renderHealth(el, base, settings); }));
   el.querySelector('[data-act="sweep"]').addEventListener('click', (e) => act(e.target, requestSweep));
 }
