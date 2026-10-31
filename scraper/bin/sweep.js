@@ -15,6 +15,15 @@ const { recordCells, readJson, writeJson } = require('../src/store/routes');
 
 const MAX_FAILED_SHARE = 0.25; // more failed combos than this = failed run
 const HEALTH_RUNS_KEPT = 200;
+const CONCURRENCY = Number(process.env.SWEEP_CONCURRENCY || 3); // pages open at once
+
+/** Run `fn` over `items` with at most `n` in flight. */
+async function pool(items, n, fn) {
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => {
+    while (next < items.length) await fn(items[next++]);
+  }));
+}
 
 function arg(name, def) {
   const i = process.argv.indexOf(`--${name}`);
@@ -69,7 +78,7 @@ async function main() {
 
     if (run.control > 0) {
       const { start: wStart, end: wEnd } = config.window;
-      for (const q of plan(only)) {
+      await pool(plan(only), CONCURRENCY, async (q) => {
         const label = `${q.routeId} ${q.tripLen}d`;
         try {
           const cells = await withRetry(() => priceGraph(ctx, { ...q, start: wStart, end: wEnd }), label);
@@ -86,7 +95,7 @@ async function main() {
           run.errors.push(`${label}: ${e.message}`);
           console.log(`${label}: FAILED ${e.message}`);
         }
-      }
+      });
     }
   } finally {
     await browser.close();

@@ -11,6 +11,7 @@ const { parseBatchExecute, parseCalendar, parseBooking } = require('./batchexecu
 
 const RPC_TIMEOUT_MS = 20_000;
 const SCROLL_TIMEOUT_MS = 8_000;
+const OPEN_RETRY_MS = 6_000;
 // Airlines load fares ~330 days out; the graph silently stops fetching there.
 // Measured 2026-10-30: last loaded return date = today + 329.
 const HORIZON_DAYS = 330;
@@ -94,7 +95,15 @@ async function priceGraph(ctx, { from, to, cabin, tripLen, start, end }) {
     await graphBtn.waitFor({ timeout: RPC_TIMEOUT_MS });
     const cells = new Map();
     const add = (list) => { for (const c of list) if (c.out >= start && c.out <= end) cells.set(c.out, c); };
-    add(await capture(page, 'GetCalendarGraph', parseCalendar, () => graphBtn.click(), 'open graph'));
+    // A click that lands before the page has hydrated does nothing; click again rather than wait.
+    let opened;
+    try {
+      opened = await capture(page, 'GetCalendarGraph', parseCalendar, () => graphBtn.click(), 'open graph', OPEN_RETRY_MS);
+    } catch {
+      await page.keyboard.press('Escape').catch(() => {});
+      opened = await capture(page, 'GetCalendarGraph', parseCalendar, () => graphBtn.click(), 'open graph (2nd click)');
+    }
+    add(opened);
     const fwd = page.getByRole('button', { name: 'Scroll forward' });
     // The forward button looks the same at the horizon; it just stops fetching.
     const horizon = addDays(today(), HORIZON_DAYS - HORIZON_SLACK_DAYS);
