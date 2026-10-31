@@ -81,16 +81,18 @@ async function capture(page, rpc, decode, action, step, timeout = RPC_TIMEOUT_MS
 }
 
 /**
- * Round-trip prices for every departure day in [start, end] at one trip length.
+ * Prices for every departure day in [start, end]: round trip at one trip length, or one-way
+ * when tripLen is null.
  * One page load; the first GetCalendarGraph covers 60 days (from start - 7), each "Scroll
  * forward" 21 more. The graph stops at the fare-loading horizon (~330 days out): there the
  * forward button is disabled, so a short result near the horizon is "not loaded yet", not an error.
  */
-async function priceGraph(ctx, { from, to, cabin, tripLen, start, end }) {
-  if (addDays(start, tripLen) > addDays(today(), HORIZON_DAYS)) return []; // nothing loaded yet
+async function priceGraph(ctx, { from, to, cabin, tripLen = null, start, end }) {
+  const span = tripLen ?? 0; // one-way when tripLen is null
+  if (addDays(start, span) > addDays(today(), HORIZON_DAYS)) return []; // nothing loaded yet
   const page = await ctx.newPage();
   try {
-    await page.goto(pageUrl({ from, to, out: start, ret: addDays(start, tripLen), cabin }), { waitUntil: 'networkidle' });
+    await page.goto(pageUrl({ from, to, out: start, ret: tripLen == null ? null : addDays(start, tripLen), cabin }), { waitUntil: 'networkidle' });
     const graphBtn = page.getByRole('button', { name: 'Price graph' }).first();
     await graphBtn.waitFor({ timeout: RPC_TIMEOUT_MS });
     const cells = new Map();
@@ -109,11 +111,11 @@ async function priceGraph(ctx, { from, to, cabin, tripLen, start, end }) {
     const horizon = addDays(today(), HORIZON_DAYS - HORIZON_SLACK_DAYS);
     let last = [...cells.keys()].at(-1) ?? start;
     for (let i = 0; i < 12 && last < end; i++) {
-      if (addDays(last, tripLen) >= addDays(today(), HORIZON_DAYS - 2)) break; // at the horizon already
+      if (addDays(last, span) >= addDays(today(), HORIZON_DAYS - 2)) break; // at the horizon already
       try {
         add(await capture(page, 'GetCalendarGraph', parseCalendar, () => fwd.click(), `scroll ${i + 1}`, SCROLL_TIMEOUT_MS));
       } catch (e) {
-        if (addDays(last, tripLen) >= horizon) break;
+        if (addDays(last, span) >= horizon) break;
         throw e;
       }
       last = [...cells.keys()].sort().at(-1);

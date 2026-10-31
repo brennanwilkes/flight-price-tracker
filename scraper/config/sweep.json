@@ -14,7 +14,7 @@
     "BKK": ["BKK"],
     "KUL": ["KUL"]
   },
-  "cabins": ["J", "Y"],
-  "tripLengths": [14, 17, 21],
+  "longLeg": { "cabins": ["J", "Y"], "tripLengths": [14, 17, 21], "oneWay": true },
+  "hops": { "cabin": "Y", "maxAgeHours": 12, "maxPerRun": 40 },
   "control": { "from": "YVR", "to": "ICN", "cabin": "Y", "tripLen": 14, "daysOut": 14, "days": 7 }
 }

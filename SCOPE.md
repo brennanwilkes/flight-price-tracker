@@ -19,6 +19,50 @@ disagree, this doc wins (decisions below were made after the plan).
 | Scraper health | Push after **2 consecutive failed runs**, then silent until recovery. Push-subscription health is dashboard-only. |
 | Cadence | Tiered: long-leg business **hourly**; economy and short hops less often (see Cadence). |
 
+## Trip builder and dashboard (decided 2026-10-30, after M1; supersedes Dashboard/Cadence below where they differ)
+
+**Trips are built automatically, driven by business long-haul fares.** Brennan doesn't build trips;
+the builder searches every combination and the dashboard shows the best N.
+
+- **Trip shape:** business across the Pacific, out and back, as a round trip OR two one-ways (into one
+  city, home from another), from YVR or YYJ. Any number of economy hops within Asia on separate
+  tickets, in any order, as long as the trip visits **Da Nang (Hoi An) for ≥ 5 nights**. Multi-day
+  stops in other cities are fine (a plus, not a cost).
+- **Victoria:** a YYJ trip's Victoria–Vancouver flight must be on the **same ticket** as the Pacific
+  crossing (Google's YYJ⇄Asia fares). Never a separate YYJ–YVR ticket: in that case Brennan just starts
+  from YVR and gets there on their own. So YYJ–YVR is never scraped or used as a hop.
+- **Trip length:** any 14–21 days home to home.
+- **Connections:** within one ticket, Google's itinerary is taken as-is. Between separate tickets,
+  same-day is allowed with **≥ 4 h** between landing and the next departure. The price graph has no
+  flight times, so the builder marks same-day connections "times to verify", and the confirm pass
+  fetches the real times for the top trips and drops the ones that don't fit.
+- **Ranking:** pure cheapest total (no penalty for extra flights).
+- **Data needed:** long-leg round trips (J, Y; 132 graphs), long-leg one-ways both directions (J, Y; 88),
+  economy hops between all 11 Asia cities (110 one-ways). Hops priced with 1 checked bag (bag-fee
+  table where Google omits it).
+- **Cadence:** long legs (round trip + one-way) hourly, hops every 12 h (sharded).
+
+**Main page (phone-first):** one row per **in/out city pair** (e.g. "in Seoul / out Manila"), sorted by
+cheapest hybrid, with the top row visually set apart as the headline ticket. Brennan wants to revisit
+the row definition once real data is in.
+- Columns: **Hybrid** (business long legs + economy hops, the headline), **Full economy**. No full
+  business, no premium economy.
+- Each cell: cheapest over all dates and trip lengths, with its dates underneath, and a small ▲/▼ for
+  the change vs 24 h ago.
+- Header: Vancouver / Victoria toggle (top right), month filter dropdown (default all months).
+- Colours: $ tiers (good / great / exceptional, plus **purple = buy now**); thresholds tuned after
+  seeing real data.
+- Tapping a row opens the **trip details**: a simple hand-drawn SVG map (simplified coastline, city
+  dots, flight arcs; no embedded map tiles) and a list of flights, each row expandable to the
+  specifics, everything linking to Google Flights.
+
+**History page (desktop-first):** x = scrape time, y = cheapest hybrid per destination (independent of
+travel dates), one line per destination, Van/Vic toggle.
+
+**Also:** a simple Health tab. No Deals page (deals are push notifications). No separate trips or
+leaderboard page (the main page is that). The route view waits until there's something to look at.
+Charts are hand-rolled SVG.
+
 ## Architecture
 
 ```
