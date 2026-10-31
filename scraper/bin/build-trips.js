@@ -199,7 +199,7 @@ async function main() {
   const m = await multiPass(dataDir, byHome, fares, !process.argv.includes('--no-details'));
   console.log(`multi-city: ${m.searched} searched (${m.failed} failed), ${m.merged} trips cheaper as one ticket; ${m.ms}ms`);
   if (details) details.multi = m;
-  // Stay ranges on every shown trip; lowest-ever marks (the main views record theirs first).
+  // Stay ranges on every shown trip; lowest-ever marks.
   for (const rows of byHome.values()) {
     for (const r of rows) {
       for (const trip of [r.hybrid, r.economy, ...Object.values(r.months).flatMap((m) => [m.hybrid, m.economy])]) {
@@ -209,8 +209,9 @@ async function main() {
     }
   }
   const views = (main) => Object.fromEntries([...byHome].filter(([v]) => v.endsWith('|') === main).map(([v, rows]) => [v, rows]));
-  markLows(dataDir, Object.fromEntries(Object.entries(views(true)).map(([v, rows]) => [v.slice(0, -1), rows])), generatedAt);
+  // Via views first: every view is marked against the lows before this build, then the main ones record.
   for (const [v, rows] of Object.entries(views(false))) markLows(dataDir, { [v.split('|')[0]]: rows }, generatedAt, { record: false });
+  markLows(dataDir, Object.fromEntries(Object.entries(views(true)).map(([v, rows]) => [v.slice(0, -1), rows])), generatedAt);
   fs.rmSync(path.join(dataDir, 'derived', 'via'), { recursive: true, force: true });
   fs.mkdirSync(path.join(dataDir, 'derived', 'via'), { recursive: true });
   for (const [view, rows] of byHome) {
