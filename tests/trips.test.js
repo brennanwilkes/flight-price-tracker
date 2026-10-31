@@ -64,7 +64,8 @@ test('same-day connection is allowed but marked; trip length stays within 14-21 
       [`DAD-ICN|${day(14)}`]: 100, // the day the flight home leaves
     },
   }));
-  const t = find(trips, 'hybrid', 'ICN', 'ICN');
+  // No night in Seoul either way: the trip's row is Da Nang, where it stays.
+  const t = find(trips, 'hybrid', 'DAD', 'DAD');
   assert.strictEqual(t.total, 4270);
   assert.strictEqual(t.days, 14);
   assert.strictEqual(t.sameDay, true);

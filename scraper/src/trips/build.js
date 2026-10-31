@@ -154,6 +154,30 @@ function ticketsOf(first, hops, last) {
 }
 
 /**
+ * Where a trip actually stays: cities with at least a night between landing and the next flight
+ * (a long haul lands the day after it leaves). A city only changed planes in doesn't count, so it
+ * neither names the row (first, last: the first and last stays) nor appears in the via filter.
+ */
+function staysOf(trip, homes) {
+  const at = (iso) => Date.parse(iso) / 864e5;
+  const flights = trip.order.map(([i, dir]) => {
+    const t = trip.tickets[i];
+    const f = dir === 'back' ? { from: t.to, to: t.from, date: t.ret } : dir.startsWith('leg') ? t.legs[Number(dir.slice(3))] : t;
+    const long = homes.includes(f.from) || homes.includes(f.to);
+    return { from: f.from, to: f.to, leave: at(f.date), land: at(f.date) + (long ? 1 : 0) };
+  });
+  const stays = [];
+  let first = null, last = null;
+  for (let k = 1; k < flights.length; k++) {
+    if (flights[k].leave - flights[k - 1].land < 1) continue;
+    first ??= flights[k - 1].to;
+    last = flights[k].from; // out of Vietnam overland: where the flight home leaves from
+    for (const c of [flights[k - 1].to, flights[k].from]) if (!stays.includes(c)) stays.push(c);
+  }
+  return { stays, first, last };
+}
+
+/**
  * Every trip worth showing, as the cheapest per (home, class, in-city, out-city, departure month).
  *
  * fares: {
@@ -182,7 +206,10 @@ function buildTrips(fares) {
   const dateSets = new Map();
   // Kept per cell (via ''), and again per cell and city the trip stays in (the via filter).
   const offer = (trip) => {
-    for (const via of ['', ...new Set(trip.tickets.map((t) => t.to).filter((c) => c !== trip.home))]) keep(trip, via);
+    const { stays, first, last } = staysOf(trip, fares.homes);
+    trip.in = first;
+    trip.out = last;
+    for (const via of ['', ...stays]) keep(trip, via);
     const route = `${trip.home}|${trip.cls}|${trip.in}|${trip.out}`;
     if (!dateSets.has(route)) dateSets.set(route, new Map());
     const sets = dateSets.get(route), set = `${trip.depart}|${trip.ret}`;
@@ -258,4 +285,4 @@ function similarCount(dateSets, trip, month = null) {
   return n;
 }
 
-module.exports = { buildTrips, similarCount, hopPlans, ticketsOf, hasSameDay, isSafe, addDays };
+module.exports = { buildTrips, similarCount, hopPlans, ticketsOf, staysOf, hasSameDay, isSafe, addDays };
