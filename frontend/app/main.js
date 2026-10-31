@@ -108,27 +108,34 @@ function trend(trip) {
 }
 
 /**
- * Against the lowest prices ever shown (builder: lows.js): 'best' (the route's cheapest yet), 'same'
- * (these dates were cheaper before), 'any' (other dates were cheaper), or '' (no history yet).
+ * Against the lowest prices ever shown (builder: lows.js), as marks: 'best' ★ the route's cheapest
+ * yet; 'dates' ☆ cheapest yet for these dates; 'any' ○ other dates were cheaper (mild); 'same' ●
+ * these dates were cheaper before (bad). None without history.
  */
-function lowState(trip) {
+function lowMarks(trip) {
   const low = trip.low;
-  if (!low?.any) return '';
-  if (low.same && trip.total > low.same.total) return 'same';
-  return trip.total <= low.any.total ? 'best' : 'any';
+  if (!low?.any) return [];
+  if (low.same && trip.total > low.same.total) return ['same'];
+  if (trip.total <= low.any.total) return ['best'];
+  return low.same ? ['dates', 'any'] : ['any'];
 }
-const LOW_MARK = { best: '★', same: '●', any: '○' };
-const lowMark = (trip) => { const k = lowState(trip); return k ? `<i class="low ${k}" aria-hidden="true">${LOW_MARK[k]}</i>` : ''; };
+const LOW_MARK = { best: '★', dates: '☆', any: '○', same: '●' };
+const lowMark = (trip) => {
+  const marks = lowMarks(trip);
+  return marks.length ? `<i class="lowmarks" aria-hidden="true">${marks.map((k) => `<i class="low ${k}">${LOW_MARK[k]}</i>`).join('')}</i>` : '';
+};
 const shortDate = (iso) => new Date(`${iso.slice(0, 10)}T12:00:00Z`).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', timeZone: 'UTC' });
-/** The stub's lines about past lows: the fact, not a verdict. */
+/** The stub's lines about past lows: the facts behind the marks. */
 function lowLines(trip) {
-  const k = lowState(trip);
-  if (!k) return '';
-  if (k === 'best') return `<p class="lows"><span class="low best">★ Lowest yet</span></p>`;
-  const lines = [];
-  if (k === 'same') lines.push(`<span class="low same">● These dates ${money(trip.low.same.total)} · ${shortDate(trip.low.same.at)}</span>`);
-  lines.push(`<span class="low any">○ Lowest ${money(trip.low.any.total)} · ${range(trip.low.any)}</span>`);
-  return `<p class="lows">${lines.join('')}</p>`;
+  const line = {
+    best: () => '★ Lowest yet',
+    dates: () => '☆ Lowest yet for these dates',
+    same: () => `● These dates ${money(trip.low.same.total)} · ${shortDate(trip.low.same.at)}`,
+    any: () => `○ Lowest ${money(trip.low.any.total)} · ${range(trip.low.any)}`,
+  };
+  const marks = lowMarks(trip);
+  if (marks[0] === 'same') marks.push('any');
+  return marks.length ? `<p class="lows">${marks.map((k) => `<span class="low ${k}">${line[k]()}</span>`).join('')}</p>` : '';
 }
 
 /** "SEP 05–22" (or "SEP 28–OCT 12"). */

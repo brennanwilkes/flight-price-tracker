@@ -204,12 +204,12 @@ async function bookingOptions(ctx, { from, to, out, ret, cabin }) {
  * A search's results as the page loads them (GetShoppingResults), for searches whose page
  * inlines none (gflights/flights.js). Returns the payload, laid out like the inline ds:1 blob.
  */
-async function shoppingResults(ctx, query) {
-  const page = await newPage(ctx, 90_000);
+async function shoppingResults(ctx, query, { timeout = 30_000 } = {}) {
+  const page = await newPage(ctx, timeout + 60_000);
   const label = `${query.from}-${query.to} ${query.out}`;
   try {
     const payloads = await capture(page, 'GetShoppingResults', (p) => [p],
-      () => page.goto(pageUrl(query), { waitUntil: 'domcontentloaded', timeout: PAGE_TIMEOUT_MS }), label, 30_000);
+      () => page.goto(pageUrl(query), { waitUntil: 'domcontentloaded', timeout: PAGE_TIMEOUT_MS }), label, timeout);
     // The first reply is only Google's "top flights"; the rest (often the cheapest) load behind
     // "View more flights".
     const more = page.getByRole('button', { name: /more flights/i }).first();

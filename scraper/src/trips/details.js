@@ -16,6 +16,7 @@ const { airportsOf } = require('../../../frontend/app/cities.js');
 const MIN_CONNECT_MIN = 4 * 60;
 const CONCURRENCY = 6; // searches in flight; a browser fallback (~10 s) holds one of these
 const PRICE_TOL = 0.03;
+const SLOW_PAGE_MS = 60_000; // retries and full lists: some searches (YYJ business returns) take Google > 30 s
 
 const at = (date, hm) => Date.parse(`${date}T${hm}:00Z`) / 60000; // minutes, local clock (comparisons only within one city)
 const arrival = (o) => at(o.legs.at(-1).arrDate, o.legs.at(-1).arr);
@@ -49,7 +50,7 @@ async function addDetails(trips, cache = new Map(), browser = null) {
   const fullOnce = (q) => {
     const key = `full ${JSON.stringify(q)}`;
     if (!cache.has(key)) {
-      cache.set(key, browser(q).then((ps) => ps.flatMap(parseResults)).catch((e) => ({ error: e.message })));
+      cache.set(key, browser(q, { timeout: SLOW_PAGE_MS }).then((ps) => ps.flatMap(parseResults)).catch((e) => ({ error: e.message })));
       stats.full++;
     }
     return cache.get(key);

@@ -87,7 +87,7 @@ async function verify(byHome, trips) {
   // Searches whose page inlines no results are asked again in a real page (gflights/flights.js).
   const { browser: chrome, ctx } = await openBrowser();
   let browserSearches = 0;
-  const browser = (q) => { browserSearches++; return shoppingResults(ctx, q); };
+  const browser = (q, opts) => { browserSearches++; return shoppingResults(ctx, q, opts); };
   const st = { cells: 0, replaced: 0, unresolved: 0, searches: 0, failed: 0, none: 0, stay: 0 };
   let pending = [...byHome.values()].flatMap((rows) => rows.flatMap((r) => CLASSES.filter((c) => r[c]).map((cls) => ({ r, cls, i: 0, cand: r[cls], best: null, first: null }))));
   st.cells = pending.length;
