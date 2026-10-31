@@ -102,3 +102,6 @@ a { color: var(--biz); }
 
 .note, footer { color: var(--muted); font-size: 12px; }
 footer { margin-top: 16px; }
+footer p { margin: 4px 0; }
+footer button { font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; margin-left: 4px; cursor: pointer; }
+.warn { color: #c4473a; }
