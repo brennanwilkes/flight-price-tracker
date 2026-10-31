@@ -2,7 +2,7 @@
 // trip details. Reads derived/trips-<HOME>.json from the data branch (scraper/bin/build-trips.js).
 import { cityName } from './cities.js';
 import { tripMap } from './map.js';
-import { alertsBar } from './alerts.js';
+import { alertsBar, sweepButton } from './alerts.js';
 
 const params = new URLSearchParams(location.search);
 const DATA = params.get('data') ?? 'https://raw.githubusercontent.com/brennanwilkes/flight-price-tracker/data';
@@ -145,6 +145,7 @@ for (const b of document.querySelectorAll('.toggle button')) {
   });
 }
 alertsBar($('#alerts'));
+sweepButton($('#sweep'));
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 $('#month').addEventListener('change', (e) => { state.month = e.target.value; state.open = null; render(); });
 show();

@@ -1,6 +1,7 @@
 // "Enable alerts": registers sw.js, subscribes to Web Push with the Worker's VAPID key and
 // hands the subscription to the Worker (one subscription; a new one replaces the old).
 // Shows the Worker's push health so a dead subscription is visible (SCOPE: Notifications).
+// Also the "scrape everything now" button (Worker POST /sweep).
 
 export const WORKER = new URLSearchParams(location.search).get('worker') ?? 'https://flight-fare-tracker.brennan-a53.workers.dev';
 
@@ -56,4 +57,31 @@ export async function alertsBar(el) {
     }
     alertsBar(el);
   });
+}
+
+/** Ask the Worker for a full sweep now; it allows one per 30 min. Returns a status line. */
+async function requestSweep() {
+  const res = await fetch(`${WORKER}/sweep`, { method: 'POST' });
+  const r = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(r.error ?? `HTTP ${res.status}`);
+  return r.started ? 'Full scrape started: new prices in ~30 min.' : `A full scrape started ${ago(r.at)}; next allowed 30 min after it.`;
+}
+
+/**
+ * "Scrape everything now" button in `el`. Opening the page from an alert (?sweep=1) presses it
+ * automatically, so the rest of the routes refresh while the deal is being looked at.
+ */
+export function sweepButton(el) {
+  const run = async () => {
+    el.textContent = 'Starting a full scrape…';
+    try { el.textContent = await requestSweep(); } catch (e) { el.textContent = `Couldn't start a scrape: ${e.message}`; }
+  };
+  el.innerHTML = '<button type="button">Scrape everything now</button>';
+  el.querySelector('button').addEventListener('click', run);
+  const params = new URLSearchParams(location.search);
+  if (params.get('sweep') === '1') {
+    params.delete('sweep');
+    history.replaceState(null, '', `${location.pathname}${params.size ? `?${params}` : ''}${location.hash}`);
+    run();
+  }
 }

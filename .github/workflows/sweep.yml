@@ -13,6 +13,9 @@ on:
       routes:
         description: Only these O-D routes (comma-separated, e.g. YVR-ICN); empty = all
         default: ''
+      homes:
+        description: Long legs from these homes (the Worker cron sends YVR, or YVR,YYJ every 3rd hour)
+        default: 'YVR,YYJ'
 
 permissions:
   contents: write  # push to the data branch
@@ -59,6 +62,7 @@ jobs:
         run: |
           args=()
           [[ -n "${{ inputs.routes }}" ]] && args+=(--routes "${{ inputs.routes }}")
+          [[ -n "${{ inputs.homes }}" ]] && args+=(--homes "${{ inputs.homes }}")
           scripts/run_sweep.sh "${args[@]}" 2>&1 | tee sweep.log
 
       - name: Summary

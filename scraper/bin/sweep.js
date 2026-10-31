@@ -6,7 +6,9 @@
  *   - economy hops between the Asia cities, the stalest first, until each is < maxAgeHours old
  *     (state/hops.json). Works with any run schedule.
  *
- *   node scraper/bin/sweep.js --data <dataDir> [--egress vpn|direct] [--routes YVR-ICN,ICN-DAD] [--no-hops]
+ *   node scraper/bin/sweep.js --data <dataDir> [--egress vpn|direct] [--homes YVR,YYJ] [--routes YVR-ICN,ICN-DAD] [--no-hops]
+ *
+ * --homes limits the long legs to those home airports (the Worker sweeps YYJ every 3rd hour).
  *
  * Control route first: if it returns no prices, Google (or our scraper) is broken, not the market,
  * so the run aborts as failed. Writes route files (src/store/routes.js), state/health.json, and a
@@ -41,10 +43,10 @@ const airportsOf = (city) => {
 };
 
 /** Long legs: every round trip and one-way between home and each Asia city. */
-function planLongLegs(only) {
+function planLongLegs(only, homes) {
   const { cabins, tripLengths, oneWay } = config.longLeg;
   const combos = [];
-  for (const home of config.origins) {
+  for (const home of homes) {
     for (const city of Object.keys(config.destinations)) {
       for (const cabin of cabins) {
         if (!only || only.includes(`${home}-${city}`)) {
@@ -93,6 +95,7 @@ async function main() {
   if (!dataDir) throw new Error('--data <dir> is required');
   const egress = arg('egress', 'direct');
   const only = arg('routes')?.split(',');
+  const homes = arg('homes')?.split(',') ?? config.origins;
   const hops = !process.argv.includes('--no-hops');
   const hopsFile = path.join(dataDir, 'state', 'hops.json');
   const hopState = readJson(hopsFile, {});
@@ -115,7 +118,7 @@ async function main() {
 
     if (run.control > 0) {
       const { start: wStart, end: wEnd } = config.window;
-      const work = [...planLongLegs(only), ...(hops ? planHops(only, hopState, Date.now()) : [])];
+      const work = [...planLongLegs(only, homes), ...(hops ? planHops(only, hopState, Date.now()) : [])];
       await pool(work, CONCURRENCY, async (q) => {
         const label = q.tripLen == null ? q.routeId : `${q.routeId} ${q.tripLen}d`;
         try {

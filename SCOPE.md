@@ -37,13 +37,21 @@ the builder searches every combination and the dashboard shows the best N.
 - **Trip length:** any 14–21 days home to home.
 - **Connections:** within one ticket, Google's itinerary is taken as-is. Between separate tickets,
   same-day is allowed with **≥ 4 h** between landing and the next departure. The price graph has no
-  flight times, so the builder marks same-day connections "times to verify", and the confirm pass
-  fetches the real times for the top trips and drops the ones that don't fit.
+  flight times, so the builder marks same-day connections "times to verify" (⏱ on the dashboard);
+  Brennan checks the times when booking.
 - **Ranking:** pure cheapest total (no penalty for extra flights).
 - **Data needed:** long-leg round trips (J, Y; 132 graphs), long-leg one-ways both directions (J, Y; 88),
   economy hops between all 11 Asia cities (110 one-ways). Hops priced with 1 checked bag (bag-fee
   table where Google omits it).
-- **Cadence:** long legs (round trip + one-way) hourly, hops every 12 h (sharded).
+- **Cadence:** YVR long legs (round trip + one-way) hourly; YYJ long legs every 3 h (Google computes
+  YYJ graphs on demand, 5-45 s each, and headline deals come from YVR anyway); hops every 12 h
+  (sharded). The Worker cron picks the homes per hour (decided 2026-10-31).
+- **Full sweep on demand:** a dashboard button, also pressed automatically when a deal alert is
+  opened, so everything refreshes while the deal is being reviewed. Worker `POST /sweep`, public,
+  at most one per 30 min.
+- **No confirm pass (decided 2026-10-31):** a price Google Flights publishes is good enough to alert
+  on and rank by; no airline-direct or booking-page check. `bookingOptions` stays in the code for
+  ad hoc checks. This supersedes "confirm", "airline-direct" and "candidate" wording below.
 
 **Main page (phone-first):** one row per **in/out city pair** (e.g. "in Seoul / out Manila"), sorted by
 cheapest hybrid, with the top row visually set apart as the headline ticket. Brennan wants to revisit
@@ -68,12 +76,16 @@ Charts are hand-rolled SVG.
 
 ## Architecture
 
+**All prod infrastructure is made by CI, never by hand** (Brennan's pattern across projects). GitHub
+secrets are the source of truth: `deploy-worker.yml` creates the KV namespace if absent
+(`worker/scripts/ensure-kv.mjs`), deploys, and re-pushes every Worker secret on each deploy.
+
 ```
 Cloudflare Worker (codexwilkes account)                       GitHub (one public repo)
  ├─ cron "5 * * * *" ──workflow_dispatch(tier set)──────────►  Actions: sweep.yml
  ├─ POST /subscribe   ◄── PWA (stores the one subscription      ├─ vpn_up.sh (if route=vpn)
  │                        in KV, keyed by device id)            ├─ node scraper/bin/sweep.js
- ├─ POST /notify      ◄── Actions (shared secret) ──────────────┤   sweep → confirm → rules → alerts
+ ├─ POST /notify      ◄── Actions (shared secret) ──────────────┤   sweep → trips → rules → alerts
  │    └─ RFC 8291/8292 Web Push → Apple/Google push service     ├─ commit + push data branch
  └─ GET  /health      ──► dashboard (last push, last error)     └─ [[RUN-HEALTH]] in commit msg
 
@@ -243,7 +255,6 @@ Implements plan §Business rules as pure functions in `scraper/src/rules/` with 
   economy for the same route and dates, **or** ≥ 25% below the route's tracked business median.
 - **Median and "new low" need history:** both stay disabled on a route until it has 14 days of
   observations. Before that, Google's typical-price label is the only baseline.
-- **Airline-direct only** for ranking and alerts; OTA prices are stored for context.
 
 ## Notifications
 
@@ -252,7 +263,7 @@ Web Push from the dashboard PWA, using meowmap's push implementation.
 - **Setup:** open the Pages URL in Safari → Add to Home Screen → open it from the home screen → Enable
   alerts (iOS 16.4+; must be a user tap). One subscription in Worker KV. There is no auth, so
   anyone could technically subscribe. Accepted: alerts contain nothing sensitive.
-- **Triggers** (plan §Alerts), each confirmed airline-direct before sending:
+- **Triggers** (plan §Alerts), on Google's published price:
   1. A business fare meets "reasonable" for the first time on a route.
   2. A route or full trip sets a new low against its own history (after the 14-day warm-up).
   3. A long-leg business round trip under CAD 3,000.
