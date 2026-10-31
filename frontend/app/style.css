@@ -103,6 +103,10 @@ header { flex-wrap: wrap; }
 .board-head { padding: 0 5px 6px; font: 600 10px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
 .board-head span + span { text-align: center; }
 .board-head span { font-weight: 700; }
+.board-head button { all: unset; cursor: pointer; text-align: center; font-weight: 700; padding: 6px 0; margin: -6px 0; border-radius: 4px; }
+.board-head button[aria-pressed="true"] { color: var(--text); }
+.board-head button[aria-pressed="true"]::after { content: ' ▾'; }
+.board-head button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 .board { list-style: none; margin: 0; padding: 0; }
 .row { padding: 4px; margin-bottom: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
 .row:active { transform: scale(0.995); }
@@ -283,6 +287,7 @@ body { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
 .tabs a[aria-current] { color: var(--amber); }
 body[data-tab="health"] header > *, body:not([data-tab="board"]) footer { display: none; }
 body[data-tab="health"] header { padding-bottom: 0; }
+body[data-tab="history"] #month { display: none; } /* history is per route, not per month */
 .pwaBar { bottom: calc(76px + env(safe-area-inset-bottom)); }
 /* Installed iOS app (as movie-server / spirit-tracker): full height from the first layout so the
    bar doesn't park above the bottom on short tabs, and no whole-page bounce dragging it along. */
@@ -353,6 +358,4 @@ main h3:first-child { margin-top: 8px; }
 .run.warn b { color: var(--warn); }
 .run b i { font-style: normal; font-size: 10px; color: var(--muted); padding: 0 4px; border: 1px solid var(--line); border-radius: 4px; margin-right: 4px; }
 .run pre { white-space: pre-wrap; margin: 0; padding: 0 12px 10px; font: 11px var(--mono); color: var(--up); }
-/* Priority switch (Health): the trip view's segmented control. */
-.seg.prio button[aria-checked="true"] { background: var(--cell); color: var(--text); box-shadow: inset 0 0 0 1px var(--line); }
 .hint { margin: 6px 2px 0; font: 500 11px var(--mono); color: var(--muted); }

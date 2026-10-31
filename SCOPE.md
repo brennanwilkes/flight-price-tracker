@@ -102,9 +102,12 @@ the builder searches every combination and the dashboard shows the best N.
   city; leg cards = slim header + one box per flight (dep | duration | arr, flight no./airline/
   aircraft muted, cabin per flight).
 - Tabs: Board / History / Health (bottom bar as in `~/movie-server`). History = per class, the 8
-  cheapest routes in the board's current view (history is per route overall). Health = scraper,
+  routes with the lowest prices ever recorded (with a via filter: among the board's routes; history
+  is per route, not per month, so the month filter is hidden there). Tapping a legend entry shows only that line, tapping it
+  again brings back the rest. A sweep that didn't build a route's trip doesn't break its line: it holds the last price, dashed. Health = scraper,
   alerts, thresholds, sweeps, flight checks, routes.
-- **Priority class (business/economy) is per device** (localStorage): sorts the board, opens trips,
+- **Priority class (business/economy) is per device** (localStorage), set by tapping the board's
+  Business or Economy column head (▾ marks it): sorts the board, opens trips,
   leads History. **Alerts go out for both classes** to whoever has alerts on.
 - No filler/caveat text anywhere (Brennan: "slop").
 - **Multi-city single tickets (2026-10-31):** after the flight checks, up to 80 Google multi-city

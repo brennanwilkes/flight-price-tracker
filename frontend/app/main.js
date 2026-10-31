@@ -263,13 +263,13 @@ function render() {
   for (const b of document.querySelectorAll('.toggle button')) b.setAttribute('aria-pressed', String(b.dataset.home === state.home));
   if (tab === 'health') {
     renderSheet();
-    renderHealth($('#view'), dataBase(state.sha), { priority: state.priority, setPriority });
+    renderHealth($('#view'), dataBase(state.sha));
     return;
   }
   if (tab === 'history') {
     renderSheet();
     const data = state.data[viewKey()];
-    if (data) { fillFilters(data); renderHistory($('#view'), dataBase(state.sha), state.home, rows(data), state.priority); }
+    if (data) { fillFilters(data); renderHistory($('#view'), dataBase(state.sha), state.home, state.vias.length ? data.rows.map((r) => ({ ...r, cells: r })) : null, state.priority); }
     return;
   }
   const data = state.data[viewKey()];
@@ -278,10 +278,14 @@ function render() {
   fillFilters(data);
   const list = rows(data);
   $('#view').innerHTML = list.length
-    ? `<div class="board-head"><span>Destination</span><span>Business</span><span>Economy</span></div>
+    ? `<div class="board-head"><span>Destination</span>${COLUMNS.map(([cls, name]) => `<button type="button" data-sort="${cls}" aria-pressed="${cls === state.priority}">${name}</button>`).join('')}</div>
       <ol class="board">${list.map(boardRow).join('')}</ol>`
     : '<p class="note">No complete trips yet.</p>';
 
+  // A column head sorts the board by that class (and becomes this device's priority).
+  for (const b of document.querySelectorAll('[data-sort]')) {
+    b.addEventListener('click', () => { if (b.dataset.sort !== state.priority) { setPriority(b.dataset.sort); render(); } });
+  }
   // A fare tile opens that class's trip; anywhere else on the row opens the first one there is.
   for (const li of document.querySelectorAll('li[data-row]')) {
     li.addEventListener('click', (e) => {
@@ -542,7 +546,7 @@ for (const b of document.querySelectorAll('.toggle button')) {
     show();
   });
 }
-/** Change this device's priority class; the board re-sorts when next shown. */
+/** Change this device's priority class (the board's sort column). */
 function setPriority(p) {
   state.priority = p;
   localSet('priority', p);

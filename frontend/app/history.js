@@ -1,8 +1,8 @@
 // History tab: the board's top routes over time, from derived/history/<YYYY-MM>.csv (a row whenever
 // a cell's total changes). Business and economy sit an order of magnitude apart, so each class
-// gets its own chart (one axis each); in each, the class's MAX_SERIES cheapest routes in the
-// board's current view, one stepped line per route (a price holds until the next change).
-// History is kept per route overall, so the month and via filters pick the routes, not the values.
+// gets its own chart (one axis each); in each, the MAX_SERIES routes with the lowest prices ever
+// recorded, one stepped line per route (a price holds until the next change). History is kept per
+// route overall, not per month; the via filter picks the routes (those on the board), not the values.
 // Chart.js is loaded from cdnjs the first time the tab opens.
 import { cityName } from './cities.js';
 
@@ -47,25 +47,31 @@ function loadHistory(base) {
 }
 
 /** Every series on one time grid (each change time, then now), value held between changes, so the
- * hover tooltip (index mode) lines all routes up at the same moment. */
+ * hover tooltip (index mode) lines all routes up at the same moment. A sweep that didn't build a
+ * route's trip records an empty price; the line holds its last price through those (dashed: `held`)
+ * and ends only when the route's latest record is empty. */
 function onGrid(list) {
   const times = [...new Set(list.flatMap((pts) => pts.map(([t]) => t)))].sort((a, b) => a - b);
   times.push(Date.now());
-  return {
-    times,
-    values: list.map((pts) => {
-      let i = -1;
-      return times.map((t) => {
-        while (i + 1 < pts.length && pts[i + 1][0] <= t) i++;
-        return i < 0 ? null : pts[i][1];
-      });
-    }),
-  };
+  const held = list.map(() => []);
+  const values = list.map((pts, k) => {
+    let i = -1;
+    let last = null;
+    return times.map((t, j) => {
+      while (i + 1 < pts.length && pts[i + 1][0] <= t) last = pts[++i][1] ?? last;
+      held[k][j] = i >= 0 && pts[i][1] == null;
+      return i < 0 || (i === pts.length - 1 && pts[i][1] == null) ? null : last;
+    });
+  });
+  return { times, values, held };
 }
 
 const charts = [];
 
-/** Render the tab into `el`. rows: the board's rows in its current view (home, month, via); the priority class's chart first. */
+/**
+ * Render the tab into `el`. rows: the board's rows under a via filter, or null for every route ever
+ * recorded; the priority class's chart first.
+ */
 export async function renderHistory(el, base, home, rows, priority = 'hybrid') {
   el.innerHTML = '<p class="note">Loading…</p>';
   let Chart, series;
@@ -74,16 +80,21 @@ export async function renderHistory(el, base, home, rows, priority = 'hybrid') {
     return;
   }
   const picks = CLASSES.slice().sort(([a]) => (a === priority ? -1 : 1)).map(([cls, name]) => {
-    const top = rows.filter((r) => r.cells[cls]).sort((a, b) => a.cells[cls].total - b.cells[cls].total).slice(0, MAX_SERIES)
-      .map((r) => ({ r, pts: series.get(`${home},${cls},${r.in},${r.out}`) ?? [] })).filter((x) => x.pts.length);
+    const board = new Map((rows ?? []).map((r) => [`${r.in},${r.out}`, r]));
+    const top = [...series].flatMap(([key, pts]) => {
+      const [h, c, inn, out] = key.split(',');
+      const low = Math.min(...pts.map(([, y]) => y ?? Infinity));
+      if (h !== home || c !== cls || low === Infinity || (rows && !board.has(`${inn},${out}`))) return [];
+      return [{ r: { in: inn, out }, trip: board.get(`${inn},${out}`)?.cells[cls], pts, low }];
+    }).sort((a, b) => a.low - b.low).slice(0, MAX_SERIES);
     return { cls, name, top };
   });
   el.innerHTML = picks.map(({ cls, name, top }) => `
     <section class="panel chart">
       <h3>${name}</h3>
       ${top.length ? `<div class="chart-box"><canvas data-cls="${cls}" role="img" aria-label="${name}: cheapest trip over time, top ${top.length} routes"></canvas></div>
-      <ol class="legend">${top.map(({ r }, i) => `
-        <li><button type="button" data-cls="${cls}" data-i="${i}" aria-pressed="true"><i style="background: var(--s${i + 1})"></i><span>${esc(label(r))}</span><b>${money(r.cells[cls].total)}</b></button></li>`).join('')}
+      <ol class="legend">${top.map(({ r, low }, i) => `
+        <li><button type="button" data-cls="${cls}" data-i="${i}" aria-pressed="true"><i style="background: var(--s${i + 1})"></i><span>${esc(label(r))}</span><b>${money(low)}</b></button></li>`).join('')}
       </ol>` : '<p class="note">No history yet.</p>'}
     </section>`).join('');
 
@@ -93,12 +104,13 @@ export async function renderHistory(el, base, home, rows, priority = 'hybrid') {
   for (const { cls, top } of picks) {
     const canvas = el.querySelector(`canvas[data-cls="${cls}"]`);
     if (!canvas) continue;
-    const { times, values } = onGrid(top.map((x) => x.pts));
+    const { times, values, held } = onGrid(top.map((x) => x.pts));
     const chart = new Chart(canvas, {
       type: 'line',
       data: {
-        datasets: top.map(({ r, pts }, i) => ({
-          label: label(r), route: { trip: r.cells[cls] }, data: values[i].map((y, j) => ({ x: times[j], y })), stepped: true, borderColor: tok(`--s${i + 1}`), borderWidth: 2,
+        datasets: top.map(({ r, trip }, i) => ({
+          label: label(r), route: { trip }, data: values[i].map((y, j) => ({ x: times[j], y })), stepped: true, borderColor: tok(`--s${i + 1}`), borderWidth: 2,
+          segment: { borderDash: (ctx) => (held[i][ctx.p0DataIndex] ? [4, 4] : undefined) },
           pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: tok(`--s${i + 1}`), pointHoverBorderColor: tok('--panel'), pointHoverBorderWidth: 2,
         })),
       },
@@ -114,9 +126,10 @@ export async function renderHistory(el, base, home, rows, priority = 'hybrid') {
             boxWidth: 8, boxHeight: 8, usePointStyle: true,
             titleFont: { family: 'JetBrains Mono', size: 12, weight: '700' }, bodyFont: { family: 'JetBrains Mono', size: 12 },
             callbacks: {
-              // Route and its price at that moment; then the route's current dates (history keeps prices, not dates).
+              // Route and its price at that moment; then the route's current dates (history keeps prices,
+              // not dates), when it's on the board.
               title: (items) => `${items[0].dataset.label}  ${items[0].parsed.y == null ? '—' : money(items[0].parsed.y)}`,
-              label: (item) => fmtDates(item.dataset.route.trip),
+              label: (item) => (item.dataset.route.trip ? fmtDates(item.dataset.route.trip) : ''),
             },
           },
         },
@@ -152,14 +165,18 @@ export async function renderHistory(el, base, home, rows, priority = 'hybrid') {
       }
     });
   }
-  // Legend entries toggle their line.
+  // A legend entry shows only its line; tapping it again while it's alone brings the rest back.
   for (const b of el.querySelectorAll('.legend button')) {
     b.addEventListener('click', () => {
       const chart = charts.find((c) => c.canvas.dataset.cls === b.dataset.cls);
-      const on = b.getAttribute('aria-pressed') !== 'true';
-      chart.setDatasetVisibility(Number(b.dataset.i), on);
+      const all = [...b.closest('.legend').querySelectorAll('button')];
+      const alone = all.every((x) => (x.getAttribute('aria-pressed') === 'true') === (x === b));
+      for (const x of all) {
+        const on = alone || x === b;
+        chart.setDatasetVisibility(Number(x.dataset.i), on);
+        x.setAttribute('aria-pressed', String(on));
+      }
       chart.update();
-      b.setAttribute('aria-pressed', String(on));
     });
   }
 }
