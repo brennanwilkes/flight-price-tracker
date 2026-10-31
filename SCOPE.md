@@ -121,6 +121,7 @@ the builder searches every combination and the dashboard shows the best N.
   these exact dates were cheaper before (bad). Tile corner on the board; the ticket stub spells out
   the earlier prices. Each ticket in the trip view is marked the same way against its own lows
   (`state/ticket-lows.json`), with what it cost before under it: which leg moved the total.
+  Cheaper before by 2% or less gets no ○/● (board, stubs and tickets alike).
 - **Rows are named by where the trip sleeps:** the first and last cities with at least a night; a city
   only changed planes in doesn't name the row or count for the via filter.
 - **Stay ranges:** "4–12 nights" (the range replaces the count): each Asia one-way moved alone, long legs fixed, within 3% of

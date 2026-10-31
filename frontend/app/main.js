@@ -181,13 +181,17 @@ function trend(trip) {
  * yet; 'dates' ☆ cheapest yet for these dates; 'any' ○ other dates were cheaper (mild); 'same' ●
  * these dates were cheaper before (bad). None without history. For a trip, or a ticket as
  * { total: its price, low } (lows.js marks tickets too: which leg moved the total).
+ * Cheaper before by NEAR or less isn't worth a mark.
  */
+const NEAR = 0.02;
 function lowMarks(trip) {
   const low = trip.low;
   if (!low?.any) return [];
-  if (low.same && trip.total > low.same.total) return ['same'];
+  const above = (was) => trip.total > was * (1 + NEAR);
+  if (low.same && above(low.same.total)) return ['same'];
   if (trip.total <= low.any.total) return ['best'];
-  return low.same ? ['dates', 'any'] : ['any'];
+  const marks = low.same && trip.total <= low.same.total ? ['dates'] : [];
+  return above(low.any.total) ? [...marks, 'any'] : marks;
 }
 const LOW_MARK = { best: '★', dates: '☆', any: '○', same: '●' };
 const lowMark = (trip) => {
