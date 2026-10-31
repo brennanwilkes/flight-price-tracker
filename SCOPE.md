@@ -28,6 +28,9 @@ the builder searches every combination and the dashboard shows the best N.
   city, home from another), from YVR or YYJ. Any number of economy hops within Asia on separate
   tickets, in any order, as long as the trip visits **Da Nang (Hoi An) for ≥ 5 nights**. Multi-day
   stops in other cities are fine (a plus, not a cost).
+- **Same cabin on both long legs, always.** Hybrid = business out AND business back (round trip or
+  two one-ways), economy only on hops within Asia. Full economy = economy on both long legs. Never
+  business one way and economy the other; a trip with any economy long leg is a full-economy trip.
 - **Victoria:** a YYJ trip's Victoria–Vancouver flight must be on the **same ticket** as the Pacific
   crossing (Google's YYJ⇄Asia fares). Never a separate YYJ–YVR ticket: in that case Brennan just starts
   from YVR and gets there on their own. So YYJ–YVR is never scraped or used as a hop.
