@@ -13,6 +13,7 @@ import { CITIES, cityName } from './cities.js';
 import { tripMap } from './map.js';
 import { sweepIfAsked } from './alerts.js';
 import { renderHealth } from './health.js';
+import { renderHistory } from './history.js';
 import { register, showBar, clearBar } from './pwa.js';
 
 const params = new URLSearchParams(location.search);
@@ -126,16 +127,23 @@ function boardRow(r, i) {
   </li>`;
 }
 
-// Tabs by hash: #health, else the board (whose trip view is #trip=…).
-const tabOf = () => (location.hash === '#health' ? 'health' : 'board');
+// Tabs by hash: #history, #health, else the board (whose trip view is #trip=…).
+const tabOf = () => ({ '#history': 'history', '#health': 'health' })[location.hash] ?? 'board';
 
 function render() {
   const tab = (state.tab = tabOf());
   document.body.dataset.tab = tab;
   for (const a of document.querySelectorAll('.tabs a')) a.toggleAttribute('aria-current', a.dataset.tab === tab);
+  for (const b of document.querySelectorAll('.toggle button')) b.setAttribute('aria-pressed', String(b.dataset.home === state.home));
   if (tab === 'health') {
     renderSheet();
     renderHealth($('#view'), dataBase(state.sha));
+    return;
+  }
+  if (tab === 'history') {
+    renderSheet();
+    const home = state.data[state.home];
+    if (home) renderHistory($('#view'), dataBase(state.sha), state.home, home.rows, state.route, (r) => { state.route = r; render(); });
     return;
   }
   const data = state.data[viewKey()];
