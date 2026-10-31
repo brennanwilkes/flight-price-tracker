@@ -14,6 +14,8 @@ const MIN_SPAN = 14; // smallest crop width, degrees of longitude
 const COMPACT = 20;
 const COMPACT_CROP = { pad: 1.5, minSpan: 10, longShown: 3 };
 const HOME = { lon: -123.18, lat: 49.19 }; // YVR; YYJ is the same direction at this scale
+// Label metrics at the largest label size (phones, style.css), in viewBox units: mono ≈ 0.6em wide.
+const CHAR_W = 16, LINE_H = 28;
 const LONG_SHOWN = 5; // of greatCircle's 64 steps (~7° of arc for these routes)
 
 const RAD = Math.PI / 180;
@@ -129,12 +131,16 @@ export function tripMap(legs, home, cities, stays = new Map()) {
   // Named only where the trip spends a night (or an overland stretch starts or ends): a city
   // only changed planes in keeps its dot, the route runs through it.
   const overland = new Set(legs.filter((l) => l.ground).flatMap((l) => [l.from, l.to]));
+  const boxes = []; // the city labels' rough extents, for placing home's clear of them
   const dots = stops.map((c) => {
     const [x, y] = pt(c);
     const left = x > W * 0.7;
     const via = !cities.includes(c);
     const dot = `<circle class="city${via ? ' via' : ''}" cx="${f(x)}" cy="${f(y)}" r="${via ? 4.5 : 6}"/>`;
     if (!stays.has(c) && !overland.has(c)) return dot;
+    const w = Math.max(cityName(c).length, stays.has(c) ? `${stays.get(c).join(' + ')} nights`.length : 0) * CHAR_W;
+    const below = y > H - 60 ? 0 : LINE_H * 1.4, above = stays.has(c) && !below ? LINE_H * 1.4 : 0;
+    boxes.push({ x0: left ? x - 11 - w : x + 11, x1: left ? x - 11 : x + 11 + w, y0: y - LINE_H / 2 - above, y1: y + LINE_H / 2 + (stays.has(c) ? below : 0) });
     return `${dot}
       <text class="label${via ? ' via' : ''}" x="${f(x + (left ? -11 : 11))}" y="${f(y)}" dominant-baseline="middle" text-anchor="${left ? 'end' : 'start'}">${cityName(c)}</text>${stays.has(c) ? `
       <text class="label nights" x="${f(x + (left ? -11 : 11))}" y="${f(y)}" dy="${y > H - 60 ? -1.45 : 1.45}em" dominant-baseline="middle" text-anchor="${left ? 'end' : 'start'}">${stays.get(c).join(' + ')} night${stays.get(c).join() === '1' ? '' : 's'}</text>` : ''}`;
@@ -145,7 +151,14 @@ export function tripMap(legs, home, cities, stays = new Map()) {
   const near = exits.length === 2 && Math.hypot(exits[0].x - exits[1].x, exits[0].y - exits[1].y) < 120;
   const homeLabel = (near ? [{ x: (exits[0].x + exits[1].x) / 2, y: (exits[0].y + exits[1].y) / 2 }] : exits).map(({ x, y }) => {
     const top = y < 2, right = x > W - 2; // which edge it leaves by
-    const lx = right ? W - 10 : x - 12, ly = top ? 26 : y + 28;
+    const lx = right ? W - 10 : x - 12;
+    let ly = top ? 26 : y + 28;
+    const w = `${cityName(home)} ↗`.length * CHAR_W;
+    for (let hit = true; hit && ly < H - 10;) { // below any city label it would sit on
+      const b = boxes.find((b) => b.x0 < lx && b.x1 > lx - w && b.y0 < ly + 6 && b.y1 > ly - LINE_H);
+      hit = !!b;
+      if (b) ly = b.y1 + LINE_H;
+    }
     return `<text class="label home" x="${f(lx)}" y="${f(Math.min(ly, H - 10))}" text-anchor="end">${cityName(home)} ↗</text>`;
   }).join('');
 

@@ -324,14 +324,21 @@ function legItem(l, ticketOf) {
   </li>`;
 }
 
-/** Nights stayed per city (overnight stays only), for the map: city → [nights or "lo–hi", …] in order. */
+// The airports a leg actually lands at and leaves from (Tokyo: HND, NRT), when its flights are known.
+const landsAt = (l) => flightOf(l)?.legs?.at(-1).to ?? l.to;
+const leavesFrom = (l) => flightOf(l)?.legs?.[0].from ?? l.from;
+
+/**
+ * Nights stayed per city (overnight stays only), for the map: airport landed at → [nights or
+ * "lo–hi", …] in order (the map draws airports, so a Tokyo stay is labelled at HND or NRT).
+ */
 function staysOf(list, flex = []) {
   const out = new Map();
   for (let i = 1; i < list.length; i++) {
     const { nights } = stay(list[i - 1], list[i]);
     if (nights <= 0) continue;
     const span = flex.find(([k]) => k === i - 1); // "6–16", as on the stay rows
-    out.set(list[i - 1].to, [...(out.get(list[i - 1].to) ?? []), span ? `${Math.max(0, nights - span[1])}–${nights + span[2]}` : nights]);
+    out.set(landsAt(list[i - 1]), [...(out.get(landsAt(list[i - 1])) ?? []), span ? `${Math.max(0, nights - span[1])}–${nights + span[2]}` : nights]);
   }
   return out;
 }
@@ -416,7 +423,7 @@ function renderSheet() {
         <div class="cal"><small>${weekday(trip.ret)}</small><b>${boardDate(trip.ret)}</b></div>
       </div>
     </div>
-    ${tripMap(flown(list, ticketOf), state.home, [...new Set(list.flatMap((l) => [l.from, l.to]))], staysOf(list, trip.flex))}
+    ${tripMap(flown(list, ticketOf), state.home, [...new Set(list.flatMap((l) => [l.from, l.to, leavesFrom(l), landsAt(l)]))], staysOf(list, trip.flex))}
     <ol class="legs${trip.tickets.some((t) => t.kind !== 'ow') ? ' has-rail' : ''}">${withRails(list, ticketOf, list.flatMap((l, i) => [
       ...(i ? [layover(list[i - 1], l, trip.flex?.find(([k]) => k === i - 1), trip.stay?.after === i - 1)] : []), legItem(l, ticketOf)])).join('')}</ol>
 `;
