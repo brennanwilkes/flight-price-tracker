@@ -18,6 +18,9 @@
  * Further candidates (any month, plus the builder's fallbacks) are checked while they could still
  * be cheaper, up to TRIES (verify), and rows re-sort on the checked totals.
  *
+ *   derived/status.json   for the Health tab: this build's detail-check stats, each route's
+ *                         freshness (cells, oldest and newest sighting), the alert thresholds
+ *
  *   node scraper/bin/build-trips.js --data <dataDir> [--no-details]
  */
 const fs = require('node:fs');
@@ -109,6 +112,17 @@ async function verify(byHome, trips) {
   return { ...st, ms: Date.now() - t0 };
 }
 
+/** Per route directory: priced cells and their oldest and newest sightings. */
+function freshness(dataDir) {
+  const dir = path.join(dataDir, 'routes');
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir).sort().map((route) => {
+    const f = path.join(dir, route, 'current.json');
+    const seen = fs.existsSync(f) ? Object.values(JSON.parse(fs.readFileSync(f, 'utf8'))).map((c) => c.seen).filter(Boolean).sort() : [];
+    return { route, cells: seen.length, oldest: seen[0] ?? null, newest: seen.at(-1) ?? null };
+  });
+}
+
 async function main() {
   const dataDir = arg('data');
   if (!dataDir) throw new Error('--data <dir> is required');
@@ -123,8 +137,9 @@ async function main() {
   const main = trips.filter((t) => !t.via);
   const vias = [...new Set(trips.map((t) => t.via))].filter((c) => c && !main.every((t) => t.tickets.some((x) => x.to === c))).sort();
   const byHome = new Map(config.origins.flatMap((home) => ['', ...vias].map((via) => [`${home}|${via}`, rowsFor(home, trips, via)])));
+  let details = null;
   if (!process.argv.includes('--no-details')) {
-    const s = await verify(byHome, trips);
+    const s = (details = await verify(byHome, trips));
     console.log(`details: ${s.cells} cells, ${s.replaced} moved to another trip (connects, or cheaper as listed), ${s.unresolved} with none that connects; ${s.searches} searches (${s.failed} failed${s.error ? `, e.g. ${s.error}` : ''}), ${s.none} flights not listed yet; ${s.ms}ms`);
   } else {
     for (const rows of byHome.values()) for (const r of rows) delete r.cands;
@@ -152,6 +167,7 @@ async function main() {
     console.log(`${home}: ${rows.length} rows${top ? `, best hybrid ${rows[0].in}/${rows[0].out} ${top.total} (${top.depart}…${top.ret})` : ''}`);
   }
   const changed = recordHistory(dataDir, generatedAt, cells);
+  fs.writeFileSync(path.join(dataDir, 'derived', 'status.json'), JSON.stringify({ generatedAt, details, routes: freshness(dataDir), alerts: alertConfig }));
   console.log(`built ${trips.length} trips, ${changed} cells changed, from ${fares.departures.length} departure days in ${Date.now() - t0}ms`);
 }
 main().catch((e) => { console.error(e); process.exit(1); });

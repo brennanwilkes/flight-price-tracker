@@ -11,7 +11,8 @@
 //   whose generatedAt isn't newer than what's shown (a stale API answer) is ignored.
 import { CITIES, cityName } from './cities.js';
 import { tripMap } from './map.js';
-import { alertsBar, sweepButton } from './alerts.js';
+import { sweepIfAsked } from './alerts.js';
+import { renderHealth } from './health.js';
 import { register, showBar, clearBar } from './pwa.js';
 
 const params = new URLSearchParams(location.search);
@@ -69,8 +70,10 @@ async function dataSha() {
 }
 
 /** A trips file: "YVR" → derived/trips-YVR.json, "YVR-BKK" → derived/via/trips-YVR-BKK.json. */
+const dataBase = (sha) => DATA_OVERRIDE ?? `https://raw.githubusercontent.com/${REPO}/${sha}`;
+
 async function fetchTrips(sha, key) {
-  const base = DATA_OVERRIDE ?? `https://raw.githubusercontent.com/${REPO}/${sha}`;
+  const base = dataBase(sha);
   const res = await fetch(`${base}/derived/${key.includes('-') ? 'via/' : ''}trips-${key}.json`, { cache: 'no-cache' });
   if (!res.ok) throw new Error(`trips-${key}.json: HTTP ${res.status}`);
   return res.json();
@@ -123,7 +126,18 @@ function boardRow(r, i) {
   </li>`;
 }
 
+// Tabs by hash: #health, else the board (whose trip view is #trip=…).
+const tabOf = () => (location.hash === '#health' ? 'health' : 'board');
+
 function render() {
+  const tab = (state.tab = tabOf());
+  document.body.dataset.tab = tab;
+  for (const a of document.querySelectorAll('.tabs a')) a.toggleAttribute('aria-current', a.dataset.tab === tab);
+  if (tab === 'health') {
+    renderSheet();
+    renderHealth($('#view'), dataBase(state.sha));
+    return;
+  }
   const data = state.data[viewKey()];
   for (const b of document.querySelectorAll('.toggle button')) b.setAttribute('aria-pressed', String(b.dataset.home === state.home));
   if (!data) return;
@@ -349,8 +363,9 @@ for (const b of document.querySelectorAll('.toggle button')) {
     show();
   });
 }
-alertsBar($('#alerts'));
-sweepButton($('#sweep'));
+sweepIfAsked((msg) => showBar('fresh', msg, () => clearBar('fresh')));
+// Switching tabs re-renders; opening or closing a trip doesn't (popstate → renderSheet).
+window.addEventListener('hashchange', () => { if (tabOf() !== state.tab) render(); });
 register();
 // The alert's commit and home are now in state; drop them from the URL so a later reload isn't
 // pinned to them.

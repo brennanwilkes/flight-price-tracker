@@ -69,21 +69,23 @@ async function requestSweep() {
   return r.started ? 'Full scrape started: new prices in ~30 min.' : `A full scrape started ${ago(r.at)}; next allowed 30 min after it.`;
 }
 
-/**
- * "Scrape everything now" button in `el`. Opening the page from an alert (?sweep=1) presses it
- * automatically, so the rest of the routes refresh while the deal is being looked at.
- */
+/** "Scrape everything now" button in `el`. */
 export function sweepButton(el) {
-  const run = async () => {
+  el.innerHTML = '<button type="button">Scrape everything now</button>';
+  el.querySelector('button').addEventListener('click', async () => {
     el.textContent = 'Starting a full scrape…';
     try { el.textContent = await requestSweep(); } catch (e) { el.textContent = `Couldn't start a scrape: ${e.message}`; }
-  };
-  el.innerHTML = '<button type="button">Scrape everything now</button>';
-  el.querySelector('button').addEventListener('click', run);
+  });
+}
+
+/**
+ * Opening the page from an alert (?sweep=1) asks for a full sweep, so the rest of the routes
+ * refresh while the deal is being looked at. Drops the parameter; reports through `say`.
+ */
+export async function sweepIfAsked(say) {
   const params = new URLSearchParams(location.search);
-  if (params.get('sweep') === '1') {
-    params.delete('sweep');
-    history.replaceState(null, '', `${location.pathname}${params.size ? `?${params}` : ''}${location.hash}`);
-    run();
-  }
+  if (params.get('sweep') !== '1') return;
+  params.delete('sweep');
+  history.replaceState(history.state, '', `${location.pathname}${params.size ? `?${params}` : ''}${location.hash}`);
+  try { say(await requestSweep()); } catch (e) { say(`Couldn't start a scrape: ${e.message}`); }
 }
