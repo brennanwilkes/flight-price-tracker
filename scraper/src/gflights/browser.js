@@ -12,8 +12,10 @@ const { parseBatchExecute, parseCalendar, parseBooking } = require('./batchexecu
 const RPC_TIMEOUT_MS = 20_000;
 const SCROLL_TIMEOUT_MS = 8_000;
 // Airlines load fares ~330 days out; the graph silently stops fetching there.
+// Measured 2026-10-30: last loaded return date = today + 329.
 const HORIZON_DAYS = 330;
 const HORIZON_SLACK_DAYS = 15;
+const today = () => new Date().toISOString().slice(0, 10);
 
 // Runs in the page before Google's code: keeps a copy of every FlightsFrontendService response
 // as the page itself receives it. Reading bodies through DevTools (page.on('response')) loses
@@ -84,6 +86,7 @@ async function capture(page, rpc, decode, action, step, timeout = RPC_TIMEOUT_MS
  * forward button is disabled, so a short result near the horizon is "not loaded yet", not an error.
  */
 async function priceGraph(ctx, { from, to, cabin, tripLen, start, end }) {
+  if (addDays(start, tripLen) > addDays(today(), HORIZON_DAYS)) return []; // nothing loaded yet
   const page = await ctx.newPage();
   try {
     await page.goto(pageUrl({ from, to, out: start, ret: addDays(start, tripLen), cabin }), { waitUntil: 'networkidle' });
@@ -94,9 +97,10 @@ async function priceGraph(ctx, { from, to, cabin, tripLen, start, end }) {
     add(await capture(page, 'GetCalendarGraph', parseCalendar, () => graphBtn.click(), 'open graph'));
     const fwd = page.getByRole('button', { name: 'Scroll forward' });
     // The forward button looks the same at the horizon; it just stops fetching.
-    const horizon = addDays(new Date().toISOString().slice(0, 10), HORIZON_DAYS - HORIZON_SLACK_DAYS);
+    const horizon = addDays(today(), HORIZON_DAYS - HORIZON_SLACK_DAYS);
     let last = [...cells.keys()].at(-1) ?? start;
     for (let i = 0; i < 12 && last < end; i++) {
+      if (addDays(last, tripLen) >= addDays(today(), HORIZON_DAYS - 2)) break; // at the horizon already
       try {
         add(await capture(page, 'GetCalendarGraph', parseCalendar, () => fwd.click(), `scroll ${i + 1}`, SCROLL_TIMEOUT_MS));
       } catch (e) {

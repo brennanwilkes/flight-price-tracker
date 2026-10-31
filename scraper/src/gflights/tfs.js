@@ -8,7 +8,8 @@
  *   3 = segment, repeated              9  = cabin (1 economy, 2 premium, 3 business, 4 first)
  *     3.2  = departure date            14 = 1 (constant)
  *     3.5  = stop ceiling              19 = 1 round trip, 2 one-way
- *     3.13 = origin  3.14 = destination   (each {1: 1, 2: IATA})
+ *     3.13 = origin  3.14 = destination   (each {1: 1, 2: IATA}, repeated for multi-airport)
+ * `from` / `to` take one IATA code or an array (Tokyo = ['NRT', 'HND']).
  */
 
 const CABIN = { Y: 1, W: 2, J: 3, F: 4 };
@@ -29,8 +30,8 @@ function bytes(field, payload) {
 function segment({ from, to, date, maxStops = null }) {
   const parts = [bytes(2, date)];
   if (maxStops != null) parts.push(vfield(5, maxStops));
-  parts.push(bytes(13, Buffer.concat([vfield(1, 1), bytes(2, from)])));
-  parts.push(bytes(14, Buffer.concat([vfield(1, 1), bytes(2, to)])));
+  for (const code of [from].flat()) parts.push(bytes(13, Buffer.concat([vfield(1, 1), bytes(2, code)])));
+  for (const code of [to].flat()) parts.push(bytes(14, Buffer.concat([vfield(1, 1), bytes(2, code)])));
   return bytes(3, Buffer.concat(parts));
 }
 

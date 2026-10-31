@@ -1,0 +1,67 @@
+# Long-leg price sweep into the `data` branch. Egress: ProtonVPN first (M1: the runner's own IP
+# gets soft-blocked under load), the direct IP only if the tunnel won't come up.
+#
+# Clock: GitHub `schedule:` for the M1 ramp (it runs late and skips some; fine for now). The
+# Cloudflare Worker cron replaces it in M2 (SCOPE.md: Architecture).
+name: Sweep
+
+on:
+  schedule:
+    - cron: '17 */4 * * *'
+  workflow_dispatch:
+    inputs:
+      routes:
+        description: Only these O-D routes (comma-separated, e.g. YVR-ICN); empty = all
+        default: ''
+
+permissions:
+  contents: write  # push to the data branch
+
+concurrency:
+  group: sweep
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  sweep:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: scraper/package-lock.json
+
+      - name: Install
+        working-directory: scraper
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Tests
+        run: npm --prefix scraper test
+
+      - name: VPN up
+        id: vpn
+        env:
+          WG_CONF: ${{ secrets.PROTONVPN_WG_CONF }}
+        run: scripts/vpn_up.sh
+
+      - name: Sweep
+        env:
+          EGRESS: ${{ steps.vpn.outputs.vpn_ok == 'true' && 'vpn' || 'direct' }}
+        run: |
+          args=()
+          [[ -n "${{ inputs.routes }}" ]] && args+=(--routes "${{ inputs.routes }}")
+          scripts/run_sweep.sh "${args[@]}" 2>&1 | tee sweep.log
+
+      - name: Summary
+        if: always()
+        run: |
+          { echo '```'; grep -E '^(control|sweep |.*FAILED)' sweep.log || true; echo '```'; } >> "$GITHUB_STEP_SUMMARY"

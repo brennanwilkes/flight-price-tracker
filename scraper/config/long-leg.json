@@ -1,0 +1,20 @@
+{
+  "window": { "start": "2027-09-01", "end": "2028-02-29" },
+  "origins": ["YVR", "YYJ"],
+  "destinations": {
+    "DAD": ["DAD"],
+    "ICN": ["ICN"],
+    "TPE": ["TPE"],
+    "HKG": ["HKG"],
+    "TYO": ["NRT", "HND"],
+    "MNL": ["MNL"],
+    "SIN": ["SIN"],
+    "HAN": ["HAN"],
+    "SGN": ["SGN"],
+    "BKK": ["BKK"],
+    "KUL": ["KUL"]
+  },
+  "cabins": ["J", "Y"],
+  "tripLengths": [14, 17, 21],
+  "control": { "from": "YVR", "to": "ICN", "cabin": "Y", "tripLen": 14, "daysOut": 14, "days": 7 }
+}
