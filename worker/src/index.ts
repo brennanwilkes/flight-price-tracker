@@ -3,8 +3,6 @@
 //   POST /notify     Actions → one push (Bearer NOTIFY_SECRET)
 //   POST /sweep      dashboard → full sweep now (public, at most one per 30 min)
 //   GET  /health     push health      GET /vapid   VAPID public key
-//   GET  /settings   dashboard settings (the sweep's alerts read them too)
-//   POST /settings   dashboard → { priority } (public, like /subscribe: nothing sensitive)
 import type { Env } from './types.ts';
 import { corsHeaders } from './cors.ts';
 import { dispatchSweep, homesForHour, manualSweep } from './dispatch.ts';
@@ -37,21 +35,6 @@ async function subscribe(req: Request, env: Env): Promise<Response> {
   await env.PUSH.put('subscription', JSON.stringify({ endpoint: sub.endpoint, keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth } }));
   await updateHealth(env, { subscribed: true });
   return json(req, { ok: true });
-}
-
-type Settings = { priority: 'hybrid' | 'economy' }; // which class sorts, opens and alerts first
-const DEFAULT_SETTINGS: Settings = { priority: 'hybrid' };
-
-async function readSettings(env: Env): Promise<Settings> {
-  return { ...DEFAULT_SETTINGS, ...((await env.PUSH.get('settings', 'json')) as Partial<Settings> | null) };
-}
-
-async function saveSettings(req: Request, env: Env): Promise<Response> {
-  const b = await readJson(req) as Partial<Settings> | null;
-  if (b?.priority !== 'hybrid' && b?.priority !== 'economy') return json(req, { error: 'priority must be hybrid or economy' }, 400);
-  const settings: Settings = { ...(await readSettings(env)), priority: b.priority };
-  await env.PUSH.put('settings', JSON.stringify(settings));
-  return json(req, settings);
 }
 
 // Constant-time-ish compare via equal-length check then XOR; the secret is long and random.
@@ -110,8 +93,6 @@ export default {
     if (req.method === 'POST' && pathname === '/sweep') {
       try { return json(req, await manualSweep(env)); } catch (e) { return json(req, { error: String(e) }, 502); }
     }
-    if (req.method === 'GET' && pathname === '/settings') return json(req, await readSettings(env));
-    if (req.method === 'POST' && pathname === '/settings') return saveSettings(req, env);
     if (req.method === 'GET' && pathname === '/vapid') return json(req, { publicKey: env.VAPID_PUBLIC_KEY });
     return json(req, { error: 'not found' }, 404);
   },

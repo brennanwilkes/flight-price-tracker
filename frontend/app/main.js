@@ -11,7 +11,7 @@
 //   whose generatedAt isn't newer than what's shown (a stale API answer) is ignored.
 import { CITIES, cityName } from './cities.js';
 import { tripMap } from './map.js';
-import { sweepIfAsked, getSettings, saveSettings } from './alerts.js';
+import { sweepIfAsked } from './alerts.js';
 import { renderHealth } from './health.js';
 import { renderHistory } from './history.js';
 import { register, showBar, clearBar } from './pwa.js';
@@ -36,7 +36,7 @@ const COLUMNS = [['hybrid', 'Business'], ['economy', 'Economy']];
 // ?home= (from an alert) picks the home airport, else the last one used.
 // data: "HOME" (all trips) or "HOME-CITY" (the via filter: trips staying in CITY) → trips file.
 const state = { home: /^(YVR|YYJ)$/.test(params.get('home') ?? '') ? params.get('home') : localGet('home') ?? 'YVR', month: '', via: '', sha: null, data: {} };
-// Priority class: sorts the board, opens first, alerts (a Worker setting; this device's copy first).
+// Priority class, per device: sorts the board, opens first, leads History. Alerts cover both.
 state.priority = localGet('priority') === 'economy' ? 'economy' : 'hybrid';
 const otherClass = () => (state.priority === 'hybrid' ? 'economy' : 'hybrid');
 const viewKey = () => (state.via ? `${state.home}-${state.via}` : state.home);
@@ -381,19 +381,11 @@ for (const b of document.querySelectorAll('.toggle button')) {
     show();
   });
 }
-/** Change the priority class here and at the Worker; the board re-sorts. */
-async function setPriority(p) {
+/** Change this device's priority class; the board re-sorts when next shown. */
+function setPriority(p) {
   state.priority = p;
   localSet('priority', p);
-  await saveSettings({ priority: p });
 }
-// The Worker's copy wins (set on another device, or this one's last save failed).
-getSettings().then((s) => {
-  if (!s?.priority || s.priority === state.priority) return;
-  state.priority = s.priority;
-  localSet('priority', s.priority);
-  render();
-});
 sweepIfAsked((msg) => showBar('fresh', msg, () => clearBar('fresh')));
 // Switching tabs re-renders; opening or closing a trip doesn't (popstate → renderSheet).
 window.addEventListener('hashchange', () => { if (tabOf() !== state.tab) render(); });

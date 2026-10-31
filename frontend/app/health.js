@@ -49,7 +49,7 @@ export async function renderHealth(el, base, settings) {
     <div class="seg prio" role="radiogroup" aria-label="Priority class">
       ${[['hybrid', 'Business'], ['economy', 'Economy']].map(([c, name]) => `<button type="button" role="radio" data-prio="${c}" aria-checked="${c === settings.priority}">${name}</button>`).join('')}
     </div>
-    <p class="hint">Sorts the board, opens trips and sends alerts for this class.</p>
+    <p class="hint">On this device: sorts the board, opens trips, leads History.</p>
 
     <h3>Scraper</h3>
     <div class="grid">
@@ -108,10 +108,9 @@ export async function renderHealth(el, base, settings) {
     </details>`;
 
   for (const b of el.querySelectorAll('[data-prio]')) {
-    b.addEventListener('click', async () => {
+    b.addEventListener('click', () => {
       for (const x of el.querySelectorAll('[data-prio]')) x.setAttribute('aria-checked', String(x === b));
-      settings.priority = b.dataset.prio;
-      try { await settings.setPriority(b.dataset.prio); } catch (e) { el.querySelector('.hint').textContent = `Couldn't save: ${e.message}`; }
+      settings.setPriority(b.dataset.prio);
     });
   }
   const result = el.querySelector('.result');

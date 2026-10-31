@@ -48,21 +48,6 @@ export async function alertState() {
 
 export { subscribe };
 
-/** Dashboard settings ({ priority: 'hybrid' | 'economy' }) from the Worker, or null. */
-export async function getSettings() {
-  try {
-    const res = await fetch(`${WORKER}/settings`, { cache: 'no-store' });
-    return res.ok ? await res.json() : null;
-  } catch { return null; }
-}
-
-/** Save settings at the Worker (the sweep's alerts read them there). */
-export async function saveSettings(settings) {
-  const res = await fetch(`${WORKER}/settings`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settings) });
-  if (!res.ok) throw new Error(`settings: HTTP ${res.status}`);
-  return res.json();
-}
-
 /** Ask the Worker for a full sweep now; it allows one per 30 min. Returns a short status. */
 export async function requestSweep() {
   const res = await fetch(`${WORKER}/sweep`, { method: 'POST' });

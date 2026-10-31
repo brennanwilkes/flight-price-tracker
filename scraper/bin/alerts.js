@@ -8,7 +8,6 @@
  * Ledger: state/alerts.json { deals: { key: { total, tier, at } } }. Written only for pushes the
  * Worker accepted. With no ledger yet, it's seeded with the current deals and nothing is sent (no
  * flood on the first run). Without NOTIFY_SECRET it prints what it would send.
- * Deals alert only for the dashboard's priority class (Worker GET /settings; both if unreachable).
  */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -79,8 +78,7 @@ async function main() {
     await send({ title: 'Scraper failed 2 runs in a row', body: String(err).slice(0, 180), url: `${config.dashboard}?v=${sha}`, tag: 'scraper' });
   }
 
-  const priority = await fetch(`${config.worker}/settings`).then((r) => (r.ok ? r.json() : {}), () => ({})).then((s) => s.priority ?? null);
-  const deals = findDeals(config, rows, lows(dataDir, config.lowsSince, generatedAt), generatedAt).filter((d) => !priority || d.cls === priority);
+  const deals = findDeals(config, rows, lows(dataDir, config.lowsSince, generatedAt), generatedAt);
   const news = deals.filter((d) => isNews(config, d, ledger.deals[d.key]));
   const record = (d) => { ledger.deals[d.key] = { total: d.trip.total, tier: d.tier, at: generatedAt }; };
   if (seeding) {
@@ -96,7 +94,7 @@ async function main() {
       const names = rest.map((d) => `${d.in === d.out ? cityName(d.in) : `${cityName(d.in)}/${cityName(d.out)}`} ${money(d.trip.total)}`);
       if (await send({ title: `${rest.length} more deals`, body: names.join(' · ').slice(0, 180), url: `${config.dashboard}?sweep=1&v=${sha}`, tag: 'more' })) rest.forEach(record);
     }
-    console.log(`alerts: ${deals.length} ${priority ?? 'any'} deals, ${news.length} new`);
+    console.log(`alerts: ${deals.length} deals, ${news.length} new`);
   }
   fs.mkdirSync(path.dirname(ledgerFile), { recursive: true });
   fs.writeFileSync(ledgerFile, `${JSON.stringify(ledger, null, 1)}\n`);
