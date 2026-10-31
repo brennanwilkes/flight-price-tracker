@@ -131,8 +131,22 @@ state/health.json                         per-run outcome, consecutive-failure c
 > business grid is ~8 min, and hourly is feasible. The graph silently stops at the fare-loading horizon
 > (handled as "not loaded", not an error). Accuracy vs the search page: 7/10 exact, 2 off by $1, 1
 > stale (graph $579 low), so **graph = candidate only; confirm on the search page before alerting**.
-> Open: egress from Actions (`.github/workflows/egress-test.yml`), seller/airline-direct via browser.
 > Playwright 1.64 doesn't support Ubuntu 20.04: locally use `PW_CHANNEL=chrome` (system Chrome).
+>
+> **Egress from Actions (run 41148430475, 2 rounds × 24 combos of 182 days):** ProtonVPN (CA) 48/48,
+> ~150 s per round, two one-retry rejections. Direct Azure IP: 16/24 in round 1, then Google returned
+> rejected RPCs (HTTP 200, null payload) that the page doesn't retry: soft blocking under load. So
+> **VPN is the primary egress, direct the fallback**, reversing the Egress decision above.
+> Plain-HTTP search pages worked on both. Read RPC bodies with the in-page recorder (`browser.js`
+> `RECORDER`), never DevTools `response.text()`, which drops bodies on 2-vCPU runners.
+>
+> **Confirm pass works** (`bookingOptions`, ~7 s per date pair): GetBookingResults gives every seller
+> with `airlineDirect`, fare brand, per-leg cabin, and `matchesCabin`. Airlines list economy brands
+> in a business search (KE Economy Flex $3,586 among Prestige fares), so airline-direct price =
+> cheapest option with `airlineDirect && matchesCabin`.
+>
+> Still open from M1: sustained hourly load on one VPN IP (the week-long ramp), and the cell change
+> rate (sizes the data branch).
 
 **Source (as originally planned):** Google Flights' internal RPCs, `curr=CAD`, `gl=CA`, `hl=en`:
 - **Calendar** (`GetCalendarGraph`/grid) for the broad sweep: about 60 departure days per request for a
