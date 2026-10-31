@@ -90,7 +90,6 @@ export async function renderHistory(el, base, home, rows, priority = 'hybrid') {
   for (const c of charts.splice(0)) c.destroy();
   const css = getComputedStyle(document.documentElement);
   const tok = (v) => css.getPropertyValue(v).trim();
-  const fmtTime = (ms) => new Date(ms).toLocaleString('en-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
   for (const { cls, top } of picks) {
     const canvas = el.querySelector(`canvas[data-cls="${cls}"]`);
     if (!canvas) continue;
@@ -99,7 +98,7 @@ export async function renderHistory(el, base, home, rows, priority = 'hybrid') {
       type: 'line',
       data: {
         datasets: top.map(({ r, pts }, i) => ({
-          label: label(r), route: { trip: r.cells[cls], vals: pts.map(([, v]) => v).filter((v) => v != null) }, data: values[i].map((y, j) => ({ x: times[j], y })), stepped: true, borderColor: tok(`--s${i + 1}`), borderWidth: 2,
+          label: label(r), route: { trip: r.cells[cls] }, data: values[i].map((y, j) => ({ x: times[j], y })), stepped: true, borderColor: tok(`--s${i + 1}`), borderWidth: 2,
           pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: tok(`--s${i + 1}`), pointHoverBorderColor: tok('--panel'), pointHoverBorderWidth: 2,
         })),
       },
@@ -115,17 +114,9 @@ export async function renderHistory(el, base, home, rows, priority = 'hybrid') {
             boxWidth: 8, boxHeight: 8, usePointStyle: true,
             titleFont: { family: 'JetBrains Mono', size: 12, weight: '700' }, bodyFont: { family: 'JetBrains Mono', size: 12 },
             callbacks: {
-              title: (items) => items[0].dataset.label,
-              label: (item) => ` ${item.parsed.y == null ? 'no trip' : money(item.parsed.y)} on ${fmtTime(item.parsed.x)}`,
-              afterBody: (items) => {
-                const { trip, vals } = items[0].dataset.route;
-                return [
-                  '',
-                  `Now   ${money(trip.total)} · ${fmtDates(trip)}`,
-                  `Low   ${money(Math.min(...vals))}`,
-                  `High  ${money(Math.max(...vals))}`,
-                ];
-              },
+              // Route and its price at that moment; then the route's current dates (history keeps prices, not dates).
+              title: (items) => `${items[0].dataset.label}  ${items[0].parsed.y == null ? '—' : money(items[0].parsed.y)}`,
+              label: (item) => fmtDates(item.dataset.route.trip),
             },
           },
         },
