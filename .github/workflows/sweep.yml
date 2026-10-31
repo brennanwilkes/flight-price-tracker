@@ -1,13 +1,11 @@
 # Long-leg price sweep into the `data` branch. Egress: ProtonVPN first (M1: the runner's own IP
 # gets soft-blocked under load), the direct IP only if the tunnel won't come up.
 #
-# Clock: GitHub `schedule:` for the M1 ramp (it runs late and skips some; fine for now). The
-# Cloudflare Worker cron replaces it in M2 (SCOPE.md: Architecture).
+# Clock: the Cloudflare Worker cron dispatches this hourly (YVR every hour, YYJ every 3rd), and
+# its POST /sweep for a full sweep on demand. No GitHub `schedule:` (it runs late and skips).
 name: Sweep
 
 on:
-  schedule:
-    - cron: '17 */4 * * *'
   workflow_dispatch:
     inputs:
       routes:
