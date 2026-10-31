@@ -1,9 +1,16 @@
-// Service worker: Web Push display only (no offline cache yet).
+// Service worker: Web Push display, and no stale app files.
 // iOS revokes push permission when a push shows no notification, so every push shows one,
 // with a generic line if the payload can't be read.
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
+
+// GitHub Pages sends max-age=600, so after a deploy the browser could mix a new index.html with
+// old modules for 10 min. Revalidate every same-origin file instead (a cheap 304 when unchanged).
+self.addEventListener('fetch', (e) => {
+  if (e.request.method !== 'GET' || new URL(e.request.url).origin !== self.location.origin) return;
+  e.respondWith(fetch(e.request, { cache: 'no-cache' }));
+});
 
 self.addEventListener('push', (e) => {
   let msg = {};

@@ -14,7 +14,7 @@ const ago = (iso) => {
 };
 
 async function subscribe() {
-  const reg = await navigator.serviceWorker.register('sw.js');
+  const reg = await navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' });
   if ((await Notification.requestPermission()) !== 'granted') throw new Error('notifications not allowed');
   const { publicKey } = await (await fetch(`${WORKER}/vapid`)).json();
   const sub = (await reg.pushManager.getSubscription())

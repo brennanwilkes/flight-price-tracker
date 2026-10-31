@@ -146,6 +146,12 @@ for (const b of document.querySelectorAll('.toggle button')) {
 }
 alertsBar($('#alerts'));
 sweepButton($('#sweep'));
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
+// A home-screen app resumes from memory instead of reloading; after a while away, reload so
+// both the code and the prices are current.
+const loadedAt = Date.now();
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && Date.now() - loadedAt > 30 * 60e3) location.reload();
+});
 $('#month').addEventListener('change', (e) => { state.month = e.target.value; state.open = null; render(); });
 show();
