@@ -86,7 +86,7 @@ async function verify(byHome, trips) {
   const { browser: chrome, ctx } = await openBrowser();
   let browserSearches = 0;
   const browser = (q) => { browserSearches++; return shoppingResults(ctx, q); };
-  const st = { cells: 0, replaced: 0, unresolved: 0, searches: 0, failed: 0, none: 0 };
+  const st = { cells: 0, replaced: 0, unresolved: 0, searches: 0, failed: 0, none: 0, stay: 0 };
   let pending = [...byHome.values()].flatMap((rows) => rows.flatMap((r) => CLASSES.filter((c) => r[c]).map((cls) => ({ r, cls, i: 0, cand: r[cls], best: null, first: null }))));
   st.cells = pending.length;
   while (pending.length) {
@@ -95,6 +95,7 @@ async function verify(byHome, trips) {
     st.failed += s.failed;
     st.error ??= s.error;
     st.none += s.none;
+    st.stay += s.stay;
     pending = pending.filter((p) => {
       p.first ??= p.cand;
       if (p.cand.connects && !(p.best?.total <= p.cand.total)) p.best = p.cand;
@@ -147,7 +148,7 @@ async function main() {
   let details = null;
   if (!process.argv.includes('--no-details')) {
     const s = (details = await verify(byHome, trips));
-    console.log(`details: ${s.cells} cells, ${s.replaced} moved to another trip (connects, or cheaper as listed), ${s.unresolved} with none that connects; ${s.searches} searches (${s.browser} in a browser, ${s.failed} failed${s.error ? `, e.g. ${s.error}` : ''}), ${s.none} flights not listed yet; ${s.ms}ms`);
+    console.log(`details: ${s.cells} cells, ${s.replaced} moved to another trip (connects, or cheaper as listed), ${s.unresolved} with none that connects; ${s.searches} searches (${s.browser} in a browser, ${s.failed} failed${s.error ? `, e.g. ${s.error}` : ''}), ${s.none} flights not listed yet, ${s.stay} trips with a short Hoi An stay; ${s.ms}ms`);
   } else {
     for (const rows of byHome.values()) for (const r of rows) delete r.cands;
   }

@@ -32,10 +32,11 @@ function flightsOf(trip) {
 }
 /**
  * Fill `flights` on the given trips' tickets, and set each trip's `connects` (false when some
- * connection has no flight). A ticket with a listed flight takes its price (the graph's kept as
- * `graph`) and the trip's total is re-summed. Pass the same `cache` across calls to reuse searches;
+ * connection has no flight, or the real flights leave the Hoi An stay short). A ticket with a
+ * listed flight takes its price (the graph's kept as `graph`) and the trip's total is re-summed. Pass the same `cache` across calls to reuse searches;
  * `browser` (query → GetShoppingResults payload) answers searches whose page inlined no results.
- * Returns { searches, failed, full, connection, none } (full: full-list page loads; the last two: misses).
+ * Returns { searches, failed, full, connection, none, stay } (full: full-list page loads; connection,
+ * none: misses; stay: trips whose real flights leave the Hoi An stay short).
  */
 async function addDetails(trips, cache = new Map(), browser = null) {
   const searchOnce = (q) => {
@@ -53,7 +54,7 @@ async function addDetails(trips, cache = new Map(), browser = null) {
     }
     return cache.get(key);
   };
-  const stats = { searches: 0, failed: 0, full: 0, connection: 0, none: 0 };
+  const stats = { searches: 0, failed: 0, full: 0, connection: 0, none: 0, stay: 0 };
 
   // Warm the cache with bounded concurrency, then pick sequentially per trip.
   const queries = [...new Map(trips.flatMap(flightsOf).map((f) => [JSON.stringify(f.query), f.query])).values()]
@@ -114,6 +115,15 @@ async function addDetails(trips, cache = new Map(), browser = null) {
       // $5,012 cheapest listed). A return's price is on its outbound.
       if (f.dir === 'out') { f.ticket.graph = f.ticket.price; f.ticket.price = pick.price; }
       landed = arrival(pick);
+    }
+    // The Hoi An stay, from the real landing to the real departure: a flight that lands the next
+    // day (overnight connection, long haul) eats into it. Short: not a trip, like a missed connection.
+    if (trip.stay) {
+      const [a, b] = [flights[trip.stay.after], flights[trip.stay.after + 1]].map((f) => f.ticket.flights[f.dir]);
+      if (a?.legs && b?.legs) {
+        const days = (Date.parse(b.legs[0].depDate) - Date.parse(a.legs.at(-1).arrDate)) / 864e5;
+        if (days < trip.stay.need) { trip.connects = false; stats.stay++; }
+      }
     }
     trip.total = trip.tickets.reduce((sum, t) => sum + t.price, 0);
   }

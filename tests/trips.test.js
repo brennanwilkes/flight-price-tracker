@@ -125,3 +125,32 @@ test('a nested return has to be flown on its day: too short for the Hoi An stay,
   }));
   assert.strictEqual(find(trips, 'economy', 'MNL', 'MNL'), undefined);
 });
+
+test('the Hoi An stay is checked against real flights: an overnight flight in leaves it short', async () => {
+  const { addDetails } = require('../scraper/src/trips/details');
+  const [t] = buildTrips(world({
+    rt: { [`YVR-ICN-Y|${D0}`]: [{ ret: day(14), price: 900 }] },
+    hops: { [`ICN-DAD|${day(3)}`]: 200, [`DAD-ICN|${day(8)}`]: 180 },
+  })).filter((x) => !x.via && x.cls === 'economy');
+  assert.deepStrictEqual(t.stay, { after: 1, need: 5 });
+  const opt = (from, to, depDate, arrDate, price) => ({ price, min: 300, airlines: ['X'], stops: [], legs: [{ code: 'X1', airline: 'X', from, to, dep: '10:00', arr: '15:00', depDate, arrDate, min: 300 }] });
+  const run = async (dadArrives) => {
+    const trip = structuredClone(t);
+    const answers = {
+      ICN: [opt('YVR', 'ICN', D0, day(1), 900)],
+      DAD: [opt('ICN', 'DAD', day(3), dadArrives, 200)],
+      back: [opt('DAD', 'ICN', day(8), day(8), 180)],
+      home: [opt('ICN', 'YVR', day(14), day(14), 0)],
+    };
+    const cache = new Map();
+    const { flightsOf } = require('../scraper/src/trips/details');
+    for (const f of flightsOf(trip)) {
+      const k = f.dir === 'back' ? 'home' : f.query.to === 'ICN' && f.query.from === 'YVR' ? 'ICN' : f.query.to === 'DAD' ? 'DAD' : 'back';
+      cache.set(JSON.stringify(f.query), Promise.resolve(answers[k]));
+    }
+    const stats = await addDetails([trip], cache);
+    return { connects: trip.connects, stay: stats.stay };
+  };
+  assert.deepStrictEqual(await run(day(3)), { connects: true, stay: 0 });
+  assert.deepStrictEqual(await run(day(4)), { connects: false, stay: 1 }); // lands next day: 4 nights
+});

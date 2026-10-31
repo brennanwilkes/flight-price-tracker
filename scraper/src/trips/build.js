@@ -29,8 +29,8 @@ const addDays = (iso, n) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 864e5)
 /**
  * Cheapest plans within Asia from arrival city `x`, landing day 1 after departure `d0`.
  * Returns plan(y, t): the cheapest way to be in city y on day t, ready to fly home, Hoi An done and
- * no return open; { cost, hops: [{ kind: 'ow'|'rt'|'back', from, to, date, ret?, price }] } or null
- * ('back' is a nested return's second flight, paid with its 'rt').
+ * no return open; { cost, hops: [{ kind: 'ow'|'rt'|'back'|'stay', from, to, date, ret?, price }] } or
+ * null ('back' is a nested return's second flight, paid with its 'rt'; 'stay' marks the Hoi An stay).
  */
 function hopPlans(x, d0, fares) {
   const { cities, hop, anchors = { DAD: 0 } } = fares;
@@ -53,7 +53,8 @@ function hopPlans(x, d0, fares) {
     const changed = put(t, city, done, open, cost, prev, hop);
     if (!done && city in anchors) {
       for (const [w, g] of Object.entries(anchors)) {
-        put(t + anchors[city] + HOI_AN_NIGHTS + g, w, 1, open, cost, { t, key: `${city}|0|${open}` }, null);
+        const need = anchors[city] + HOI_AN_NIGHTS + g; // days from landing at `city` to flying out of `w`
+        put(t + need, w, 1, open, cost, { t, key: `${city}|0|${open}` }, { kind: 'stay', from: city, to: w, need });
       }
     }
     return changed;
@@ -108,7 +109,7 @@ function hopPlans(x, d0, fares) {
 /** True when any flight leaves on the day the previous ticket lands (times to verify). */
 function hasSameDay(d0, hops, backDate) {
   let landed = addDays(d0, 1);
-  for (const h of hops) {
+  for (const h of hops.filter((x) => x.kind !== 'stay')) {
     if (h.date === landed) return true;
     landed = h.date;
   }
@@ -121,7 +122,7 @@ function hasSameDay(d0, hops, backDate) {
  */
 function isSafe(d0, hops, backDate) {
   let landed = addDays(d0, 1);
-  for (const h of hops) {
+  for (const h of hops.filter((x) => x.kind !== 'stay')) {
     if (h.date <= landed) return false;
     landed = h.date;
   }
@@ -129,7 +130,9 @@ function isSafe(d0, hops, backDate) {
 }
 
 /**
- * A trip's tickets and flying order from its long legs and Asia plan: `first` (a long round trip
+ * A trip's tickets and flying order from its long legs and Asia plan, and where the Hoi An stay
+ * falls: stay = { after: the order index of the flight landing before it, need: days from that
+ * landing to the next flight } (details.js checks it against real times): `first` (a long round trip
  * or one-way), the plan's hops (a nested return's 'back' is the second flight of its 'rt'), and
  * `last` (the one-way home, or null when `first` is a round trip).
  */
@@ -137,7 +140,9 @@ function ticketsOf(first, hops, last) {
   const tickets = [first];
   const order = [[0, 'out']];
   const open = [];
+  let stay = null;
   for (const h of hops) {
+    if (h.kind === 'stay') { stay = { after: order.length - 1, need: h.need }; continue; }
     if (h.kind === 'back') { order.push([open.pop(), 'back']); continue; }
     const { kind, ...rest } = h;
     tickets.push({ kind, ...rest, cabin: 'Y' });
@@ -145,7 +150,7 @@ function ticketsOf(first, hops, last) {
     if (kind === 'rt') open.push(tickets.length - 1);
   }
   if (last) { tickets.push(last); order.push([tickets.length - 1, 'out']); } else order.push([0, 'back']);
-  return { tickets, order };
+  return { tickets, order, stay };
 }
 
 /**

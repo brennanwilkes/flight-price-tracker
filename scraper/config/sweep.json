@@ -12,7 +12,7 @@
     { "kind": "long", "homes": ["YYJ"], "cities": "all", "lengthRange": [14, 21], "oneWay": true, "maxAgeHours": 8 },
     { "kind": "hops", "vietnam": true, "maxAgeHours": 12 },
     { "kind": "hops", "vietnam": false, "maxAgeHours": 24 },
-    { "kind": "asiaRT", "lengthRange": [2, 19], "maxAgeHours": 168 }
+    { "kind": "asiaRT", "fromVietnam": [2, 15], "toVietnam": [5, 19], "maxAgeHours": 48 }
   ],
   "control": { "from": "YVR", "to": "ICN", "cabin": "Y", "tripLen": 14, "daysOut": 14, "days": 7 }
 }

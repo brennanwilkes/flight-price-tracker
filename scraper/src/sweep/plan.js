@@ -7,7 +7,8 @@
  *   long  — home ⇄ gateway, per cabin: a round trip per trip length, and one-ways both ways
  *   hops  — economy one-ways between Asia cities, only over the hop network (src/network)
  *   asiaRT — economy round trips between a Vietnam anchor city and each city it has flights with
- *            (either end as origin), per trip length: a return nested inside the long-haul trip
+ *            (either end as origin), per trip length: a return nested inside the long-haul trip;
+ *            lengths by direction (fromVietnam / toVietnam, see below)
  * state/graphs.json: { '<routeId>|<tripLen>': last successful scrape (ISO) }.
  */
 const { citiesWith, CITIES } = require('../../../frontend/app/cities.js');
@@ -52,7 +53,9 @@ function allGraphs(config, network) {
           if (p === v || !routes.has(`${v}-${p}`) || !routes.has(`${p}-${v}`)) continue;
           for (const [a, b] of [[v, p], [p, v]]) {
             if (vietnam.includes(a) && vietnam.includes(b) && a > b) continue; // both anchors: one origin is enough
-            for (const tripLen of lengthsOf(t)) add({ routeId: `${a}-${b}-Y`, from: a, to: b, cabin: 'Y', tripLen });
+            // From Vietnam it fits beside the Hoi An stay (≤ 15 days); to Vietnam it holds it (≥ 5).
+            const r = !vietnam.includes(a) ? t.toVietnam : !vietnam.includes(b) ? t.fromVietnam : [t.fromVietnam[0], t.toVietnam[1]];
+            for (const tripLen of lengthsOf({ lengthRange: r })) add({ routeId: `${a}-${b}-Y`, from: a, to: b, cabin: 'Y', tripLen });
           }
         }
       }
