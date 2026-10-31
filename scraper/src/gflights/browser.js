@@ -10,24 +10,30 @@ const { pageUrl, HEADERS } = require('./page');
 const { parseBatchExecute, parseCalendar, parseBooking } = require('./batchexecute');
 
 const RPC_TIMEOUT_MS = 20_000;
-const SCROLL_TIMEOUT_MS = 8_000;
-const OPEN_RETRY_MS = 6_000;
+// Google computes uncached graphs on demand: YYJ ones take 2-22s+ where YVR's come back in 0.1s.
+// So wait long for a reply once the request is out, but re-click quickly if none went out.
+const GRAPH_TIMEOUT_MS = 60_000;
+const SENT_TIMEOUT_MS = 6_000;
 // Airlines load fares ~330 days out; the graph silently stops fetching there.
 // Measured 2026-10-30: last loaded return date = today + 329.
 const HORIZON_DAYS = 330;
 const HORIZON_SLACK_DAYS = 15;
 const today = () => new Date().toISOString().slice(0, 10);
+class NothingSent extends Error {}
 
 // Runs in the page before Google's code: keeps a copy of every FlightsFrontendService response
 // as the page itself receives it. Reading bodies through DevTools (page.on('response')) loses
 // them intermittently ("No data found for resource"), badly so on 2-vCPU Actions runners.
+// window.__sent logs each request as it goes out, so a slow reply isn't mistaken for a dead click.
 const RECORDER = `(() => {
   const log = (window.__rpc = []);
+  const sent = (window.__sent = []);
   const want = (u) => /FlightsFrontendService\\//.test(String(u));
   const open = XMLHttpRequest.prototype.open;
   XMLHttpRequest.prototype.open = function (m, u, ...rest) { this.__u = String(u); return open.call(this, m, u, ...rest); };
   const send = XMLHttpRequest.prototype.send;
   XMLHttpRequest.prototype.send = function (...a) {
+    if (want(this.__u)) sent.push(this.__u);
     if (want(this.__u)) this.addEventListener('loadend', () => {
       let text = null;
       try { text = this.responseText; } catch {}
@@ -37,8 +43,9 @@ const RECORDER = `(() => {
   };
   const f = window.fetch;
   window.fetch = async (...a) => {
-    const res = await f(...a);
     const u = a[0] instanceof Request ? a[0].url : a[0];
+    if (want(u)) sent.push(String(u));
+    const res = await f(...a);
     if (want(u)) res.clone().text().then((text) => log.push({ url: String(u), status: res.status, text }), () => log.push({ url: String(u), status: res.status, text: null }));
     return res;
   };
@@ -80,12 +87,24 @@ async function capture(page, rpc, decode, action, step, timeout = RPC_TIMEOUT_MS
   }
 }
 
+/** Click `button`; true once a `rpc` request has gone out, false if none within SENT_TIMEOUT_MS. */
+async function clickAndSend(page, button, rpc) {
+  const before = await page.evaluate(() => window.__sent.length);
+  await button.click();
+  const deadline = Date.now() + SENT_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    if (await page.evaluate(([i, r]) => window.__sent.slice(i).some((u) => u.includes(r)), [before, rpc])) return true;
+    await page.waitForTimeout(200);
+  }
+  return false;
+}
+
 /**
  * Prices for every departure day in [start, end]: round trip at one trip length, or one-way
  * when tripLen is null.
  * One page load; the first GetCalendarGraph covers 60 days (from start - 7), each "Scroll
  * forward" 21 more. The graph stops at the fare-loading horizon (~330 days out): there the
- * forward button is disabled, so a short result near the horizon is "not loaded yet", not an error.
+ * forward button sends nothing, so a short result near the horizon is "not loaded yet", not an error.
  */
 async function priceGraph(ctx, { from, to, cabin, tripLen = null, start, end }) {
   const span = tripLen ?? 0; // one-way when tripLen is null
@@ -98,14 +117,11 @@ async function priceGraph(ctx, { from, to, cabin, tripLen = null, start, end }) 
     const cells = new Map();
     const add = (list) => { for (const c of list) if (c.out >= start && c.out <= end) cells.set(c.out, c); };
     // A click that lands before the page has hydrated does nothing; click again rather than wait.
-    let opened;
-    try {
-      opened = await capture(page, 'GetCalendarGraph', parseCalendar, () => graphBtn.click(), 'open graph', OPEN_RETRY_MS);
-    } catch {
+    add(await capture(page, 'GetCalendarGraph', parseCalendar, async () => {
+      if (await clickAndSend(page, graphBtn, 'GetCalendarGraph')) return;
       await page.keyboard.press('Escape').catch(() => {});
-      opened = await capture(page, 'GetCalendarGraph', parseCalendar, () => graphBtn.click(), 'open graph (2nd click)');
-    }
-    add(opened);
+      if (!(await clickAndSend(page, graphBtn, 'GetCalendarGraph'))) throw new Error('open graph: two clicks sent no request');
+    }, 'open graph', GRAPH_TIMEOUT_MS));
     const fwd = page.getByRole('button', { name: 'Scroll forward' });
     // The forward button looks the same at the horizon; it just stops fetching.
     const horizon = addDays(today(), HORIZON_DAYS - HORIZON_SLACK_DAYS);
@@ -113,9 +129,11 @@ async function priceGraph(ctx, { from, to, cabin, tripLen = null, start, end }) 
     for (let i = 0; i < 12 && last < end; i++) {
       if (addDays(last, span) >= addDays(today(), HORIZON_DAYS - 2)) break; // at the horizon already
       try {
-        add(await capture(page, 'GetCalendarGraph', parseCalendar, () => fwd.click(), `scroll ${i + 1}`, SCROLL_TIMEOUT_MS));
+        add(await capture(page, 'GetCalendarGraph', parseCalendar, async () => {
+          if (!(await clickAndSend(page, fwd, 'GetCalendarGraph'))) throw new NothingSent(`scroll ${i + 1}: click sent no request`);
+        }, `scroll ${i + 1}`, GRAPH_TIMEOUT_MS));
       } catch (e) {
-        if (addDays(last, span) >= horizon) break;
+        if (e instanceof NothingSent && addDays(last, span) >= horizon) break;
         throw e;
       }
       last = [...cells.keys()].sort().at(-1);
