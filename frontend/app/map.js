@@ -126,11 +126,16 @@ export function tripMap(legs, home, cities, stays = new Map()) {
 
   // City labels: right of the dot, or left when that would run off the map. Connection airports
   // smaller and hollow.
+  // Named only where the trip spends a night (or an overland stretch starts or ends): a city
+  // only changed planes in keeps its dot, the route runs through it.
+  const overland = new Set(legs.filter((l) => l.ground).flatMap((l) => [l.from, l.to]));
   const dots = stops.map((c) => {
     const [x, y] = pt(c);
     const left = x > W * 0.7;
     const via = !cities.includes(c);
-    return `<circle class="city${via ? ' via' : ''}" cx="${f(x)}" cy="${f(y)}" r="${via ? 4.5 : 6}"/>
+    const dot = `<circle class="city${via ? ' via' : ''}" cx="${f(x)}" cy="${f(y)}" r="${via ? 4.5 : 6}"/>`;
+    if (!stays.has(c) && !overland.has(c)) return dot;
+    return `${dot}
       <text class="label${via ? ' via' : ''}" x="${f(x + (left ? -11 : 11))}" y="${f(y)}" dominant-baseline="middle" text-anchor="${left ? 'end' : 'start'}">${cityName(c)}</text>${stays.has(c) ? `
       <text class="label nights" x="${f(x + (left ? -11 : 11))}" y="${f(y)}" dy="${y > H - 60 ? -1.45 : 1.45}em" dominant-baseline="middle" text-anchor="${left ? 'end' : 'start'}">${stays.get(c).join(' + ')} night${stays.get(c).join() === '1' ? '' : 's'}</text>` : ''}`;
   }).join('');
