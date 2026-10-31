@@ -57,6 +57,7 @@ jobs:
       - name: Sweep
         env:
           EGRESS: ${{ steps.vpn.outputs.vpn_ok == 'true' && 'vpn' || 'direct' }}
+          NOTIFY_SECRET: ${{ secrets.NOTIFY_SECRET }}
         run: |
           args=()
           [[ -n "${{ inputs.routes }}" ]] && args+=(--routes "${{ inputs.routes }}")

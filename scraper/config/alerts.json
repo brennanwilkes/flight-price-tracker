@@ -1,0 +1,13 @@
+{
+  "tiers": {
+    "hybrid": [[3500, "buy"], [4200, "great"], [5000, "good"]],
+    "economy": [[800, "buy"], [1000, "great"], [1300, "good"]]
+  },
+  "cheapBusinessLongLegs": 3000,
+  "newLowWarmupDays": 14,
+  "lowsSince": "2026-10-31T04:00:00Z",
+  "realertDrop": { "cad": 100, "share": 0.05 },
+  "maxPushesPerRun": 3,
+  "worker": "https://flight-fare-tracker.brennan-a53.workers.dev",
+  "dashboard": "https://brennanwilkes.github.io/flight-price-tracker/"
+}

@@ -23,6 +23,8 @@ const { loadFares } = require('../src/trips/fares');
 const { buildTrips, similarCount } = require('../src/trips/build');
 const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
 const { addDetails } = require('../src/trips/details');
+const alertConfig = require('../config/alerts.json');
+const { tierOf } = require('../src/alerts/rules');
 
 const CLASSES = ['hybrid', 'economy'];
 const DETAIL_ROWS = Infinity; // every row: ~4 searches a cell, ~1 s each, 4 at a time (~3 min a sweep)
@@ -55,7 +57,8 @@ function rowsFor(home, trips) {
 }
 
 // A trip as the dashboard stores it, without the builder's keys.
-const strip = ({ home, in: _i, out: _o, cls, month, safe, fallbacks, ...trip }) => trip;
+// tier: the price tier word (config/alerts.json), shared with the alerts.
+const strip = ({ home, in: _i, out: _o, cls, month, safe, fallbacks, ...trip }) => ({ ...trip, tier: tierOf(alertConfig, cls, trip.total) });
 // An overall cell: its own copy of the tickets (flight details go there, not on the month twin)
 // and +N counted across months.
 const overall = (t, trips) => t && { ...strip(t), tickets: t.tickets.map((x) => ({ ...x })), alts: similarCount(trips.dateSets, t) };

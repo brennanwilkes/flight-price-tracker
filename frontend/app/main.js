@@ -20,7 +20,8 @@ const REPO = 'brennanwilkes/flight-price-tracker';
 const DATA_OVERRIDE = params.get('data'); // local testing: a directory laid out like the data branch
 const POLL_MS = 5 * 60e3;
 
-// $ tiers per column, cheapest first. Placeholders: tune once there's a few weeks of data.
+// $ tiers per column, cheapest first: a fallback for data built before cells carried `tier`.
+// The source of truth is scraper/config/alerts.json (the alerts use it too).
 const TIERS = {
   hybrid: [[3500, 'buy'], [4200, 'great'], [5000, 'good']],
   economy: [[800, 'buy'], [1000, 'great'], [1300, 'good']],
@@ -30,7 +31,8 @@ const COLUMNS = [['hybrid', 'Business'], ['economy', 'Economy']];
 
 // sha: the data-branch commit the loaded files came from. The open trip lives in the URL hash
 // (#trip=IN-OUT~class), so the back gesture closes it and an alert can link straight to one.
-const state = { home: localGet('home') ?? 'YVR', month: '', sha: null, data: {} };
+// ?home= (from an alert) picks the home airport, else the last one used.
+const state = { home: /^(YVR|YYJ)$/.test(params.get('home') ?? '') ? params.get('home') : localGet('home') ?? 'YVR', month: '', sha: null, data: {} };
 const $ = (sel) => document.querySelector(sel);
 
 function localGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
@@ -46,6 +48,7 @@ const dateRange = (a, b) => (a.slice(0, 7) === b.slice(0, 7) ? `${fmtDate(a)}–
 const weekday = (iso) => new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-CA', { weekday: 'long', timeZone: 'UTC' });
 const fmtMonth = (ym) => new Date(`${ym}-15T12:00:00Z`).toLocaleDateString('en-CA', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 const tier = (cls, total) => TIERS[cls].find(([max]) => total <= max)?.[1] ?? '';
+const tierOfTrip = (cls, t) => t.tier ?? tier(cls, t.total); // the builder's (config/alerts.json), else the fallback
 const pairLabel = (r) => (r.in === r.out ? cityName(r.in) : `${cityName(r.in)} → ${cityName(r.out)}`);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
 
@@ -98,7 +101,7 @@ const alts = (t) => (t.alts ? `<i class="alts" title="${t.alts} other date${t.al
 /** A fare tile: price, its dates, the change vs yesterday, and +N similar dates. */
 function fare(cls, trip) {
   if (!trip) return '<span class="fare none">—</span>';
-  return `<button type="button" class="fare ${tier(cls, trip.total)}" data-cls="${cls}">
+  return `<button type="button" class="fare ${tierOfTrip(cls, trip)}" data-cls="${cls}">
     <b>${money(trip.total)}</b><span class="tdates">${range(trip)}${alts(trip)}</span>${trend(trip)}
   </button>`;
 }
@@ -282,7 +285,7 @@ function renderSheet() {
       </div>
       <button type="button" class="close" aria-label="Close">✕</button>
     </div>
-    <div class="ticket ${tier(cls, trip.total)}">
+    <div class="ticket ${tierOfTrip(cls, trip)}">
       <div class="stub"><small>Total</small><b>${money(trip.total)}</b>${trend(trip)}${trip.alts ? `<span class="similar">+${trip.alts} similar dates</span>` : ''}</div>
       <div class="span">
         <div class="cal"><small>${weekday(trip.depart)}</small><b>${boardDate(trip.depart)}</b></div>
@@ -326,9 +329,11 @@ for (const b of document.querySelectorAll('.toggle button')) {
 alertsBar($('#alerts'));
 sweepButton($('#sweep'));
 register();
-// The alert's commit is now in state; drop it from the URL so a later reload isn't pinned to it.
-if (params.has('v')) {
+// The alert's commit and home are now in state; drop them from the URL so a later reload isn't
+// pinned to them.
+if (params.has('v') || params.has('home')) {
   params.delete('v');
+  params.delete('home');
   history.replaceState(null, '', `${location.pathname}${params.size ? `?${params}` : ''}${location.hash}`);
 }
 

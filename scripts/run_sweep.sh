@@ -50,4 +50,15 @@ else
 		git push -q origin "$DATA_BRANCH"
 	fi
 fi
+
+# Deal alerts, linking to the commit just pushed; then the ledger they wrote.
+if node "$REPO_ROOT/scraper/bin/alerts.js" --data "$DATA_DIR" --sha "$(git rev-parse HEAD)"; then
+	git add -A state/alerts.json
+	if ! git diff --cached --quiet; then
+		git -c user.name="flight-tracker-bot" -c user.email="flight-tracker-bot@users.noreply.github.com" commit -q -m "alerts $(date -u +%FT%TZ)"
+		git push -q origin "$DATA_BRANCH" || { git pull -q --rebase origin "$DATA_BRANCH" && git push -q origin "$DATA_BRANCH"; }
+	fi
+else
+	echo "alerts failed" >&2
+fi
 exit "$rc"
