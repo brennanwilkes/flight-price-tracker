@@ -7,7 +7,7 @@
  *   1 = 28, 2 = 2 (constants)          8  = passenger kind, repeated (1 = adult)
  *   3 = segment, repeated              9  = cabin (1 economy, 2 premium, 3 business, 4 first)
  *     3.2  = departure date            14 = 1 (constant)
- *     3.5  = stop ceiling              19 = 1 round trip, 2 one-way
+ *     3.5  = stop ceiling              19 = 1 round trip, 2 one-way, 3 multi-city
  *     3.13 = origin  3.14 = destination   (each {1: 1, 2: IATA}, repeated for multi-airport)
  * `from` / `to` take one IATA code or an array (Tokyo = ['NRT', 'HND']).
  */
@@ -35,9 +35,16 @@ function segment({ from, to, date, maxStops = null }) {
   return bytes(3, Buffer.concat(parts));
 }
 
-/** Round trip if `ret` is given, else one-way. Dates are YYYY-MM-DD. */
-function buildTfs({ from, to, out, ret = null, cabin = 'Y', maxStops = null }) {
+/**
+ * Round trip if `ret` is given, multi-city (one ticket) if `legs` ([{ from, to, date }]) is, else
+ * one-way. Dates are YYYY-MM-DD.
+ */
+function buildTfs({ from, to, out, ret = null, legs = null, cabin = 'Y', maxStops = null }) {
   if (!CABIN[cabin]) throw new Error(`unknown cabin ${cabin}`);
+  if (legs) {
+    return Buffer.concat([vfield(1, 28), vfield(2, 2), ...legs.map((l) => segment({ ...l, maxStops })),
+      vfield(8, 1), vfield(9, CABIN[cabin]), vfield(14, 1), vfield(19, 3)]).toString('base64url');
+  }
   const parts = [vfield(1, 28), vfield(2, 2), segment({ from, to, date: out, maxStops })];
   if (ret) parts.push(segment({ from: to, to: from, date: ret, maxStops }));
   parts.push(vfield(8, 1), vfield(9, CABIN[cabin]), vfield(14, 1), vfield(19, ret ? 1 : 2));

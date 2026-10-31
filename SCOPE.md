@@ -107,6 +107,11 @@ the builder searches every combination and the dashboard shows the best N.
 - **Priority class (business/economy) is per device** (localStorage): sorts the board, opens trips,
   leads History. **Alerts go out for both classes** to whoever has alerts on.
 - No filler/caveat text anywhere (Brennan: "slop").
+- **Multi-city single tickets (2026-10-31):** after the flight checks, up to 80 Google multi-city
+  searches a build (half per class, most promising first; cached 24 h in `state/multi.json`): the two
+  long one-ways as one open-jaw ticket, and economy trips as one ticket for every flight. Cheaper
+  wins and is shown as one ticket (one colour, a rail joining its flights, a link to that exact
+  multi-city search). Seen: YVR→MNL + SGN→YVR business $4,953 as one ticket vs ~$7,000 as two.
 - **Lowest-ever marks** (`state/lows.json`, verified cells only, all time): gold ★ route's cheapest
   yet; faint gold ☆ cheapest yet for these dates; red ○ other dates were cheaper (mild); bold red ●
   these exact dates were cheaper before (bad). Tile corner on the board; the ticket stub spells out

@@ -26,6 +26,7 @@
   --biz: #7a4fd6;
   --eco: #2f8f5b;
   --up: #c4473a;
+  --warn: #c27414; /* a sweep that succeeded with some errors */
   /* Ticket colours, in the order tickets are first flown. */
   /* Colour means one thing each: green/purple the price tiers, gold business class, and these the
      tickets (never green or purple). */
@@ -50,6 +51,7 @@
     --biz: #b195ff;
     --eco: #5fc58c;
     --up: #f07a6c;
+    --warn: #f0a040;
     --tk1: #5aa6f0; --tk2: #f0a050; --tk3: #ee7aa8; --tk4: #4cc8cc; --tk5: #d8c060; --tk6: #8f939b;
   }
 }
@@ -172,14 +174,24 @@ body.sheet-open { overflow: hidden; }
 .span .line span { position: relative; padding: 0 6px; }
 
 /* Itinerary: each flight a card of boxed fields, its segments below; each ticket in its own
-   colour (--tk, set per leg); a return ticket's two flights joined by a rail down the left gutter
-   (the return is always the first and last flight, so the rail runs the list's whole height). */
+   colour (--tk, set per leg); a ticket's flights (return, multi-city) joined by a rail down the
+   left gutter in its colour, a nested ticket's one lane in (main.js withRails). */
 .legs { list-style: none; padding: 0; margin-top: 16px; margin-bottom: 16px; }
 .legs.has-rail { padding-left: 20px; }
 .legs.has-rail > li { position: relative; }
-.legs.has-rail > li::before { content: ""; position: absolute; left: -16px; top: 0; bottom: 0; border-left: 2px solid var(--tk1); }
-.legs.has-rail > li:first-child::before { top: 30px; width: 12px; border-top: 2px solid var(--tk1); border-top-left-radius: 8px; }
-.legs.has-rail > li:last-child::before { bottom: auto; height: 32px; width: 12px; border-bottom: 2px solid var(--tk1); border-bottom-left-radius: 8px; }
+.legs > li.r0::before, .legs > li.r1::after { content: ""; position: absolute; top: 0; bottom: 0; border-left: 2px solid var(--rail0); }
+.legs > li.r0::before { left: -16px; }
+.legs > li.r1::after { left: -9px; border-left-color: var(--rail1); }
+.legs > li.r0-start::before, .legs > li.r1-start::after { top: 30px; width: 6px; border-top: 2px solid; border-top-left-radius: 8px; }
+.legs > li.r0-end::before, .legs > li.r1-end::after { bottom: auto; height: 32px; width: 6px; border-bottom: 2px solid; border-bottom-left-radius: 8px; }
+.legs > li.r0-start::before, .legs > li.r0-end::before { width: 12px; border-color: var(--rail0); }
+.legs > li.r1-start::after, .legs > li.r1-end::after { border-color: var(--rail1); }
+.r0-tk1 { --rail0: var(--tk1); } .r1-tk1 { --rail1: var(--tk1); }
+.r0-tk2 { --rail0: var(--tk2); } .r1-tk2 { --rail1: var(--tk2); }
+.r0-tk3 { --rail0: var(--tk3); } .r1-tk3 { --rail1: var(--tk3); }
+.r0-tk4 { --rail0: var(--tk4); } .r1-tk4 { --rail1: var(--tk4); }
+.r0-tk5 { --rail0: var(--tk5); } .r1-tk5 { --rail1: var(--tk5); }
+.r0-tk6 { --rail0: var(--tk6); } .r1-tk6 { --rail1: var(--tk6); }
 .leg a { display: flex; flex-direction: column; gap: 4px; padding: 4px; border-radius: 10px;
   background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--tk); color: inherit; text-decoration: none; }
 .leg a:active { transform: scale(0.995); }
@@ -326,7 +338,8 @@ main h3:first-child { margin-top: 8px; }
 .run b { text-align: right; color: var(--eco); }
 .run.bad { border-color: color-mix(in srgb, var(--up) 60%, var(--line)); }
 .run.bad b { color: var(--up); }
-.run b i { font-style: normal; font-size: 10px; color: var(--muted); padding: 0 4px; border: 1px solid var(--line); border-radius: 4px; margin-left: 4px; }
+.run.warn b { color: var(--warn); }
+.run b i { font-style: normal; font-size: 10px; color: var(--muted); padding: 0 4px; border: 1px solid var(--line); border-radius: 4px; margin-right: 4px; }
 .run pre { white-space: pre-wrap; margin: 0; padding: 0 12px 10px; font: 11px var(--mono); color: var(--up); }
 /* Priority switch (Health): the trip view's segmented control. */
 .seg.prio button[aria-checked="true"] { background: var(--cell); color: var(--text); box-shadow: inset 0 0 0 1px var(--line); }

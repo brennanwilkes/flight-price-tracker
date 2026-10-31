@@ -35,9 +35,11 @@ const alertConfig = require('../config/alerts.json');
 const { tierOf } = require('../src/alerts/rules');
 const { flexOf } = require('../src/trips/flex');
 const { markLows } = require('../src/trips/lows');
+const { applyMulti } = require('../src/trips/multi');
 
 const CLASSES = ['hybrid', 'economy'];
 const TRIES = 10;
+const MULTI_BUDGET = 80; // multi-city searches per build (trips/multi.js)
 
 function arg(name, def) {
   const i = process.argv.indexOf(`--${name}`);
@@ -122,6 +124,46 @@ async function verify(byHome, trips) {
   return { ...st, ms: Date.now() - t0 };
 }
 
+/**
+ * Multi-city single tickets (trips/multi.js) for the shown cells: the main views searched, most
+ * promising first (an open jaw estimated at the cheaper return to either end, which is about what
+ * airlines charge); the via views take the cached prices only. Re-tiers and re-sorts the rows.
+ */
+async function multiPass(dataDir, byHome, fares, search) {
+  const cellsOf = (main) => [...byHome].filter(([v]) => v.endsWith('|') === main)
+    .flatMap(([, rows]) => rows.flatMap((r) => CLASSES.map((cls) => r[cls] && Object.assign(r[cls], { cls })).filter(Boolean))); // groupsOf reads cls
+  const homes = fares.homes;
+  const estimate = (t) => {
+    const long = t.tickets.filter((x) => homes.includes(x.from) || homes.includes(x.to));
+    if (long.length !== 2 || long.some((x) => x.kind !== 'ow')) return t.total;
+    const [out, back] = long;
+    const rt = [out.to, back.from].flatMap((c) => fares.roundTrip(out.from, c, out.cabin, out.date)).filter((r) => r.ret === back.date);
+    return rt.length ? t.total - out.price - back.price + Math.min(...rt.map((r) => r.price)) : t.total;
+  };
+  let chrome = null;
+  let browser = null;
+  if (search) {
+    const b = await openBrowser();
+    chrome = b.browser;
+    browser = (q, opts) => shoppingResults(b.ctx, q, opts);
+  }
+  try {
+    const t0 = Date.now();
+    // Each class most promising first, taking turns: economy totals would otherwise always win.
+    const byClass = CLASSES.map((c) => cellsOf(true).filter((t) => t.cls === c).sort((a, b) => estimate(a) - estimate(b)));
+    const main = byClass[0].flatMap((t, i) => [t, byClass[1][i]]).concat(byClass[1].slice(byClass[0].length)).filter(Boolean);
+    const st = await applyMulti(dataDir, main, homes, browser, { budget: MULTI_BUDGET });
+    await applyMulti(dataDir, cellsOf(false), homes, null);
+    for (const [view, rows] of byHome) {
+      for (const r of rows) for (const cls of CLASSES) if (r[cls]) { delete r[cls].cls; r[cls].tier = tierOf(alertConfig, cls, r[cls].total); }
+      byHome.set(view, sortRows(rows));
+    }
+    return { ...st, ms: Date.now() - t0 };
+  } finally {
+    await chrome?.close();
+  }
+}
+
 /** Per route directory: priced cells and their oldest and newest sightings. */
 function freshness(dataDir) {
   const dir = path.join(dataDir, 'routes');
@@ -154,6 +196,9 @@ async function main() {
   } else {
     for (const rows of byHome.values()) for (const r of rows) delete r.cands;
   }
+  const m = await multiPass(dataDir, byHome, fares, !process.argv.includes('--no-details'));
+  console.log(`multi-city: ${m.searched} searched (${m.failed} failed), ${m.merged} trips cheaper as one ticket; ${m.ms}ms`);
+  if (details) details.multi = m;
   // Stay ranges on every shown trip; lowest-ever marks (the main views record theirs first).
   for (const rows of byHome.values()) {
     for (const r of rows) {

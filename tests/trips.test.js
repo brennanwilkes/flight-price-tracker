@@ -185,3 +185,20 @@ test('lowest ever: the ledger marks any-date and same-date lows, and only record
   markLows(dir, { YVR: [r] }, at, { record: false });
   assert.deepStrictEqual(r.hybrid.low, { any: { total: 3900, depart: '2027-09-05', ret: '2027-09-19' }, same: { total: 4000, at } });
 });
+
+test('multi-city: two long one-ways become one open-jaw ticket, flights and order carried over', () => {
+  const { merge, groupsOf } = require('../scraper/src/trips/multi');
+  const [t] = buildTrips(world({
+    ow: { [`YVR-ICN-J|${D0}`]: 3000, [`DAD-YVR-J|${day(15)}`]: 3200 },
+    hops: { [`ICN-DAD|${day(3)}`]: 200 },
+  })).filter((x) => !x.via && x.cls === 'hybrid');
+  t.tickets[0].flights = { out: { legs: ['a'] } };
+  const [g] = groupsOf(t, ['YVR']);
+  assert.deepStrictEqual(g.replace, [0, 2]);
+  merge(t, g, 4500);
+  assert.deepStrictEqual(t.tickets.map((x) => `${x.kind} ${x.from}-${x.to} ${x.price}`), ['multi YVR-YVR 4500', 'ow ICN-DAD 200']);
+  assert.deepStrictEqual(t.order, [[0, 'leg0'], [1, 'out'], [0, 'leg1']]);
+  assert.deepStrictEqual(t.tickets[0].flights, { leg0: { legs: ['a'] } });
+  assert.strictEqual(t.total, 4700);
+  assert.match(t.tickets[0].url, /tfs=/);
+});

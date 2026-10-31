@@ -212,6 +212,7 @@ function render() {
 
 /** Google Flights search for one ticket. */
 function flightsLink(t) {
+  if (t.url) return t.url; // a multi-city ticket: that exact search (builder: multi.js)
   const cabin = t.cabin === 'J' ? 'business class' : 'economy';
   const q = t.kind === 'rt'
     ? `Flights from ${t.from} to ${t.to} on ${t.date} through ${t.ret} ${cabin}`
@@ -221,13 +222,15 @@ function flightsLink(t) {
 
 /**
  * The trip's flights in flying order (trip.order from the builder), numbered as on the map.
- * A round trip's two flights are one ticket.
+ * A round trip's two flights are one ticket, and so are a multi-city ticket's.
  */
 function legs(trip) {
   const order = trip.order ?? legacyOrder(trip);
   return order.map(([i, leg], k) => {
     const t = trip.tickets[i];
-    const l = leg === 'back' ? { t, leg, from: t.to, to: t.from, date: t.ret } : { t, leg, from: t.from, to: t.to, date: t.date };
+    const l = leg === 'back' ? { t, leg, from: t.to, to: t.from, date: t.ret }
+      : leg.startsWith('leg') ? { t, leg, ...t.legs[Number(leg.slice(3))] } // one flight of a multi-city ticket
+        : { t, leg, from: t.from, to: t.to, date: t.date };
     return { ...l, n: k + 1, cabin: t.cabin };
   });
 }
@@ -305,8 +308,9 @@ function segments(l) {
  * two flights are also joined by a rail down the left gutter (CSS).
  */
 function legItem(l, ticketOf) {
-  const rt = l.t.kind === 'rt';
-  const price = !rt || l.leg === 'out' ? money(l.t.price) : '';
+  // A ticket with several flights shows its price on the first.
+  const first = l.t.kind === 'rt' ? l.leg === 'out' : l.t.kind === 'multi' ? l.leg === 'leg0' : true;
+  const price = first ? money(l.t.price) : '';
   const dow = new Date(`${l.date}T12:00:00Z`).toLocaleDateString('en-CA', { weekday: 'short', timeZone: 'UTC' }).toUpperCase().replace('.', '');
   return `<li class="leg ${l.cabin === 'J' ? 'biz' : 'eco'}" style="--tk: var(--tk${ticketOf.get(l.t)})">
     <a href="${flightsLink(l.t)}" target="_blank" rel="noopener">
@@ -328,6 +332,26 @@ function staysOf(list) {
     if (nights > 0) out.set(list[i - 1].to, [...(out.get(list[i - 1].to) ?? []), nights]);
   }
   return out;
+}
+
+/**
+ * Rails down the left gutter joining a ticket's flights (a return, a multi-city ticket), in the
+ * ticket's colour; a ticket nested inside another's span gets the inner lane. items: the list's
+ * <li>s, a layover between each two flights. Adds the rail classes (CSS) to each.
+ */
+function withRails(list, ticketOf, items) {
+  const spans = [];
+  for (const t of new Set(list.map((l) => l.t))) {
+    const at = list.flatMap((l, i) => (l.t === t ? [i] : []));
+    if (at.length > 1) spans.push({ tk: ticketOf.get(t), from: at[0] * 2, to: at.at(-1) * 2 }); // item index: flight i is 2i
+  }
+  spans.sort((a, b) => a.from - b.from);
+  for (const s of spans) s.lane = Math.min(1, spans.filter((o) => o !== s && o.from < s.from && o.to > s.to).length);
+  return items.map((html, k) => {
+    const cls = spans.filter((s) => k >= s.from && k <= s.to)
+      .map((s) => `r${s.lane} r${s.lane}-tk${s.tk}${k === s.from ? ` r${s.lane}-start` : k === s.to ? ` r${s.lane}-end` : ''}`);
+    return cls.length ? html.replace('<li class="', `<li class="${cls.join(' ')} `) : html;
+  });
 }
 
 /** Every flight actually flown, for the map: a leg's connections when known, else the leg. */
@@ -391,7 +415,8 @@ function renderSheet() {
       </div>
     </div>
     ${tripMap(flown(list, ticketOf), state.home, [...new Set(list.flatMap((l) => [l.from, l.to]))], staysOf(list))}
-    <ol class="legs${trip.tickets.some((t) => t.kind === 'rt') ? ' has-rail' : ''}">${list.map((l, i) => (i ? layover(list[i - 1], l, trip.flex?.find(([k]) => k === i - 1), trip.stay?.after === i - 1) : '') + legItem(l, ticketOf)).join('')}</ol>
+    <ol class="legs${trip.tickets.some((t) => t.kind !== 'ow') ? ' has-rail' : ''}">${withRails(list, ticketOf, list.flatMap((l, i) => [
+      ...(i ? [layover(list[i - 1], l, trip.flex?.find(([k]) => k === i - 1), trip.stay?.after === i - 1)] : []), legItem(l, ticketOf)])).join('')}</ol>
 `;
   sheet.querySelector('.close').addEventListener('click', closeTrip);
   for (const b of sheet.querySelectorAll('.seg button')) {

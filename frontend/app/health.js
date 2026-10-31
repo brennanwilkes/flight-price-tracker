@@ -87,10 +87,11 @@ export async function renderHealth(el, base, settings) {
 
     <h3>Sweeps</h3>
     <div class="runs">${runs.map((r) => {
-      const cells = `<span>${when(r.at)}</span><span>${r.ok}/${r.ok + r.failed}</span><span>${Math.round(r.seconds / 60)}m</span><b>${r.success ? 'OK' : 'FAIL'}${r.errors?.length ? ` <i>${r.errors.length}</i>` : ''}</b>`;
+      const cells = `<span>${when(r.at)}</span><span>${r.ok}/${r.ok + r.failed}</span><span>${Math.round(r.seconds / 60)}m</span><b>${r.errors?.length ? `<i>${r.errors.length}</i>` : ''}${r.success ? 'OK' : 'FAIL'}</b>`;
+      const cls = `run${!r.success ? ' bad' : r.errors?.length ? ' warn' : ''}`;
       return r.errors?.length
-        ? `<details class="run${r.success ? '' : ' bad'}"><summary>${cells}</summary>${r.errors.map((e) => `<pre>${esc(e.split('\n')[0])}</pre>`).join('')}</details>`
-        : `<div class="run${r.success ? '' : ' bad'}"><div class="summary">${cells}</div></div>`;
+        ? `<details class="${cls}"><summary>${cells}</summary>${r.errors.map((e) => `<pre>${esc(e.split('\n')[0])}</pre>`).join('')}</details>`
+        : `<div class="${cls}"><div class="summary">${cells}</div></div>`;
     }).join('')}</div>
 
     ${d ? `<h3>Flight checks</h3>
