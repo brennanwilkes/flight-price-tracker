@@ -9,6 +9,10 @@ import { LAND, STEP } from './land.js';
 const W = 640, H = 480; // viewBox; the crop is grown to this aspect
 const PAD = 2.5; // degrees around the cities
 const MIN_SPAN = 14; // smallest crop width, degrees of longitude
+// On a phone, a compact trip (cities within COMPACT degrees, e.g. Da Nang and Manila) zooms in further:
+// less padding, a shorter stretch of the long haul in frame, a smaller minimum width.
+const COMPACT = 20;
+const COMPACT_CROP = { pad: 1.5, minSpan: 10, longShown: 3 };
 const HOME = { lon: -123.18, lat: 49.19 }; // YVR; YYJ is the same direction at this scale
 const LONG_SHOWN = 5; // of greatCircle's 64 steps (~7° of arc for these routes)
 
@@ -48,14 +52,17 @@ export function tripMap(legs, home, cities, stays = new Map()) {
   // so the line has room before it leaves the map.
   const gateways = [...new Set(legs.filter((l) => !onMap(l.from) || !onMap(l.to)).map((l) => (onMap(l.from) ? l.from : l.to)))];
   const routes = new Map(gateways.map((c) => [c, greatCircle(place(c), HOME)]));
-  const reach = [...routes.values()].map((pts) => pts[LONG_SHOWN]);
+  const cityLons = stops.map((c) => place(c).lon), cityLats = stops.map((c) => place(c).lat);
+  const compact = matchMedia('(max-width: 600px)').matches && Math.max(Math.max(...cityLons) - Math.min(...cityLons), Math.max(...cityLats) - Math.min(...cityLats)) < COMPACT;
+  const { pad, minSpan, longShown } = compact ? COMPACT_CROP : { pad: PAD, minSpan: MIN_SPAN, longShown: LONG_SHOWN };
+  const reach = [...routes.values()].map((pts) => pts[longShown]);
 
   // Crop: the cities plus padding, grown to MIN_SPAN and then to the viewBox aspect (in Mercator units).
   const lons = [...stops.map((c) => place(c).lon), ...reach.map((p) => p[0])];
   const ys = [...stops.map((c) => mercY(place(c).lat)), ...reach.map((p) => mercY(p[1]))];
-  let x0 = Math.min(...lons) - PAD, x1 = Math.max(...lons) + PAD;
-  let y0 = Math.min(...ys) - PAD, y1 = Math.max(...ys) + PAD;
-  if (x1 - x0 < MIN_SPAN) { const g = (MIN_SPAN - (x1 - x0)) / 2; x0 -= g; x1 += g; }
+  let x0 = Math.min(...lons) - pad, x1 = Math.max(...lons) + pad;
+  let y0 = Math.min(...ys) - pad, y1 = Math.max(...ys) + pad;
+  if (x1 - x0 < minSpan) { const g = (minSpan - (x1 - x0)) / 2; x0 -= g; x1 += g; }
   if ((x1 - x0) / (y1 - y0) > W / H) { const g = ((x1 - x0) * H / W - (y1 - y0)) / 2; y0 -= g; y1 += g; }
   else { const g = ((y1 - y0) * W / H - (x1 - x0)) / 2; x0 -= g; x1 += g; }
   const k = W / (x1 - x0);
@@ -119,8 +126,8 @@ export function tripMap(legs, home, cities, stays = new Map()) {
     const left = x > W * 0.7;
     const via = !cities.includes(c);
     return `<circle class="city${via ? ' via' : ''}" cx="${f(x)}" cy="${f(y)}" r="${via ? 4.5 : 6}"/>
-      <text class="label${via ? ' via' : ''}" x="${f(x + (left ? -11 : 11))}" y="${f(y + 5)}" text-anchor="${left ? 'end' : 'start'}">${cityName(c)}</text>${stays.has(c) ? `
-      <text class="label nights" x="${f(x + (left ? -11 : 11))}" y="${f(y + 24)}" text-anchor="${left ? 'end' : 'start'}">${stays.get(c).join(' + ')} night${stays.get(c).join() === '1' ? '' : 's'}</text>` : ''}`;
+      <text class="label${via ? ' via' : ''}" x="${f(x + (left ? -11 : 11))}" y="${f(y)}" dominant-baseline="middle" text-anchor="${left ? 'end' : 'start'}">${cityName(c)}</text>${stays.has(c) ? `
+      <text class="label nights" x="${f(x + (left ? -11 : 11))}" y="${f(y)}" dy="${y > H - 60 ? -1.45 : 1.45}em" dominant-baseline="middle" text-anchor="${left ? 'end' : 'start'}">${stays.get(c).join(' + ')} night${stays.get(c).join() === '1' ? '' : 's'}</text>` : ''}`;
   }).join('');
 
   // Home, named where each long-haul line leaves the map: beside the line, on the inner side,

@@ -127,6 +127,15 @@ function boardRow(r, i) {
   </li>`;
 }
 
+/** The month and via selects, for the current view (board and history share them). */
+function fillFilters(data) {
+  const months = [...new Set(data.rows.flatMap((r) => Object.keys(r.months)))].sort();
+  $('#month').innerHTML = `<option value="">All months</option>${months.map((m) => `<option value="${m}"${m === state.month ? ' selected' : ''}>${fmtMonth(m)}</option>`).join('')}`;
+  const vias = state.data[state.home]?.vias ?? [];
+  $('#via').hidden = !vias.length; // data built before the via filter has none
+  $('#via').innerHTML = `<option value="">Any city</option>${vias.map((c) => `<option value="${c}"${c === state.via ? ' selected' : ''}>Via ${esc(cityName(c))}</option>`).join('')}`;
+}
+
 // Tabs by hash: #history, #health, else the board (whose trip view is #trip=…).
 const tabOf = () => ({ '#history': 'history', '#health': 'health' })[location.hash] ?? 'board';
 
@@ -142,19 +151,14 @@ function render() {
   }
   if (tab === 'history') {
     renderSheet();
-    const home = state.data[state.home];
-    if (home) renderHistory($('#view'), dataBase(state.sha), state.home, home.rows, state.route, (r) => { state.route = r; render(); });
+    const data = state.data[viewKey()];
+    if (data) { fillFilters(data); renderHistory($('#view'), dataBase(state.sha), state.home, rows(data)); }
     return;
   }
   const data = state.data[viewKey()];
-  for (const b of document.querySelectorAll('.toggle button')) b.setAttribute('aria-pressed', String(b.dataset.home === state.home));
   if (!data) return;
 
-  const months = [...new Set(data.rows.flatMap((r) => Object.keys(r.months)))].sort();
-  $('#month').innerHTML = `<option value="">All months</option>${months.map((m) => `<option value="${m}"${m === state.month ? ' selected' : ''}>${fmtMonth(m)}</option>`).join('')}`;
-  const vias = state.data[state.home]?.vias ?? [];
-  $('#via').innerHTML = `<option value="">Any city</option>${vias.map((c) => `<option value="${c}"${c === state.via ? ' selected' : ''}>Via ${esc(cityName(c))}</option>`).join('')}`;
-
+  fillFilters(data);
   const list = rows(data);
   $('#view').innerHTML = list.length
     ? `<div class="board-head"><span>Destination</span><span>Business</span><span>Economy</span></div>
@@ -334,7 +338,7 @@ function renderSheet() {
       <div class="stub"><small>Total</small><b>${money(trip.total)}</b>${trend(trip)}${trip.alts ? `<span class="similar">+${trip.alts} similar dates</span>` : ''}</div>
       <div class="span">
         <div class="cal"><small>${weekday(trip.depart)}</small><b>${boardDate(trip.depart)}</b></div>
-        <div class="line"><span>${trip.days} days</span><span>${trip.tickets.length} tickets</span></div>
+        <div class="line"><span>${trip.days} days</span><span>${trip.tickets.length} ticket${trip.tickets.length > 1 ? "s" : ""}</span></div>
         <div class="cal"><small>${weekday(trip.ret)}</small><b>${boardDate(trip.ret)}</b></div>
       </div>
     </div>

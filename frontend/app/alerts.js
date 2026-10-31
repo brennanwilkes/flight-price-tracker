@@ -1,7 +1,6 @@
-// "Enable alerts": registers sw.js, subscribes to Web Push with the Worker's VAPID key and
-// hands the subscription to the Worker (one subscription; a new one replaces the old).
-// Shows the Worker's push health so a dead subscription is visible (SCOPE: Notifications).
-// Also the "scrape everything now" button (Worker POST /sweep).
+// Alerts: subscribe this device to Web Push with the Worker's VAPID key and hand the subscription
+// to the Worker (one subscription; a new one replaces the old); report push health so a dead
+// subscription is visible (SCOPE: Notifications). Also the full sweep on demand (Worker POST /sweep).
 
 export const WORKER = new URLSearchParams(location.search).get('worker') ?? 'https://flight-fare-tracker.brennan-a53.workers.dev';
 
@@ -32,50 +31,29 @@ async function health() {
   } catch { return null; }
 }
 
-/** Render the alerts line into `el`. */
-export async function alertsBar(el) {
+/**
+ * Where alerts stand on this device and at the Worker: { state, detail, canEnable }.
+ * state: 'on' | 'off' | 'failing' | 'install' (iOS: add to Home Screen first) | 'unsupported' | 'unreachable'.
+ */
+export async function alertState() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    el.innerHTML = ios() && !standalone()
-      ? 'Alerts: Share → Add to Home Screen, then open it from there.'
-      : 'Alerts aren’t supported in this browser.';
-    return;
+    return ios() && !standalone() ? { state: 'install', detail: 'Share → Add to Home Screen' } : { state: 'unsupported' };
   }
   const h = await health();
-  const reg = await navigator.serviceWorker.getRegistration();
-  const here = Notification.permission === 'granted' && !!(await reg?.pushManager.getSubscription());
-  let status;
-  if (!h) status = 'Alert server unreachable.';
-  else if (!h.subscribed) status = '<b class="warn">Alerts off.</b>';
-  else if (h.lastError && (!h.lastPushAt || h.lastErrorAt > h.lastPushAt)) status = `<b class="warn">Last push failed</b> (${ago(h.lastErrorAt)}).`;
-  else status = `Alerts on${h.lastPushAt ? ` · last push ${ago(h.lastPushAt)}` : ''}.`;
-  el.innerHTML = `${status} <button type="button">${here && h?.subscribed ? 'Re-subscribe' : 'Enable alerts'}</button>`;
-  el.querySelector('button').addEventListener('click', async (e) => {
-    e.target.disabled = true;
-    try {
-      await subscribe();
-    } catch (err) {
-      el.textContent = `Couldn't enable alerts: ${err.message}`;
-      return;
-    }
-    alertsBar(el);
-  });
+  if (!h) return { state: 'unreachable', canEnable: true };
+  if (!h.subscribed) return { state: 'off', canEnable: true };
+  if (h.lastError && (!h.lastPushAt || h.lastErrorAt > h.lastPushAt)) return { state: 'failing', detail: `last push ${ago(h.lastErrorAt)}`, canEnable: true };
+  return { state: 'on', detail: h.lastPushAt ? `last push ${ago(h.lastPushAt)}` : 'no pushes yet', canEnable: true };
 }
 
-/** Ask the Worker for a full sweep now; it allows one per 30 min. Returns a status line. */
-async function requestSweep() {
+export { subscribe };
+
+/** Ask the Worker for a full sweep now; it allows one per 30 min. Returns a short status. */
+export async function requestSweep() {
   const res = await fetch(`${WORKER}/sweep`, { method: 'POST' });
   const r = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(r.error ?? `HTTP ${res.status}`);
-  return r.started ? 'Full scrape started: new prices in ~30 min.' : `A full scrape started ${ago(r.at)}; next allowed 30 min after it.`;
-}
-
-/** "Scrape everything now" button in `el`. */
-export function sweepButton(el) {
-  el.innerHTML = '<button type="button">Scrape everything now</button>';
-  el.querySelector('button').addEventListener('click', async () => {
-    el.textContent = 'Starting a full scrape…';
-    try { el.textContent = await requestSweep(); } catch (e) { el.textContent = `Couldn't start a scrape: ${e.message}`; }
-  });
+  return r.started ? 'Full scrape started · prices in ~30 min' : `Already running · started ${ago(r.at)}`;
 }
 
 /**

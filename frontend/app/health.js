@@ -1,21 +1,23 @@
 // Health tab: is the scraper running, are alerts reaching the phone, how fresh is each route.
 // Reads the data branch at the dashboard's commit (state/health.json, state/alerts.json,
-// derived/status.json) and the Worker's push health (via alerts.js).
-import { alertsBar, sweepButton } from './alerts.js';
+// derived/status.json) and the Worker's push health (alerts.js).
+import { alertState, subscribe, requestSweep } from './alerts.js';
 import { cityName } from './cities.js';
 
 const STALE_H = 48; // a route with cells older than this is falling behind (fares.js drops them)
+const ALERT_WORD = { on: 'On', off: 'Off', failing: 'Failing', install: 'Install first', unsupported: 'Not supported', unreachable: 'Unreachable' };
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
 const money = (n) => `$${n.toLocaleString('en-CA')}`;
+const num = (n) => n.toLocaleString('en-CA');
 const hours = (iso) => (Date.now() - Date.parse(iso)) / 36e5;
 const ago = (iso) => {
   if (!iso) return '—';
   const h = hours(iso);
   return h < 1 ? `${Math.max(1, Math.round(h * 60))}m ago` : h < 48 ? `${Math.round(h)}h ago` : `${Math.round(h / 24)}d ago`;
 };
-const when = (iso) => new Date(iso).toLocaleString('en-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
-const mins = (s) => `${Math.round(s / 60)}m`;
+const when = (iso) => new Date(iso).toLocaleString('en-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', '');
+const box = (label, value, cls = '') => `<div class="box ${cls}"><small>${label}</small><b>${value}</b></div>`;
 
 async function get(base, file) {
   try {
@@ -24,72 +26,85 @@ async function get(base, file) {
   } catch { return null; }
 }
 
-const routeItem = (r) => `<li class="${!r.newest || hours(r.newest) > STALE_H ? 'bad' : ''}"><span class="what">${r.route}</span><span class="when">${r.cells} cells</span><b>${ago(r.newest)}</b></li>`;
-
 /** Render the tab into `el`; base: the data branch at the dashboard's commit. */
 export async function renderHealth(el, base) {
   el.innerHTML = '<p class="note">Loading…</p>';
-  const [health, ledger, status] = await Promise.all([get(base, 'state/health.json'), get(base, 'state/alerts.json'), get(base, 'derived/status.json')]);
-  const last = health?.runs?.[0];
+  const [health, ledger, status, alerts] = await Promise.all([
+    get(base, 'state/health.json'), get(base, 'state/alerts.json'), get(base, 'derived/status.json'), alertState(),
+  ]);
+  const runs = health?.runs ?? [];
+  const last = runs[0];
   const failing = health?.consecutiveFailures ?? 0;
   const routes = status?.routes ?? [];
   const stale = routes.filter((r) => !r.newest || hours(r.newest) > STALE_H);
   const d = status?.details;
+  const a = status?.alerts;
+  const deals = Object.entries(ledger?.deals ?? {}).sort((x, y) => y[1].at.localeCompare(x[1].at)).slice(0, 6);
 
   el.innerHTML = `
-    <section class="panel status ${failing ? 'bad' : 'ok'}">
-      <div class="stat"><small>Last sweep</small><b>${last ? ago(last.at) : '—'}</b><span>${last ? (last.success ? 'OK' : 'FAILED') : 'no runs yet'}</span></div>
-      <div class="stat"><small>Combos</small><b>${last ? `${last.ok}/${last.ok + last.failed}` : '—'}</b><span>${last ? `${last.priced.toLocaleString('en-CA')} priced` : ''}</span></div>
-      <div class="stat"><small>Failing</small><b>${failing}</b><span>runs in a row</span></div>
-      <div class="stat"><small>Stale routes</small><b>${stale.length}</b><span>of ${routes.length}</span></div>
-    </section>
+    <h3>Scraper</h3>
+    <div class="grid">
+      ${box('Last sweep', last ? ago(last.at) : '—', last && !last.success ? 'bad' : '')}
+      ${box('Status', failing ? `Failing ×${failing}` : last ? 'OK' : '—', failing ? 'bad' : 'good')}
+      ${box('Combos', last ? `${last.ok}/${last.ok + last.failed}` : '—')}
+      ${box('Stale routes', `${stale.length}/${routes.length}`, stale.length ? 'bad' : '')}
+    </div>
 
     <h3>Alerts</h3>
-    <section class="panel controls">
-      <p id="alerts"></p>
-      <p id="sweep"></p>
-    </section>
-    ${ledger ? `<ol class="list">${Object.entries(ledger.deals).sort((a, b) => b[1].at.localeCompare(a[1].at)).slice(0, 8).map(([key, a]) => {
+    <div class="grid">
+      ${box('Push', ALERT_WORD[alerts.state], alerts.state === 'on' ? 'good' : 'bad')}
+      ${box('Last', alerts.detail ? esc(alerts.detail.replace(/^last push /, '')) : '—')}
+    </div>
+    <div class="actions">
+      ${alerts.canEnable ? `<button type="button" data-act="enable">${alerts.state === 'on' ? 'Re-subscribe this phone' : 'Enable alerts'}</button>` : ''}
+      <button type="button" data-act="sweep">Scrape everything now</button>
+      <p class="result" hidden></p>
+    </div>
+    ${deals.length ? `<ol class="rows">${deals.map(([key, x]) => {
       const [home, cls, inn, out] = key.split(',');
-      return `<li><span class="when">${when(a.at)}</span><span class="what">${esc(inn === out ? cityName(inn) : `${cityName(inn)} / ${cityName(out)}`)} · ${cls === 'hybrid' ? 'business' : 'economy'}${home !== 'YVR' ? ` · ${home}` : ''}</span><b>${money(a.total)}</b></li>`;
-    }).join('') || '<li class="empty">No deals alerted yet</li>'}</ol>` : ''}
+      return `<li><span>${when(x.at)}</span><span>${esc(inn === out ? cityName(inn) : `${cityName(inn)} / ${cityName(out)}`)}${cls === 'hybrid' ? ' · J' : ''}${home !== 'YVR' ? ` · ${home}` : ''}</span><b>${money(x.total)}</b></li>`;
+    }).join('')}</ol>` : ''}
 
-    ${status?.alerts ? `<h3>Alert when</h3>
-    <section class="panel rules">
-      <div><small>Business buy tier</small><b>≤ ${money(status.alerts.tiers.hybrid[0][0])}</b></div>
-      <div><small>Economy buy tier</small><b>≤ ${money(status.alerts.tiers.economy[0][0])}</b></div>
-      <div><small>Business long flights</small><b>&lt; ${money(status.alerts.cheapBusinessLongLegs)}</b></div>
-      <div><small>New low after</small><b>${status.alerts.newLowWarmupDays} days</b></div>
-      <div><small>Again after a drop of</small><b>${money(status.alerts.realertDrop.cad)} / ${status.alerts.realertDrop.share * 100}%</b></div>
-      <div><small>Pushes per sweep</small><b>≤ ${status.alerts.maxPushesPerRun}</b></div>
-    </section>` : ''}
+    ${a ? `<h3>Alert when</h3>
+    <div class="grid">
+      ${box('Business ≤', money(a.tiers.hybrid[0][0]))}
+      ${box('Economy ≤', money(a.tiers.economy[0][0]))}
+      ${box('J long flights <', money(a.cheapBusinessLongLegs))}
+      ${box('New low after', `${a.newLowWarmupDays} days`)}
+      ${box('Again after', `−${money(a.realertDrop.cad)} / ${a.realertDrop.share * 100}%`)}
+      ${box('Max per sweep', a.maxPushesPerRun)}
+    </div>` : ''}
 
-    <h3>Recent sweeps</h3>
-    <ol class="list runs">${(health?.runs ?? []).map((r) => `
+    <h3>Sweeps</h3>
+    <ol class="rows">${runs.map((r) => `
       <li class="${r.success ? '' : 'bad'}">
-        <span class="when">${when(r.at)}</span>
-        <span class="what">${r.ok}/${r.ok + r.failed} · ${r.changes.toLocaleString('en-CA')} changed · ${r.egress} · ${mins(r.seconds)}</span>
-        <b>${r.success ? 'OK' : 'FAIL'}</b>
+        <span>${when(r.at)}</span><span>${r.ok}/${r.ok + r.failed} · ${Math.round(r.seconds / 60)}m</span><b>${r.success ? 'OK' : 'FAIL'}</b>
         ${r.errors?.length ? `<details><summary>${r.errors.length} error${r.errors.length > 1 ? 's' : ''}</summary>${r.errors.map((e) => `<pre>${esc(e.split('\n')[0])}</pre>`).join('')}</details>` : ''}
-      </li>`).join('') || '<li class="empty">No runs yet</li>'}
+      </li>`).join('')}
     </ol>
 
     ${d ? `<h3>Flight checks</h3>
-    <section class="panel rules">
-      <div><small>Cells checked</small><b>${d.cells.toLocaleString('en-CA')}</b></div>
-      <div><small>Moved to another trip</small><b>${d.replaced}</b></div>
-      <div><small>None connects</small><b>${d.unresolved}</b></div>
-      <div><small>Searches</small><b>${d.searches} <span class="${d.failed ? 'warn' : ''}">(${d.failed} failed)</span></b></div>
-      <div><small>Not listed yet</small><b>${d.none.toLocaleString('en-CA')} flights</b></div>
-      <div><small>Took</small><b>${Math.round(d.ms / 1000)}s</b></div>
-    </section>` : ''}
+    <div class="grid">
+      ${box('Cells', num(d.cells))}
+      ${box('Searches', `${num(d.searches)}${d.failed ? ` · ${d.failed} failed` : ''}`, d.failed ? 'bad' : '')}
+      ${box('Rerouted', num(d.replaced))}
+      ${box('No connection', num(d.unresolved))}
+    </div>` : ''}
 
     <h3>Routes</h3>
-    ${stale.length ? `<ol class="list routes">${stale.map(routeItem).join('')}</ol>` : ''}
-    <details class="all-routes"><summary>${routes.length} routes${stale.length ? `, ${stale.length} stale` : ''} · newest ${ago(routes.map((r) => r.newest).filter(Boolean).sort().at(-1))}</summary>
-      <ol class="list routes">${routes.slice().sort((a, b) => (a.newest ?? '').localeCompare(b.newest ?? '')).map(routeItem).join('')}</ol>
-    </details>
-    <p class="note">Updated ${status ? when(status.generatedAt) : '—'}</p>`;
-  alertsBar(el.querySelector('#alerts'));
-  sweepButton(el.querySelector('#sweep'));
+    <details class="rows-fold"><summary><span>${routes.length} routes</span><b>${ago(routes.map((r) => r.newest).filter(Boolean).sort().at(-1))}</b></summary>
+      <ol class="rows">${routes.slice().sort((x, y) => (x.newest ?? '').localeCompare(y.newest ?? '')).map((r) => `
+        <li class="${!r.newest || hours(r.newest) > STALE_H ? 'bad' : ''}"><span>${r.route}</span><span>${r.cells}</span><b>${ago(r.newest)}</b></li>`).join('')}
+      </ol>
+    </details>`;
+
+  const result = el.querySelector('.result');
+  const act = async (b, fn) => {
+    b.disabled = true;
+    result.hidden = false;
+    try { result.textContent = (await fn()) ?? ''; } catch (e) { result.textContent = e.message; }
+    b.disabled = false;
+  };
+  el.querySelector('[data-act="enable"]')?.addEventListener('click', (e) => act(e.target, async () => { await subscribe(); renderHealth(el, base); }));
+  el.querySelector('[data-act="sweep"]').addEventListener('click', (e) => act(e.target, requestSweep));
 }

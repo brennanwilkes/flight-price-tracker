@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- No viewport-fit=cover: in an installed iOS app it lays the page out under the clock, where iOS
-       blurs and fades it (seen in ~/movie-server). Without it the page starts below the status bar. -->
-  <meta name="theme-color" content="#16181d">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- The installed iOS app draws the page under the clock and fades whatever sits there. As in
+       ~/movie-server: a solid sticky header padded by the inset + 14px takes the fade (style.css). -->
+  <meta name="theme-color" content="#eeede8" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f1114" media="(prefers-color-scheme: dark)">
   <!-- Filled by scripts/stamp-pwa.mjs at deploy; app/pwa.js registers the worker only when stamped. -->
   <meta name="fl-build" content="__BUILD__">
   <title>Asia Fares</title>
@@ -29,9 +30,9 @@
   <main id="view"><p class="note">Loading…</p></main>
   <footer><p id="stamp"></p></footer>
   <nav class="tabs" aria-label="Sections">
-    <a href="#" data-tab="board">Board</a>
-    <a href="#history" data-tab="history">History</a>
-    <a href="#health" data-tab="health">Health</a>
+    <a href="#" data-tab="board"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Board</a>
+    <a href="#history" data-tab="history"><svg viewBox="0 0 24 24"><path d="M3 20h18M5 16l4-5 4 3 6-8"/></svg>History</a>
+    <a href="#health" data-tab="health"><svg viewBox="0 0 24 24"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>Health</a>
   </nav>
 </body>
 </html>
