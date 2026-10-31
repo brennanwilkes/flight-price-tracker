@@ -13,6 +13,7 @@ const CLASSES = [['hybrid', 'Business'], ['economy', 'Economy']];
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
 const money = (n) => `$${Math.round(n).toLocaleString('en-CA')}`;
+const fmtDates = (t) => `${new Date(`${t.depart}T12:00:00Z`).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', timeZone: 'UTC' })} – ${new Date(`${t.ret}T12:00:00Z`).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', timeZone: 'UTC' })}`;
 const label = (r) => (r.in === r.out ? cityName(r.in) : `${cityName(r.in)} / ${cityName(r.out)}`);
 
 let chartJs = null;
@@ -97,23 +98,35 @@ export async function renderHistory(el, base, home, rows) {
     const chart = new Chart(canvas, {
       type: 'line',
       data: {
-        datasets: top.map(({ r }, i) => ({
-          label: label(r), data: values[i].map((y, j) => ({ x: times[j], y })), stepped: true, borderColor: tok(`--s${i + 1}`), borderWidth: 2,
+        datasets: top.map(({ r, pts }, i) => ({
+          label: label(r), route: { trip: r.cells[cls], vals: pts.map(([, v]) => v).filter((v) => v != null) }, data: values[i].map((y, j) => ({ x: times[j], y })), stepped: true, borderColor: tok(`--s${i + 1}`), borderWidth: 2,
           pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: tok(`--s${i + 1}`), pointHoverBorderColor: tok('--panel'), pointHoverBorderWidth: 2,
         })),
       },
       options: {
         animation: false,
         maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
+        // One route per tooltip: the line nearest the tap.
+        interaction: { mode: 'nearest', axis: 'xy', intersect: false },
         plugins: {
           legend: { display: false }, // the HTML legend below names every line
           tooltip: {
-            backgroundColor: tok('--cell'), titleColor: tok('--muted'), bodyColor: tok('--text'), borderColor: tok('--line'), borderWidth: 1,
+            backgroundColor: tok('--cell'), titleColor: tok('--text'), bodyColor: tok('--text'), borderColor: tok('--line'), borderWidth: 1,
             boxWidth: 8, boxHeight: 8, usePointStyle: true,
-            titleFont: { family: 'JetBrains Mono', size: 11 }, bodyFont: { family: 'JetBrains Mono', size: 12 },
-            itemSort: (a, b) => (a.parsed.y ?? Infinity) - (b.parsed.y ?? Infinity),
-            callbacks: { title: (items) => fmtTime(items[0].parsed.x), label: (item) => ` ${item.dataset.label}  ${item.parsed.y == null ? '—' : money(item.parsed.y)}` },
+            titleFont: { family: 'JetBrains Mono', size: 12, weight: '700' }, bodyFont: { family: 'JetBrains Mono', size: 12 },
+            callbacks: {
+              title: (items) => items[0].dataset.label,
+              label: (item) => ` ${item.parsed.y == null ? 'no trip' : money(item.parsed.y)} on ${fmtTime(item.parsed.x)}`,
+              afterBody: (items) => {
+                const { trip, vals } = items[0].dataset.route;
+                return [
+                  '',
+                  `Now   ${money(trip.total)} · ${fmtDates(trip)}`,
+                  `Low   ${money(Math.min(...vals))}`,
+                  `High  ${money(Math.max(...vals))}`,
+                ];
+              },
+            },
           },
         },
         scales: {
@@ -134,6 +147,19 @@ export async function renderHistory(el, base, home, rows) {
       },
     });
     charts.push(chart);
+  }
+  // A tap anywhere but a chart closes any open tooltip (touch leaves them up otherwise).
+  if (!el.dataset.dismiss) {
+    el.dataset.dismiss = '1';
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('canvas')) return;
+      for (const c of charts) {
+        if (!c.tooltip?.getActiveElements().length) continue;
+        c.tooltip.setActiveElements([], { x: 0, y: 0 });
+        c.setActiveElements([]);
+        c.update();
+      }
+    });
   }
   // Legend entries toggle their line.
   for (const b of el.querySelectorAll('.legend button')) {
