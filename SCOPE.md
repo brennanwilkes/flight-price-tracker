@@ -122,6 +122,11 @@ the builder searches every combination and the dashboard shows the best N.
   the total, Hoi An minimum kept (`trips/flex.js`).
 - **The Hoi An stay is checked against real flights** (an overnight arrival can't eat a night);
   stays outside Da Nang/Hue read "Hanoi + Hoi An" or "Hanoi → Hoi An → Saigon".
+- **Via filter, up to 3 cities (AND: a night in each).** One city: its flight-checked file. Two or
+  three: instantly, the trips from each city's file that also stay in the others; then exactly, the
+  builder itself (`frontend/app/build.js`, shared with the scraper) in a Web Worker over
+  `derived/fares.json`, a cell's cheapest trip with no same-day connection (graph prices, not
+  flight-checked; where both found the same trip the checked one stays). Chips pulse while it builds.
 - iOS installed app: solid sticky header padded by the safe-area inset + 30 px (status-bar fade).
 
 **Main page (phone-first):** one row per **in/out city pair** (e.g. "in Seoul / out Manila"), sorted by

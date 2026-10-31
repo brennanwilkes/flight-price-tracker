@@ -41,6 +41,7 @@ function loadFares(dataDir, config, { now = Date.now() } = {}) {
   }
 
   return {
+    raw: { rt, ow }, // for bundleOf
     homes,
     cities,
     anchors: Object.fromEntries(Object.entries(CITIES).filter(([, c]) => c.vietnam != null).map(([k, c]) => [k, c.vietnam])),
@@ -52,4 +53,26 @@ function loadFares(dataDir, config, { now = Date.now() } = {}) {
   };
 }
 
-module.exports = { loadFares };
+/**
+ * The fares as one compact JSON value, for the page's own builds (the multi-city via filter):
+ * { homes, cities, anchors, departures, base, ow: { "from-to-cabin": [day, price, …] },
+ *   rt: { "from-to-cabin": [day, retDay, price, …] } }, days counted from `base`.
+ * faresOf (frontend/app/fares.js) turns it back into what loadFares returns.
+ */
+function bundleOf(fares) {
+  const base = fares.departures[0] ?? new Date().toISOString().slice(0, 10);
+  const day = (iso) => Math.round((Date.parse(iso) - Date.parse(base)) / 864e5);
+  const ow = {}, rt = {};
+  for (const [k, price] of fares.raw.ow) {
+    const [from, to, cabin, date] = k.split('|');
+    (ow[`${from}-${to}-${cabin}`] ??= []).push(day(date), price);
+  }
+  for (const [k, list] of fares.raw.rt) {
+    const [from, to, cabin, out] = k.split('|');
+    for (const r of list) (rt[`${from}-${to}-${cabin}`] ??= []).push(day(out), day(r.ret), r.price);
+  }
+  const { homes, cities, anchors, departures } = fares;
+  return { homes, cities, anchors, departures, base, ow, rt };
+}
+
+module.exports = { loadFares, bundleOf };

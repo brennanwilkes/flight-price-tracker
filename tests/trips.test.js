@@ -203,3 +203,23 @@ test('multi-city: two long one-ways become one open-jaw ticket, flights and orde
   assert.strictEqual(t.total, 4700);
   assert.match(t.tickets[0].url, /tfs=/);
 });
+
+test('need: only trips with a night in every listed city, the cheapest of those', () => {
+  const w = world({
+    rt: { [`YVR-ICN-J|${D0}`]: [{ ret: day(16), price: 4000 }] },
+    hops: {
+      [`ICN-DAD|${day(3)}`]: 100,
+      [`DAD-ICN|${day(8)}`]: 100, // cheapest: never in Manila
+      [`DAD-MNL|${day(8)}`]: 150,
+      [`MNL-ICN|${day(9)}`]: 150, // a night in Manila
+      [`MNL-ICN|${day(8)}`]: 10, // same day through Manila: changes planes, no night
+    },
+  });
+  const all = find(buildTrips(w), 'hybrid', 'ICN', 'ICN');
+  assert.strictEqual(all.total, 4200);
+  const trips = buildTrips(w, { need: ['MNL'] });
+  const t = find(trips, 'hybrid', 'ICN', 'ICN');
+  assert.strictEqual(t.total, 4400);
+  assert.ok(trips.every((x) => !x.via));
+  assert.strictEqual(buildTrips(w, { need: ['MNL', 'HAN'] }).length, 0);
+});

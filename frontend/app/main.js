@@ -15,6 +15,7 @@ import { sweepIfAsked } from './alerts.js';
 import { renderHealth } from './health.js';
 import { renderHistory } from './history.js';
 import { register, showBar, clearBar } from './pwa.js';
+import { staysOf as tripStays } from './build.js';
 
 const params = new URLSearchParams(location.search);
 const ALERT_SHA = /^[0-9a-f]{40}$/.test(params.get('v') ?? '') ? params.get('v') : null;
@@ -34,12 +35,16 @@ const COLUMNS = [['hybrid', 'Business'], ['economy', 'Economy']];
 // sha: the data-branch commit the loaded files came from. The open trip lives in the URL hash
 // (#trip=IN-OUT~class), so the back gesture closes it and an alert can link straight to one.
 // ?home= (from an alert) picks the home airport, else the last one used.
-// data: "HOME" (all trips) or "HOME-CITY" (the via filter: trips staying in CITY) → trips file.
-const state = { home: /^(YVR|YYJ)$/.test(params.get('home') ?? '') ? params.get('home') : localGet('home') ?? 'YVR', month: '', via: '', sha: null, data: {} };
+// vias: the via filter's cities (up to MAX_VIAS), trips staying in every one.
+// data: "HOME" (all trips) or "HOME-CITY" (one via city) → trips file; "HOME-CITY+CITY…" → built
+// in the page (multiVia).
+const HOMES = ['YVR', 'YYJ'];
+const MAX_VIAS = 3;
+const state = { home: /^(YVR|YYJ)$/.test(params.get('home') ?? '') ? params.get('home') : localGet('home') ?? 'YVR', month: '', vias: [], sha: null, data: {} };
 // Priority class, per device: sorts the board, opens first, leads History. Alerts cover both.
 state.priority = localGet('priority') === 'economy' ? 'economy' : 'hybrid';
 const otherClass = () => (state.priority === 'hybrid' ? 'economy' : 'hybrid');
-const viewKey = () => (state.via ? `${state.home}-${state.via}` : state.home);
+const viewKey = () => (state.vias.length ? `${state.home}-${state.vias.join('+')}` : state.home);
 const $ = (sel) => document.querySelector(sel);
 
 function localGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
@@ -86,8 +91,72 @@ async function fetchTrips(sha, key) {
 /** The current view's trips, and its home's (for the via list), fetched once per data commit. */
 async function load() {
   state.data[state.home] ??= await fetchTrips(state.sha, state.home);
-  if (!state.data[state.home].vias?.includes(state.via)) state.via = '';
-  if (state.via) state.data[viewKey()] ??= await fetchTrips(state.sha, viewKey());
+  const known = state.data[state.home].vias ?? [];
+  state.vias = state.vias.filter((c) => known.includes(c));
+  const key = viewKey();
+  if (state.vias.length === 1) state.data[key] ??= await fetchTrips(state.sha, key);
+  if (state.vias.length > 1 && !state.data[key]) {
+    for (const c of state.vias) state.data[`${state.home}-${c}`] ??= await fetchTrips(state.sha, `${state.home}-${c}`);
+    state.data[key] = approxOf(state.vias.map((c) => state.data[`${state.home}-${c}`]), state.vias);
+    multiVia(key, state.vias);
+  }
+}
+
+/**
+ * Several via cities, at once: from each city's own (flight-checked) file, the trips that also
+ * stay in the others; the cheapest per cell. Misses any trip that's no city's cheapest.
+ */
+function approxOf(files, need) {
+  const stays = (t) => t?.order && need.every((c) => tripStays(t, HOMES).stays.includes(c));
+  const better = (a, b) => (stays(b) && !(a?.total <= b.total) ? b : a);
+  const rows = new Map();
+  for (const r of files.flatMap((f) => f.rows)) {
+    const key = `${r.in}-${r.out}`;
+    if (!rows.has(key)) rows.set(key, { in: r.in, out: r.out, hybrid: null, economy: null, months: {} });
+    const row = rows.get(key);
+    for (const [cls] of COLUMNS) {
+      row[cls] = better(row[cls], r[cls]);
+      for (const [m, cells] of Object.entries(r.months)) {
+        row.months[m] ??= { hybrid: null, economy: null };
+        row.months[m][cls] = better(row.months[m][cls], cells[cls]);
+      }
+    }
+  }
+  return { approx: true, rows: [...rows.values()] };
+}
+
+/**
+ * Then exactly: the builder over the fare bundle in a worker (via-worker.js), every trip that
+ * stays in all of `need`. Its cells replace the approximation's, but where both found the same
+ * trip the checked one stays (it has the flights).
+ */
+let worker = null, asked = 0;
+const waiting = new Map(); // request id → { key, sha }
+function multiVia(key, need) {
+  if (!worker) {
+    worker = new Worker(new URL('./via-worker.js', import.meta.url), { type: 'module' });
+    worker.onmessage = ({ data: { id, rows, error } }) => {
+      const w = waiting.get(id);
+      waiting.delete(id);
+      const approx = state.data[w.key];
+      if (w.sha !== state.sha || !approx) return; // newer data since
+      state.data[w.key] = error ? { ...approx, approx: false } : { rows: rows.map((r) => keepChecked(r, approx.rows.find((a) => a.in === r.in && a.out === r.out))) };
+      if (viewKey() === w.key) render();
+    };
+  }
+  waiting.set(++asked, { key, sha: state.sha });
+  worker.postMessage({ id: asked, url: `${dataBase(state.sha)}/derived/fares.json`, home: state.home, need });
+}
+const sameTrip = (a, b) => a && b && a.depart === b.depart && a.ret === b.ret
+  && a.tickets.length === b.tickets.length && a.tickets.every((t, i) => t.from === b.tickets[i].from && t.to === b.tickets[i].to && t.date === b.tickets[i].date && t.ret === b.tickets[i].ret);
+function keepChecked(row, approx) {
+  if (!approx) return row;
+  const pick = (built, checked) => (sameTrip(built, checked) ? checked : built);
+  for (const [cls] of COLUMNS) {
+    row[cls] = pick(row[cls], approx[cls]);
+    for (const m of Object.keys(row.months)) row.months[m][cls] = pick(row.months[m][cls], approx.months[m]?.[cls]);
+  }
+  return row;
 }
 
 /** Rows for the current month filter, each with its two cells, sorted by hybrid then economy. */
@@ -165,9 +234,13 @@ function boardRow(r, i) {
 function fillFilters(data) {
   const months = [...new Set(data.rows.flatMap((r) => Object.keys(r.months)))].sort();
   $('#month').innerHTML = `<option value="">All months</option>${months.map((m) => `<option value="${m}"${m === state.month ? ' selected' : ''}>${fmtMonth(m)}</option>`).join('')}`;
+  // Via: the select adds a city (data built before the via filter has none), a chip removes one.
   const vias = state.data[state.home]?.vias ?? [];
-  $('#via').hidden = !vias.length; // data built before the via filter has none
-  $('#via').innerHTML = `<option value="">Any city</option>${vias.map((c) => `<option value="${c}"${c === state.via ? ' selected' : ''}>Via ${esc(cityName(c))}</option>`).join('')}`;
+  const more = vias.filter((c) => !state.vias.includes(c));
+  $('#via').hidden = !more.length || state.vias.length >= MAX_VIAS;
+  $('#via').innerHTML = `<option value="">${state.vias.length ? '+ City' : 'Any city'}</option>${more.map((c) => `<option value="${c}">Via ${esc(cityName(c))}</option>`).join('')}`;
+  $('#vias').innerHTML = state.vias.map((c) => `<button type="button" data-city="${c}" aria-label="Remove ${esc(cityName(c))}">${esc(cityName(c))}<span aria-hidden="true">×</span></button>`).join('');
+  $('#vias').classList.toggle('pending', !!state.data[viewKey()]?.approx); // exact rows still building
 }
 
 // Tabs by hash: #history, #health, else the board (whose trip view is #trip=…).
@@ -485,7 +558,6 @@ async function refresh(resumed) {
   const apply = async () => {
     state.sha = sha;
     state.data = { [state.home]: fresh };
-    if (!fresh.vias?.includes(state.via)) state.via = '';
     clearBar('fresh');
     await show();
   };
@@ -495,6 +567,10 @@ async function refresh(resumed) {
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refresh(true); });
 setInterval(() => { if (document.visibilityState === 'visible') refresh(false); }, POLL_MS);
 $('#month').addEventListener('change', (e) => { state.month = e.target.value; render(); });
-$('#via').addEventListener('change', (e) => { state.via = e.target.value; show(); });
+$('#via').addEventListener('change', (e) => { if (e.target.value) state.vias = [...state.vias, e.target.value]; show(); });
+$('#vias').addEventListener('click', (e) => {
+  const c = e.target.closest('button')?.dataset.city;
+  if (c) { state.vias = state.vias.filter((v) => v !== c); show(); }
+});
 // An alert's prices first; then anything newer than them.
 show().then(() => { if (ALERT_SHA) refresh(true); });

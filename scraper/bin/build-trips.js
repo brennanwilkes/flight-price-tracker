@@ -18,6 +18,9 @@
  * Further candidates (any month, plus the builder's fallbacks) are checked while they could still
  * be cheaper, up to TRIES (verify), and rows re-sort on the checked totals.
  *
+ *   derived/fares.json   the fares the trips were built from (fares.js bundleOf), for the page's
+ *                        own builds: the via filter with several cities
+ *
  *   derived/status.json   for the Health tab: this build's detail-check stats, each route's
  *                         freshness (cells, oldest and newest sighting), the alert thresholds
  *
@@ -26,7 +29,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const config = require('../config/sweep.json');
-const { loadFares } = require('../src/trips/fares');
+const { loadFares, bundleOf } = require('../src/trips/fares');
 const { buildTrips, similarCount } = require('../../frontend/app/build.js');
 const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
 const { addDetails } = require('../src/trips/details');
@@ -235,6 +238,7 @@ async function main() {
     console.log(`${home}: ${rows.length} rows${top ? `, best hybrid ${rows[0].in}/${rows[0].out} ${top.total} (${top.depart}…${top.ret})` : ''}`);
   }
   const changed = recordHistory(dataDir, generatedAt, cells);
+  fs.writeFileSync(path.join(dataDir, 'derived', 'fares.json'), JSON.stringify({ ...bundleOf(fares), tiers: alertConfig.tiers }));
   fs.writeFileSync(path.join(dataDir, 'derived', 'status.json'), JSON.stringify({ generatedAt, details, routes: freshness(dataDir), alerts: alertConfig }));
   console.log(`built ${trips.length} trips, ${changed} cells changed, from ${fares.departures.length} departure days in ${Date.now() - t0}ms`);
 }

@@ -82,6 +82,16 @@ select, .toggle button {
   border-radius: 6px;
   padding: 7px 8px;
 }
+/* Via cities chosen: chips on their own line under the selects, tap to remove. Pulsing while the
+   exact rows build (main.js multiVia). */
+header { flex-wrap: wrap; }
+#vias { order: 9; flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 6px; }
+#vias:empty { display: none; }
+#vias button { font: 500 13px var(--mono); color: var(--bg); background: var(--text); border: 0; border-radius: 6px; padding: 6px 8px; cursor: pointer; }
+#vias button span { margin-left: 8px; opacity: 0.6; }
+#vias.pending button { animation: pending 1.2s ease-in-out infinite alternate; }
+@keyframes pending { to { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) { #vias.pending button { animation: none; opacity: 0.6; } }
 .toggle { display: flex; }
 .toggle button { border-radius: 0; cursor: pointer; letter-spacing: 0.06em; }
 .toggle button:first-child { border-radius: 6px 0 0 6px; }
