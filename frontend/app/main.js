@@ -408,7 +408,7 @@ function legItem(l, ticketOf) {
     <a href="${flightsLink(l.t)}" target="_blank" rel="noopener">
       <span class="leg-head">
         <span class="day">${dow} ${boardDate(l.date)}</span>
-        <b class="route"><span>${esc(cityName(l.from))}<span class="arrow">→</span></span> <span>${esc(cityName(l.to))}${first ? lowMark(vsLows) : ''}</span></b>
+        <b class="route"><span>${esc(cityName(l.from))}<span class="arrow">→</span></span> <span>${esc(cityName(l.to))}${lowMark(vsLows)}</span></b>
         <b class="price">${price || '<span class="incl">incl.</span>'}</b>
       </span>
       ${first ? lowLines(vsLows, ['same', 'any']) : ''}
