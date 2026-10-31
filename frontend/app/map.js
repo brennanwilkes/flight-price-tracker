@@ -1,7 +1,7 @@
 // Trip map: Natural Earth coastlines (app/land.js) in Mercator, cropped to the trip's Asian cities.
 // Long-haul legs are great circles toward home, leaving the map where they really would, with
-// the home city named at the edge. Each city pair is one line (a return trip too), badged with
-// its leg numbers from the itinerary list.
+// the home city named at the edge. Arrowheads give each flight's direction: a hop flown both
+// ways is two arcs bending to opposite sides; a long haul flown both ways is one line, both arrows.
 import { CITIES, cityName } from './cities.js';
 import { LAND, STEP } from './land.js';
 
@@ -68,36 +68,34 @@ export function tripMap(legs, home) {
     return `${d}Z`;
   }).join('');
 
-  // Group legs by unordered city pair: one line each, badged with every leg number on it.
-  const pairs = new Map();
-  for (const l of legs) {
-    const key = [l.from, l.to].sort().join('-');
-    if (!pairs.has(key)) pairs.set(key, { a: l.from, b: l.to, cabin: l.cabin, ns: [] });
-    pairs.get(key).ns.push(l.n);
-  }
-
-  const lines = [], badges = [], exits = [];
-  for (const { a, b, cabin, ns } of pairs.values()) {
+  const lines = [], arrows = [], exits = [], drawn = new Set();
+  for (const { from: a, to: b, cabin } of legs) {
     const cls = cabin === 'J' ? 'biz' : 'eco';
-    const city = onMap(a) ? a : b;
     if (!onMap(a) || !onMap(b)) {
-      // Long haul: the great circle toward home, until it leaves the crop.
+      // Long haul: the great circle toward home (from the city), until it leaves the crop.
+      const city = onMap(a) ? a : b;
       const pts = routes.get(city).map(([lon, lat]) => px(lon, lat));
       const inside = ([x, y]) => x >= 0 && x <= W && y >= 0 && y <= H;
       const end = pts.findIndex((p) => !inside(p));
       const seen = pts.slice(0, end < 0 ? pts.length : end + 1);
-      lines.push(`<path class="leg ${cls}" d="M${seen.map(([x, y]) => `${f(x)} ${f(y)}`).join('L')}"/>`);
-      const [ex, ey] = seen[seen.length - 1];
-      exits.push({ x: Math.min(Math.max(ex, 0), W), y: Math.min(Math.max(ey, 0), H) });
-      const [bx, by] = pts[Math.ceil(LONG_SHOWN / 2)];
-      badges.push(badge(bx, by, ns, cls));
+      if (!drawn.has(city)) {
+        drawn.add(city);
+        lines.push(`<path class="leg ${cls}" d="M${seen.map(([x, y]) => `${f(x)} ${f(y)}`).join('L')}"/>`);
+        const [ex, ey] = seen[seen.length - 1];
+        exits.push({ x: Math.min(Math.max(ex, 0), W), y: Math.min(Math.max(ey, 0), H) });
+      }
+      // Inbound arrow nearer the city, outbound one further along; each points the way flown.
+      const j = Math.max(1, Math.min(seen.length - 2, onMap(b) ? 1 : 3));
+      const [p0, p1] = onMap(b) ? [seen[j + 1], seen[j - 1]] : [seen[j - 1], seen[j + 1]];
+      arrows.push(arrow((seen[j][0]), seen[j][1], p1[0] - p0[0], p1[1] - p0[1], cls));
       continue;
     }
-    // Hop: a gentle arc, always bent the same way for a pair whichever direction it's flown.
-    const [p, q] = [pt(a), pt(b)].sort((m, n) => m[0] - n[0] || m[1] - n[1]);
-    const mx = (p[0] + q[0]) / 2 - (q[1] - p[1]) * 0.15, my = (p[1] + q[1]) / 2 + (q[0] - p[0]) * 0.15;
+    // Hop: an arc bent to the right of its direction, so there and back are two separate arcs.
+    const [p, q] = [pt(a), pt(b)];
+    const mx = (p[0] + q[0]) / 2 - (q[1] - p[1]) * 0.18, my = (p[1] + q[1]) / 2 + (q[0] - p[0]) * 0.18;
     lines.push(`<path class="leg ${cls}" d="M${f(p[0])} ${f(p[1])}Q${f(mx)} ${f(my)} ${f(q[0])} ${f(q[1])}"/>`);
-    badges.push(badge((p[0] + 2 * mx + q[0]) / 4, (p[1] + 2 * my + q[1]) / 4, ns, cls));
+    // Arc midpoint and its tangent (the chord direction there).
+    arrows.push(arrow((p[0] + 2 * mx + q[0]) / 4, (p[1] + 2 * my + q[1]) / 4, q[0] - p[0], q[1] - p[1], cls));
   }
 
   // City labels: right of the dot, or left when that would run off the map.
@@ -120,13 +118,12 @@ export function tripMap(legs, home) {
   return `<svg class="map" viewBox="0 0 ${W} ${H}" role="img" aria-label="Trip map">
     <rect class="sea" width="${W}" height="${H}"/>
     <path class="land" d="${land}"/>
-    ${lines.join('')}${dots}${badges.join('')}${homeLabel}
+    ${lines.join('')}${arrows.join('')}${dots}${homeLabel}
   </svg>`;
 }
 
-function badge(x, y, ns, cls) {
-  const text = ns.join(' · ');
-  const w = 12 + text.length * 8.5;
-  return `<g class="badge ${cls}"><rect x="${(x - w / 2).toFixed(1)}" y="${(y - 12).toFixed(1)}" width="${w.toFixed(1)}" height="24" rx="12"/>
-    <text x="${x.toFixed(1)}" y="${(y + 5).toFixed(1)}" text-anchor="middle">${text}</text></g>`;
+/** A filled arrowhead at (x, y) pointing along (dx, dy). */
+function arrow(x, y, dx, dy, cls) {
+  const deg = (Math.atan2(dy, dx) * 180) / Math.PI;
+  return `<path class="arrow ${cls}" d="M9 0L-7 -8L-3 0L-7 8Z" transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${deg.toFixed(1)})"/>`;
 }

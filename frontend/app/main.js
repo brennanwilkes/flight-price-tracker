@@ -25,8 +25,8 @@ const TIERS = {
   hybrid: [[3500, 'buy'], [4200, 'great'], [5000, 'good']],
   economy: [[800, 'buy'], [1000, 'great'], [1300, 'good']],
 };
-const COLUMNS = [['hybrid', 'Hybrid'], ['economy', 'Full economy']];
-const TAG = { hybrid: 'J+Y', economy: 'Y' }; // fare tile labels: business long legs + economy hops, or all economy
+// "Business" is the hybrid: business class to and from Asia, economy hops within it.
+const COLUMNS = [['hybrid', 'Business'], ['economy', 'Economy']];
 
 // sha: the data-branch commit the loaded files came from. The open trip lives in the URL hash
 // (#trip=IN-OUT~class), so the back gesture closes it and an alert can link straight to one.
@@ -90,17 +90,17 @@ function trend(trip) {
   return `<span class="trend ${d < 0 ? 'down' : 'up'}" title="24 h ago: ${money(trip.was)}">${d < 0 ? '▼' : '▲'}${Math.abs(d).toLocaleString('en-CA')}</span>`;
 }
 
-/** "SEP 05 – SEP 22" plus "+N" when other dates come within 2% (the builder's alts). */
-function dates(trip) {
+/** A date chip: "SEP 05–22" plus "+N" when other dates come within 2% (the builder's alts). */
+function dates(trip, cls) {
   const alts = trip.alts ? `<i class="alts" title="${trip.alts} other date${trip.alts > 1 ? 's' : ''} within 2% of this price">+${trip.alts}</i>` : '';
   const range = trip.depart.slice(0, 7) === trip.ret.slice(0, 7) ? `${boardDate(trip.depart)}–${trip.ret.slice(8)}` : `${boardDate(trip.depart)}–${boardDate(trip.ret)}`;
-  return `${range}${alts}`;
+  return `<span class="when ${cls}">${range}${alts}</span>`;
 }
 
 function fare(cls, trip) {
   if (!trip) return '<span class="fare none">—</span>';
   return `<button type="button" class="fare ${tier(cls, trip.total)}" data-cls="${cls}">
-    <span class="tag">${TAG[cls]}</span><b>${money(trip.total)}</b>${trend(trip)}
+    <b>${money(trip.total)}</b>${trend(trip)}
   </button>`;
 }
 
@@ -108,12 +108,12 @@ function fare(cls, trip) {
 function boardRow(r, i) {
   const [h, e] = [r.cells.hybrid, r.cells.economy];
   const same = h && e && h.depart === e.depart && h.ret === e.ret;
-  // Dates beside the city: the hybrid's, and the economy's too when they differ.
-  const when = [h && [h, 'hybrid'], e && !same && [e, 'economy']].filter(Boolean)
-    .map(([t, cls]) => `<span class="when">${h && e && !same ? `<span class="tag">${TAG[cls]}</span>` : ''}${dates(t)}</span>`).join('');
-  const code = r.in === r.out ? r.in : `${r.in}<br>${r.out}`;
+  // Dates beside the city, one chip per class in its colour (the fare tiles carry the same
+  // colour); one plain chip when both classes fly the same dates.
+  const when = same ? dates(h, 'both') : [h && dates(h, 'hybrid'), e && dates(e, 'economy')].filter(Boolean).join('');
+  const code = r.in === r.out ? `<b>${r.in}</b>` : `<b>${r.in}</b><b>${r.out}</b>`;
   return `<li class="row${i === 0 ? ' headline' : ''}" data-row="${r.in}-${r.out}">
-    <div class="dest"><span class="code">${code}</span><span class="city">${esc(pairLabel(r))}</span>${when}</div>
+    <div class="dest"><span class="code">${code}</span><span class="city">${esc(pairLabel(r))}</span><span class="whens">${when}</span></div>
     ${COLUMNS.map(([cls]) => fare(cls, r.cells[cls])).join('')}
   </li>`;
 }
@@ -128,9 +128,9 @@ function render() {
 
   const list = rows(data);
   $('#view').innerHTML = list.length
-    ? `<div class="board-head"><span>Destination</span><span>Hybrid</span><span>Economy</span></div>
+    ? `<div class="board-head"><span>Destination</span><span class="hybrid">Business</span><span class="economy">Economy</span></div>
       <ol class="board">${list.map(boardRow).join('')}</ol>
-      <p class="note">J+Y: business to and from Asia, economy within it. Y: economy throughout. +N: other dates within 2% of the price.</p>`
+      <p class="note">Business: business class to and from Asia, economy within it. Economy: economy throughout. Dates are coloured to match. +N: other dates within 2% of the price.</p>`
     : '<p class="note">No complete trips yet.</p>';
   $('#stamp').textContent = `Updated ${new Date(data.generatedAt).toLocaleString('en-CA', { dateStyle: 'medium', timeStyle: 'short' })}`;
 
@@ -166,36 +166,81 @@ function legs(trip) {
 }
 
 // Long hauls land the day after they leave (Asia is a day ahead); hops land the same day.
+// Only a fallback: with flight details the real arrival is known.
 const landsOn = (l) => (CITIES[l.from]?.lon == null || CITIES[l.to]?.lon == null ? addDay(l.date) : l.date);
 const addDay = (iso) => new Date(Date.parse(`${iso}T12:00:00Z`) + 864e5).toISOString().slice(0, 10);
+const dur = (min) => `${Math.floor(min / 60)}h${String(min % 60).padStart(2, '0')}`;
+const minutesAt = (date, hm) => Date.parse(`${date}T${hm}:00Z`) / 60e3; // local clock; compare within one city only
+/** The flights Google lists for this leg (scraper/src/trips/details.js), or undefined. */
+const flightOf = (l) => l.t.flights?.[l.leg ?? 'out'];
 
-/** Between two legs: the nights spent in the city, or a same-day connection. */
+/** Between two legs: the time in the city, from real flight times when known. */
 function layover(prev, next) {
-  const nights = (Date.parse(next.date) - Date.parse(landsOn(prev))) / 864e5;
   const where = esc(cityName(prev.to));
+  const a = flightOf(prev), b = flightOf(next);
+  if (b?.miss === 'connection') return `<li class="layover bad"><span>No flight that day leaves 4h+ after landing · ${where}</span></li>`;
+  if (a?.legs && b?.legs) {
+    const land = a.legs.at(-1), dep = b.legs[0];
+    const nights = (Date.parse(dep.depDate) - Date.parse(land.arrDate)) / 864e5;
+    const wait = minutesAt(dep.depDate, dep.dep) - minutesAt(land.arrDate, land.arr);
+    if (nights > 0) return `<li class="layover"><span>${nights} night${nights > 1 ? 's' : ''} · ${where}</span></li>`;
+    return `<li class="layover tight"><span>${dur(wait)} layover · ${where}</span></li>`;
+  }
+  const nights = (Date.parse(next.date) - Date.parse(landsOn(prev))) / 864e5;
   if (nights > 0) return `<li class="layover"><span>${nights} night${nights > 1 ? 's' : ''} · ${where}</span></li>`;
-  const sameTicket = prev.t === next.t;
-  return `<li class="layover tight"><span>Same day · ${where}${sameTicket ? '' : ' · ⏱ check times'}</span></li>`;
+  return `<li class="layover tight"><span>Same day · ${where}</span></li>`;
+}
+
+/** The flights inside one leg: each segment boxed, connections between them. */
+function segments(l) {
+  const f = flightOf(l);
+  if (!f) return '';
+  if (f.miss === 'none') return '<span class="segs"><span class="seg-miss">No flights listed for this date yet: schedules not loaded this far out</span></span>';
+  if (f.miss) return '';
+  const segs = f.legs.map((g, i) => {
+    const plus = (Date.parse(g.arrDate) - Date.parse(g.depDate)) / 864e5;
+    const stop = i ? `<span class="conn">${dur(f.stops[i - 1]?.min ?? 0)} connection · ${esc(cityName(g.from) ?? g.from)} ${g.from}</span>` : '';
+    return `${stop}<span class="sg">
+      <span class="f code">${esc(g.code)}</span>
+      <span class="f times"><b>${g.from} ${g.dep}<span class="arrow">→</span>${g.to} ${g.arr}${plus ? `<sup>+${plus}</sup>` : ''}</b><small>${esc(g.airline ?? '')}${g.plane ? ` · ${esc(g.plane)}` : ''}</small></span>
+      <span class="f dur">${dur(g.min)}</span>
+    </span>`;
+  }).join('');
+  const total = f.legs.length > 1 ? `<span class="segs-total">${dur(f.min)} total · ${f.legs.length - 1} stop${f.legs.length > 2 ? 's' : ''}</span>` : '';
+  const likely = f.likely ? '<span class="segs-total">Likely return flight: the airline\'s cheapest that day</span>' : '';
+  return `<span class="segs">${segs}${total}${likely}</span>`;
 }
 
 /**
- * One flight, as a boarding-pass row of boxed fields; the whole row opens it in Google Flights.
- * Legs on one ticket (a return) carry the same ticket letter and are joined by a rail (CSS).
+ * One flight, as a boarding-pass row of boxed fields with its segments below; the whole row
+ * opens it in Google Flights. Each ticket has its own colour (--tk1…); a return ticket's two
+ * flights are also joined by a rail down the left gutter (CSS).
  */
 function legItem(l, ticketOf) {
-  const tk = ticketOf.get(l.t);
   const rt = l.t.kind === 'rt';
-  const price = !rt ? money(l.t.price) : l.leg === 'out' ? money(l.t.price) : '';
-  const note = !rt ? 'one way' : l.leg === 'out' ? 'return' : 'return ↩';
-  return `<li class="leg ${l.cabin === 'J' ? 'biz' : 'eco'}${rt ? ` rail rail-${l.leg}` : ''}">
+  const price = !rt || l.leg === 'out' ? money(l.t.price) : '';
+  // The listed flight's price, when it's off from the graph's (e.g. the one that connects costs more).
+  const f = flightOf(l);
+  const listed = price && f?.price && Math.abs(f.price - l.t.price) > l.t.price * 0.03 ? `<small class="listed">listed ${money(f.price)}</small>` : '';
+  const dow = new Date(`${l.date}T12:00:00Z`).toLocaleDateString('en-CA', { weekday: 'short', timeZone: 'UTC' }).toUpperCase().replace('.', '');
+  return `<li class="leg ${l.cabin === 'J' ? 'biz' : 'eco'}" style="--tk: var(--tk${ticketOf.get(l.t)})">
     <a href="${flightsLink(l.t)}" target="_blank" rel="noopener">
       <span class="f n">${l.n}</span>
-      <span class="f day"><small>${new Date(`${l.date}T12:00:00Z`).toLocaleDateString('en-CA', { weekday: 'short', timeZone: 'UTC' }).toUpperCase().replace('.', '')}</small>${boardDate(l.date)}</span>
-      <span class="f route"><b>${l.from}<span class="arrow">→</span>${l.to}</b><small>${esc(cityName(l.from))} → ${esc(cityName(l.to))}</small></span>
-      <span class="f cabin">${l.cabin === 'J' ? 'BUS' : 'ECO'}</span>
-      <span class="f price"><b>${price || '<span class="incl">incl.</span>'}</b><small>${tk} · ${note}</small></span>
+      <span class="f day"><small>${dow}</small>${boardDate(l.date)}</span>
+      <span class="f route"><b>${esc(cityName(l.from))}<span class="arrow">→</span>${esc(cityName(l.to))}</b><small>${l.cabin === 'J' ? 'Business' : 'Economy'}</small></span>
+      <span class="f price"><b>${price || '<span class="incl">incl.</span>'}</b>${listed}</span>
+      ${segments(l)}
     </a>
   </li>`;
+}
+
+/** What to know before booking: connections that don't work, or same-day ones nobody checked. */
+function sheetNote(trip, list) {
+  if (list.some((l) => flightOf(l)?.miss === 'connection')) {
+    return '<p class="note warn">⚠ As priced, this trip has a connection no listed flight makes. Booking it means a later flight, or an extra night.</p>';
+  }
+  const unchecked = trip.sameDay && list.some((l) => !flightOf(l)?.legs);
+  return unchecked ? '<p class="note">⏱ Includes a same-day connection between separate tickets: check the times before booking.</p>' : '';
 }
 
 function openTrip(key, cls) {
@@ -222,9 +267,9 @@ function renderSheet() {
   const cls = row.cells[m[2]] ? m[2] : COLUMNS.find(([c]) => row.cells[c])[0];
   const trip = row.cells[cls];
   const list = legs(trip);
-  // Tickets lettered in the order they're first flown: A, B, C…
+  // Tickets numbered in the order they're first flown, for their colours.
   const ticketOf = new Map();
-  for (const l of list) if (!ticketOf.has(l.t)) ticketOf.set(l.t, `TKT ${String.fromCharCode(65 + ticketOf.size)}`);
+  for (const l of list) if (!ticketOf.has(l.t)) ticketOf.set(l.t, Math.min(ticketOf.size + 1, 6));
   if (!sheet) {
     sheet = document.createElement('div');
     sheet.id = 'sheet';
@@ -237,21 +282,22 @@ function renderSheet() {
   sheet.setAttribute('aria-label', pairLabel(row));
   sheet.innerHTML = `
     <div class="sheet-bar">
+      <div class="seg" role="tablist">${COLUMNS.filter(([c]) => row.cells[c]).map(([c, label]) => `
+        <button type="button" role="tab" data-cls="${c}" aria-selected="${c === cls}">${label} <b>${money(row.cells[c].total)}</b></button>`).join('')}
+      </div>
       <button type="button" class="close" aria-label="Close">✕</button>
-      <div><h2>${esc(pairLabel(row))}</h2>
-      <span>from ${esc(cityName(state.home))}${state.month ? ` · ${fmtMonth(state.month)}` : ''}</span></div>
     </div>
-    <div class="seg" role="tablist">${COLUMNS.filter(([c]) => row.cells[c]).map(([c, label]) => `
-      <button type="button" role="tab" data-cls="${c}" aria-selected="${c === cls}">${label} <b>${money(row.cells[c].total)}</b></button>`).join('')}
-    </div>
-    <div class="sum ${tier(cls, trip.total)}">
-      <b>${money(trip.total)}</b>${trend(trip)}
-      <span>${fmtDay(trip.depart)} – ${fmtDay(trip.ret)} · ${trip.days} days · ${trip.tickets.length} tickets${trip.alts ? ` · +${trip.alts} other dates within 2%` : ''}</span>
+    <div class="sum">
+      <div class="stat price ${tier(cls, trip.total)}"><small>Total</small><b>${money(trip.total)}</b>${trend(trip)}</div>
+      <div class="stat"><small>Leave</small><b>${boardDate(trip.depart)}</b><span>${fmtDay(trip.depart).split(',')[0]}</span></div>
+      <div class="stat"><small>Home</small><b>${boardDate(trip.ret)}</b><span>${fmtDay(trip.ret).split(',')[0]}</span></div>
+      <div class="stat"><small>Length</small><b>${trip.days}</b><span>days</span></div>
+      <div class="stat"><small>Tickets</small><b>${trip.tickets.length}</b><span>to book</span></div>
+      ${trip.alts ? `<div class="stat"><small>Similar</small><b>+${trip.alts}</b><span>dates ≤2%</span></div>` : ''}
     </div>
     ${tripMap(list, state.home)}
     <ol class="legs${trip.tickets.some((t) => t.kind === 'rt') ? ' has-rail' : ''}">${list.map((l, i) => (i ? layover(list[i - 1], l) : '') + legItem(l, ticketOf)).join('')}</ol>
-    ${trip.sameDay ? '<p class="note">⏱ Includes a same-day connection between separate tickets: check the times before booking.</p>' : ''}
-    <p class="note">Prices are Google Flights' lowest for each date when last checked. Tap a flight to see it there.</p>`;
+    ${sheetNote(trip, list)}`;
   sheet.querySelector('.close').addEventListener('click', closeTrip);
   for (const b of sheet.querySelectorAll('.seg button')) {
     b.addEventListener('click', () => {
