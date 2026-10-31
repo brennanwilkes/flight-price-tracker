@@ -237,14 +237,15 @@ function stay(prev, next) {
  */
 function segments(l) {
   const f = flightOf(l);
+  const cab = l.cabin === 'J' ? '<span class="cab biz">Business</span>' : '<span class="cab">Economy</span>';
   if (!f) return '';
-  if (f.miss === 'none') return '<span class="segs"><span class="seg-miss">Not scheduled yet</span></span>';
+  if (f.miss === 'none') return `<span class="segs"><span class="seg-miss">Not scheduled yet · ${cab}</span></span>`;
   if (f.miss) return '';
   const segs = f.legs.map((g, i) => {
     const plus = (Date.parse(g.arrDate) - Date.parse(g.depDate)) / 864e5;
     const conn = i ? `<span class="conn"><span>${dur(f.stops[i - 1]?.min ?? 0)} · ${esc(cityName(g.from))}</span></span>` : '';
     return `${conn}<span class="sg">
-      <small class="sg-id"><b>${esc(g.code)}</b> ${esc(g.airline ?? '')}${g.plane ? ` · ${esc(g.plane)}` : ''}</small>
+      <small class="sg-id"><span>${esc(g.code)} · ${esc(g.airline ?? '')}${g.plane ? ` · ${esc(g.plane)}` : ''}</span>${cab}</small>
       <span class="sg-end"><b>${g.dep}</b><small>${g.from}</small></span>
       <span class="sg-dur">${dur(g.min)}</span>
       <span class="sg-end arr"><b>${g.arr}${plus ? `<sup>+${plus}</sup>` : ''}</b><small>${g.to}</small></span>
@@ -254,7 +255,7 @@ function segments(l) {
 }
 
 /**
- * One flight: date, route and price, its segments below; the whole card opens it in Google
+ * One flight: a slim line of date, route and price, its segments below; the whole card opens it in Google
  * Flights. Each ticket has its own colour on the card's left edge (--tk1…); a return ticket's
  * two flights are also joined by a rail down the left gutter (CSS).
  */
@@ -264,9 +265,11 @@ function legItem(l, ticketOf) {
   const dow = new Date(`${l.date}T12:00:00Z`).toLocaleDateString('en-CA', { weekday: 'short', timeZone: 'UTC' }).toUpperCase().replace('.', '');
   return `<li class="leg ${l.cabin === 'J' ? 'biz' : 'eco'}" style="--tk: var(--tk${ticketOf.get(l.t)})">
     <a href="${flightsLink(l.t)}" target="_blank" rel="noopener">
-      <span class="f day"><small>${dow}</small>${boardDate(l.date)}</span>
-      <span class="f route"><b><span>${esc(cityName(l.from))}<span class="arrow">→</span></span> <span>${esc(cityName(l.to))}</span></b><small class="cab${l.cabin === 'J' ? ' biz' : ''}">${l.cabin === 'J' ? 'Business' : 'Economy'}</small></span>
-      <span class="f price"><b>${price || '<span class="incl">incl.</span>'}</b></span>
+      <span class="leg-head">
+        <span class="day">${dow} ${boardDate(l.date)}</span>
+        <b class="route"><span>${esc(cityName(l.from))}<span class="arrow">→</span></span> <span>${esc(cityName(l.to))}</span></b>
+        <b class="price">${price || '<span class="incl">incl.</span>'}</b>
+      </span>
       ${segments(l)}
     </a>
   </li>`;
