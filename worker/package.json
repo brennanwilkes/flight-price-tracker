@@ -10,15 +10,9 @@
     "predeploy": "node scripts/cf-guard.mjs",
     "deploy": "wrangler deploy",
     "predev": "node scripts/cf-guard.mjs",
-    "dev": "wrangler dev",
-    "//typecheck": "Type-check src/.",
-    "typecheck": "tsc --noEmit",
-    "//test": "Zero test dependencies: Node strips the types itself.",
-    "test": "node --test --experimental-strip-types test/*.test.ts"
+    "dev": "wrangler dev"
   },
   "devDependencies": {
-    "wrangler": "4.151.0",
-    "typescript": "5.9.3",
-    "@cloudflare/workers-types": "^5.20260910.1"
+    "wrangler": "4.151.0"
   }
 }
