@@ -15,48 +15,66 @@ const SCROLL_TIMEOUT_MS = 8_000;
 const HORIZON_DAYS = 330;
 const HORIZON_SLACK_DAYS = 15;
 
+// Runs in the page before Google's code: keeps a copy of every FlightsFrontendService response
+// as the page itself receives it. Reading bodies through DevTools (page.on('response')) loses
+// them intermittently ("No data found for resource"), badly so on 2-vCPU Actions runners.
+const RECORDER = `(() => {
+  const log = (window.__rpc = []);
+  const want = (u) => /FlightsFrontendService\\//.test(String(u));
+  const open = XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open = function (m, u, ...rest) { this.__u = String(u); return open.call(this, m, u, ...rest); };
+  const send = XMLHttpRequest.prototype.send;
+  XMLHttpRequest.prototype.send = function (...a) {
+    if (want(this.__u)) this.addEventListener('loadend', () => {
+      let text = null;
+      try { text = this.responseText; } catch {}
+      log.push({ url: this.__u, status: this.status, text });
+    });
+    return send.apply(this, a);
+  };
+  const f = window.fetch;
+  window.fetch = async (...a) => {
+    const res = await f(...a);
+    const u = a[0] instanceof Request ? a[0].url : a[0];
+    if (want(u)) res.clone().text().then((text) => log.push({ url: String(u), status: res.status, text }), () => log.push({ url: String(u), status: res.status, text: null }));
+    return res;
+  };
+})();`;
+
 async function openBrowser({ channel = process.env.PW_CHANNEL || undefined } = {}) {
   const browser = await chromium.launch({ channel, headless: true });
   const ctx = await browser.newContext({ locale: 'en-CA', timezoneId: 'America/Vancouver', viewport: { width: 1280, height: 900 } });
   const socs = /SOCS=([^;]+)/.exec(HEADERS.cookie)[1];
   await ctx.addCookies([{ name: 'SOCS', value: socs, domain: '.google.com', path: '/' }]);
+  await ctx.addInitScript(RECORDER);
   return { browser, ctx };
 }
 
 const addDays = (iso, n) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
 
 /**
- * Run `action` and return the parsed calendar cells of the RPC it triggers.
- * The page sometimes fires a request and supersedes it (body gone: "No data found for
- * resource"), and sometimes gets a rejected reply (HTTP 200, null wrb.fr payload) that it then
- * retries itself. Skip both and wait for the first usable response.
+ * Run `action` and return the parsed calendar cells of the first usable `rpc` response after it.
+ * A rejected reply (HTTP 200, null wrb.fr payload) is skipped: the page retries those itself.
  */
 async function capture(page, rpc, action, step, timeout = RPC_TIMEOUT_MS) {
   const deadline = Date.now() + timeout;
-  let cells = null;
-  let unreadable = 0;
+  let seen = await page.evaluate(() => window.__rpc.length);
   let rejected = 0;
-  let wake = () => {};
-  const onResponse = (r) => {
-    if (!r.url().includes(`FlightsFrontendService/${rpc}`)) return;
-    r.text().then((t) => {
-      const payloads = parseBatchExecute(t).filter((p) => p != null);
-      if (payloads.length) cells ??= payloads.flatMap(parseCalendar);
-      else rejected++;
-    }, () => { unreadable++; }).finally(() => wake());
-  };
-  page.on('response', onResponse);
-  try {
-    await action();
-    while (cells == null) {
-      const left = deadline - Date.now();
-      if (left <= 0) throw new Error(`${step}: no usable ${rpc} response within ${timeout}ms (${rejected} rejected, ${unreadable} unreadable)`);
-      await new Promise((resolve) => { wake = resolve; setTimeout(resolve, Math.min(left, 500)); });
+  let unreadable = 0;
+  await action();
+  for (;;) {
+    const fresh = await page.evaluate((i) => window.__rpc.slice(i), seen);
+    seen += fresh.length;
+    for (const r of fresh) {
+      if (!r.url.includes(`FlightsFrontendService/${rpc}`)) continue;
+      if (r.text == null) { unreadable++; continue; }
+      const payloads = parseBatchExecute(r.text).filter((p) => p != null);
+      if (payloads.length) return payloads.flatMap(parseCalendar);
+      rejected++;
     }
-  } finally {
-    page.off('response', onResponse);
+    if (Date.now() >= deadline) throw new Error(`${step}: no usable ${rpc} response within ${timeout}ms (${rejected} rejected, ${unreadable} unreadable)`);
+    await page.waitForTimeout(200);
   }
-  return cells;
 }
 
 /**
