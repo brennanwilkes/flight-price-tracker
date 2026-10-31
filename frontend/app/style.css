@@ -143,18 +143,18 @@ body.sheet-open { overflow: hidden; }
 .ticket .stub b { font: 700 30px var(--mono); letter-spacing: -0.02em; }
 .ticket .stub .trend { font-size: 12px; }
 .ticket .similar { margin-left: auto; font: 600 11px var(--mono); color: var(--muted); }
-.ticket.good .stub { background: var(--good); }
-.ticket.great .stub { background: var(--great); }
-.ticket.buy .stub { background: var(--buy); color: var(--buy-text); }
+.ticket.good .stub, .ticket.great .stub, .ticket.buy .stub { background-image: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, #fff 6%, transparent) 6px 7px); }
+.ticket.good .stub { background-color: var(--good); }
+.ticket.great .stub { background-color: var(--great); }
+.ticket.buy .stub { background-color: var(--buy); color: var(--buy-text); }
 .ticket.buy .stub small, .ticket.buy .stub .similar { color: inherit; opacity: 0.8; }
 .ticket .span { display: flex; align-items: center; gap: 10px; padding: 14px 16px; }
 .cal { display: flex; flex-direction: column; gap: 3px; padding: 8px 10px; border-radius: 8px; background: var(--cell); border: 1px solid var(--line); flex: none; }
 .cal b { font: 700 18px var(--mono); white-space: nowrap; }
-.span .line { flex: 1; position: relative; display: flex; justify-content: space-between; min-width: 0; font: 600 11px var(--mono); color: var(--muted); white-space: nowrap; }
+.span .line { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; gap: 18px; min-width: 0; font: 600 11px var(--mono); color: var(--muted); white-space: nowrap; }
 .span .line::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 2px solid var(--line); }
 .span .line::after { content: ""; position: absolute; right: -2px; top: calc(50% - 4px); border: 5px solid transparent; border-left: 7px solid var(--line); border-right: 0; }
-.span .line span { position: relative; background: var(--panel); padding: 0 6px; transform: translateY(-14px); }
-.span .line span + span { transform: translateY(14px); }
+.span .line span { position: relative; padding: 0 6px; }
 
 /* Itinerary: each flight a card of boxed fields, its segments below; each ticket in its own
    colour (--tk, set per leg); a return ticket's two flights joined by a rail down the left gutter
@@ -204,6 +204,7 @@ body.sheet-open { overflow: hidden; }
 .map .leg { fill: none; stroke: var(--c); stroke-width: 3.5; stroke-linecap: round; }
 .map .leg.eco { stroke-dasharray: 8 6; }
 .map .city.via { fill: var(--sea); stroke: var(--text); stroke-width: 2; }
+.map .label.nights { font-size: 14px; font-weight: 500; fill: var(--muted); }
 .map .label.via { font-size: 15px; font-weight: 500; fill: var(--muted); }
 .map .city { fill: var(--text); stroke: var(--sea); stroke-width: 2.5; }
 .map .label { fill: var(--text); font: 600 19px var(--mono); paint-order: stroke; stroke: var(--sea); stroke-width: 5px; stroke-linejoin: round; }

@@ -32,7 +32,9 @@ const COLUMNS = [['hybrid', 'Business'], ['economy', 'Economy']];
 // sha: the data-branch commit the loaded files came from. The open trip lives in the URL hash
 // (#trip=IN-OUT~class), so the back gesture closes it and an alert can link straight to one.
 // ?home= (from an alert) picks the home airport, else the last one used.
-const state = { home: /^(YVR|YYJ)$/.test(params.get('home') ?? '') ? params.get('home') : localGet('home') ?? 'YVR', month: '', sha: null, data: {} };
+// data: "HOME" (all trips) or "HOME-CITY" (the via filter: trips staying in CITY) → trips file.
+const state = { home: /^(YVR|YYJ)$/.test(params.get('home') ?? '') ? params.get('home') : localGet('home') ?? 'YVR', month: '', via: '', sha: null, data: {} };
+const viewKey = () => (state.via ? `${state.home}-${state.via}` : state.home);
 const $ = (sel) => document.querySelector(sel);
 
 function localGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
@@ -66,15 +68,19 @@ async function dataSha() {
   return 'data';
 }
 
-async function fetchTrips(sha, home) {
+/** A trips file: "YVR" → derived/trips-YVR.json, "YVR-BKK" → derived/via/trips-YVR-BKK.json. */
+async function fetchTrips(sha, key) {
   const base = DATA_OVERRIDE ?? `https://raw.githubusercontent.com/${REPO}/${sha}`;
-  const res = await fetch(`${base}/derived/trips-${home}.json`, { cache: 'no-cache' });
-  if (!res.ok) throw new Error(`trips-${home}.json: HTTP ${res.status}`);
+  const res = await fetch(`${base}/derived/${key.includes('-') ? 'via/' : ''}trips-${key}.json`, { cache: 'no-cache' });
+  if (!res.ok) throw new Error(`trips-${key}.json: HTTP ${res.status}`);
   return res.json();
 }
 
-async function load(home) {
-  return (state.data[home] ??= await fetchTrips(state.sha, home));
+/** The current view's trips, and its home's (for the via list), fetched once per data commit. */
+async function load() {
+  state.data[state.home] ??= await fetchTrips(state.sha, state.home);
+  if (!state.data[state.home].vias?.includes(state.via)) state.via = '';
+  if (state.via) state.data[viewKey()] ??= await fetchTrips(state.sha, viewKey());
 }
 
 /** Rows for the current month filter, each with its two cells, sorted by hybrid then economy. */
@@ -118,12 +124,14 @@ function boardRow(r, i) {
 }
 
 function render() {
-  const data = state.data[state.home];
+  const data = state.data[viewKey()];
   for (const b of document.querySelectorAll('.toggle button')) b.setAttribute('aria-pressed', String(b.dataset.home === state.home));
   if (!data) return;
 
   const months = [...new Set(data.rows.flatMap((r) => Object.keys(r.months)))].sort();
   $('#month').innerHTML = `<option value="">All months</option>${months.map((m) => `<option value="${m}"${m === state.month ? ' selected' : ''}>${fmtMonth(m)}</option>`).join('')}`;
+  const vias = state.data[state.home]?.vias ?? [];
+  $('#via').innerHTML = `<option value="">Via any city</option>${vias.map((c) => `<option value="${c}"${c === state.via ? ' selected' : ''}>Via ${esc(cityName(c))}</option>`).join('')}`;
 
   const list = rows(data);
   $('#view').innerHTML = list.length
@@ -176,19 +184,24 @@ const flightOf = (l) => l.t.flights?.[l.leg ?? 'out'];
 /** Between two legs: the time in the city, from real flight times when known. */
 function layover(prev, next) {
   const where = esc(cityName(prev.to));
+  if (flightOf(next)?.miss === 'connection') return `<li class="layover bad"><span>Misses connection · ${where}</span></li>`;
+  const { nights, wait } = stay(prev, next);
+  if (nights > 0) return `<li class="layover"><span>${nights} night${nights > 1 ? 's' : ''} · ${where}</span></li>`;
+  return `<li class="layover"><span>${wait != null ? `${dur(wait)} layover` : 'Same day'} · ${where}</span></li>`;
+}
+
+/** Nights in the city between two legs, and the wait in minutes when both flights' times are known. */
+function stay(prev, next) {
   const a = flightOf(prev), b = flightOf(next);
-  if (b?.miss === 'connection') return `<li class="layover bad"><span>Misses connection · ${where}</span></li>`;
   if (a?.legs && b?.legs) {
     const land = a.legs.at(-1), dep = b.legs[0];
-    const nights = (Date.parse(dep.depDate) - Date.parse(land.arrDate)) / 864e5;
-    const wait = minutesAt(dep.depDate, dep.dep) - minutesAt(land.arrDate, land.arr);
-    if (nights > 0) return `<li class="layover"><span>${nights} night${nights > 1 ? 's' : ''} · ${where}</span></li>`;
-    return `<li class="layover"><span>${dur(wait)} layover · ${where}</span></li>`;
+    return {
+      nights: (Date.parse(dep.depDate) - Date.parse(land.arrDate)) / 864e5,
+      wait: minutesAt(dep.depDate, dep.dep) - minutesAt(land.arrDate, land.arr),
+    };
   }
   // One side unknown: the real landing day if known, else the usual one.
-  const nights = (Date.parse(next.date) - Date.parse(a?.legs?.at(-1).arrDate ?? landsOn(prev))) / 864e5;
-  if (nights > 0) return `<li class="layover"><span>${nights} night${nights > 1 ? 's' : ''} · ${where}</span></li>`;
-  return `<li class="layover"><span>Same day · ${where}</span></li>`;
+  return { nights: (Date.parse(next.date) - Date.parse(a?.legs?.at(-1).arrDate ?? landsOn(prev))) / 864e5, wait: null };
 }
 
 /** The flights inside one leg: each segment boxed, connections between them. */
@@ -234,6 +247,16 @@ function legItem(l, ticketOf) {
   </li>`;
 }
 
+/** Nights stayed per city (overnight stays only), for the map: city → [nights, …] in order. */
+function staysOf(list) {
+  const out = new Map();
+  for (let i = 1; i < list.length; i++) {
+    const { nights } = stay(list[i - 1], list[i]);
+    if (nights > 0) out.set(list[i].from, [...(out.get(list[i].from) ?? []), nights]);
+  }
+  return out;
+}
+
 /** Every flight actually flown, for the map: a leg's connections when known, else the leg. */
 const flown = (list, ticketOf) => list.flatMap((l) => {
   const f = flightOf(l);
@@ -254,7 +277,7 @@ function closeTrip() {
 /** The full-screen trip view for #trip=IN-OUT~class, or nothing. */
 function renderSheet() {
   const m = /^#trip=([A-Z]{3}-[A-Z]{3})~(hybrid|economy)$/.exec(location.hash);
-  const data = state.data[state.home];
+  const data = state.data[viewKey()];
   const row = m && data && rows(data).find((r) => `${r.in}-${r.out}` === m[1]);
   let sheet = $('#sheet');
   if (!row) {
@@ -293,7 +316,7 @@ function renderSheet() {
         <div class="cal"><small>${weekday(trip.ret)}</small><b>${boardDate(trip.ret)}</b></div>
       </div>
     </div>
-    ${tripMap(flown(list, ticketOf), state.home, [...new Set(list.flatMap((l) => [l.from, l.to]))])}
+    ${tripMap(flown(list, ticketOf), state.home, [...new Set(list.flatMap((l) => [l.from, l.to]))], staysOf(list))}
     <ol class="legs${trip.tickets.some((t) => t.kind === 'rt') ? ' has-rail' : ''}">${list.map((l, i) => (i ? layover(list[i - 1], l) : '') + legItem(l, ticketOf)).join('')}</ol>
 `;
   sheet.querySelector('.close').addEventListener('click', closeTrip);
@@ -311,7 +334,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('#shee
 async function show() {
   try {
     state.sha ??= ALERT_SHA ?? await dataSha();
-    await load(state.home);
+    await load();
   } catch (e) {
     $('#view').innerHTML = `<p class="note">Couldn't load trips: ${esc(e.message)}</p>`;
     return;
@@ -345,11 +368,12 @@ async function refresh(resumed) {
   try { fresh = await fetchTrips(sha, state.home); } catch { return; }
   const shown = state.data[state.home];
   if (shown && Date.parse(fresh.generatedAt) <= Date.parse(shown.generatedAt)) return;
-  const apply = () => {
+  const apply = async () => {
     state.sha = sha;
     state.data = { [state.home]: fresh };
+    if (!fresh.vias?.includes(state.via)) state.via = '';
     clearBar('fresh');
-    render();
+    await show();
   };
   if (resumed || !shown) apply();
   else showBar('fresh', 'New prices are in. Tap to show them.', apply);
@@ -357,5 +381,6 @@ async function refresh(resumed) {
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refresh(true); });
 setInterval(() => { if (document.visibilityState === 'visible') refresh(false); }, POLL_MS);
 $('#month').addEventListener('change', (e) => { state.month = e.target.value; render(); });
+$('#via').addEventListener('change', (e) => { state.via = e.target.value; show(); });
 // An alert's prices first; then anything newer than them.
 show().then(() => { if (ALERT_SHA) refresh(true); });

@@ -9,10 +9,14 @@
  * and per departure month. Rows sorted by cheapest hybrid, then cheapest economy. Overall cells
  * carry `was`: the cell's total 24 h earlier, when known.
  *
+ *   derived/via/trips-<HOME>-<CITY>.json   the same rows (no `was`), each cell the cheapest trip
+ *                                           staying in CITY: the dashboard's via filter
+ *
  * Every row's overall cells get the actual flights on each ticket
- * (src/trips/details.js; skipped with --no-details). The price graph has no times, so a cell's
- * cheapest trip can have a connection no flight makes; then the next cheapest candidate (any month,
- * plus the builder's fallbacks) is checked, up to TRIES, and rows re-sort on what connects.
+ * (src/trips/details.js; skipped with --no-details), and the listed prices: the price graph has
+ * no times and can be stale, so a cell's cheapest trip may not connect or may cost more as listed.
+ * Further candidates (any month, plus the builder's fallbacks) are checked while they could still
+ * be cheaper, up to TRIES (verify), and rows re-sort on the checked totals.
  *
  *   node scraper/bin/build-trips.js --data <dataDir> [--no-details]
  */
@@ -27,7 +31,6 @@ const alertConfig = require('../config/alerts.json');
 const { tierOf } = require('../src/alerts/rules');
 
 const CLASSES = ['hybrid', 'economy'];
-const DETAIL_ROWS = Infinity; // every row: ~4 searches a cell, ~1 s each, 4 at a time (~3 min a sweep)
 const TRIES = 6;
 
 function arg(name, def) {
@@ -35,10 +38,10 @@ function arg(name, def) {
   return i > 0 ? process.argv[i + 1] : def;
 }
 
-function rowsFor(home, trips) {
+function rowsFor(home, trips, via = '') {
   const rows = new Map();
   for (const t of trips) {
-    if (t.home !== home) continue;
+    if (t.home !== home || t.via !== via) continue;
     const key = `${t.in}-${t.out}`;
     if (!rows.has(key)) rows.set(key, { in: t.in, out: t.out, hybrid: null, economy: null, months: {} });
     const row = rows.get(key);
@@ -58,38 +61,45 @@ function rowsFor(home, trips) {
 
 // A trip as the dashboard stores it, without the builder's keys.
 // tier: the price tier word (config/alerts.json), shared with the alerts.
-const strip = ({ home, in: _i, out: _o, cls, month, safe, fallbacks, ...trip }) => ({ ...trip, tier: tierOf(alertConfig, cls, trip.total) });
+const strip = ({ home, in: _i, out: _o, cls, month, safe, fallbacks, via, ...trip }) => ({ ...trip, tier: tierOf(alertConfig, cls, trip.total) });
 // An overall cell: its own copy of the tickets (flight details go there, not on the month twin)
 // and +N counted across months.
-const overall = (t, trips) => t && { ...strip(t), tickets: t.tickets.map((x) => ({ ...x })), alts: similarCount(trips.dateSets, t) };
+const overall = (t, trips) => t && { ...strip(t), tickets: t.tickets.map((x) => ({ ...x })), alts: t.via ? 0 : similarCount(trips.dateSets, t) };
 const price = (t) => t?.total ?? Infinity;
 const sortRows = (rows) => rows.sort((a, b) => price(a.hybrid) - price(b.hybrid) || price(a.economy) - price(b.economy));
 
 /**
- * Check the top rows' overall cells against real flights. A cell whose trip doesn't connect moves
- * to its next candidate; if none of TRIES connects it keeps the cheapest, which shows its own bad
- * connection.
+ * Check every row's overall cells against real flights (byHome: any map of row lists). Each
+ * cell walks its candidates cheapest first (graph prices), keeping the cheapest that connects at
+ * listed prices, until the next candidate's graph total can't beat it, or after TRIES. None
+ * connects: the cheapest, showing its own bad connection.
  */
 async function verify(byHome, trips) {
   const t0 = Date.now();
   const cache = new Map();
   const st = { cells: 0, replaced: 0, unresolved: 0, searches: 0, failed: 0, none: 0 };
-  let pending = [...byHome.values()].flatMap((rows) => rows.slice(0, DETAIL_ROWS).flatMap((r) => CLASSES.filter((c) => r[c]).map((cls) => ({ r, cls, i: 0, first: r[cls] }))));
+  let pending = [...byHome.values()].flatMap((rows) => rows.flatMap((r) => CLASSES.filter((c) => r[c]).map((cls) => ({ r, cls, i: 0, cand: r[cls], best: null, first: null }))));
   st.cells = pending.length;
-  for (let round = 0; pending.length; round++) {
-    const s = await addDetails(pending.map((p) => p.r[p.cls]), config.origins, cache);
+  while (pending.length) {
+    const s = await addDetails(pending.map((p) => p.cand), config.origins, cache);
     st.searches += s.searches;
     st.failed += s.failed;
+    st.error ??= s.error;
     st.none += s.none;
     pending = pending.filter((p) => {
-      if (p.r[p.cls].connects) {
-        if (p.i) st.replaced++;
-        return false;
+      p.first ??= p.cand;
+      if (p.cand.connects && !(p.best?.total <= p.cand.total)) p.best = p.cand;
+      const next = p.r.cands[p.cls][++p.i];
+      if (next && p.i < TRIES && !(p.best && next.total >= p.best.total)) {
+        p.cand = overall(next, trips);
+        return true;
       }
-      const next = round < TRIES - 1 && p.r.cands[p.cls][++p.i];
-      p.r[p.cls] = next ? overall(next, trips) : p.first;
-      if (!next) st.unresolved++;
-      return !!next;
+      const done = p.best ?? p.first;
+      done.tier = tierOf(alertConfig, p.cls, done.total);
+      p.r[p.cls] = done;
+      if (!p.best) st.unresolved++;
+      else if (p.best !== p.first) st.replaced++;
+      return false;
     });
   }
   for (const rows of byHome.values()) {
@@ -108,14 +118,25 @@ async function main() {
   const generatedAt = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   const dayAgo = valuesAt(dataDir, new Date(Date.parse(generatedAt) - 864e5).toISOString().replace(/\.\d+Z$/, 'Z'));
   const cells = [];
-  const byHome = new Map(config.origins.map((home) => [home, rowsFor(home, trips)]));
+  // Views: "HOME|" is the dashboard's, "HOME|CITY" the via filter's for each city.
+  // A city every trip stays in (Da Nang) needs no view of its own.
+  const main = trips.filter((t) => !t.via);
+  const vias = [...new Set(trips.map((t) => t.via))].filter((c) => c && !main.every((t) => t.tickets.some((x) => x.to === c))).sort();
+  const byHome = new Map(config.origins.flatMap((home) => ['', ...vias].map((via) => [`${home}|${via}`, rowsFor(home, trips, via)])));
   if (!process.argv.includes('--no-details')) {
     const s = await verify(byHome, trips);
-    console.log(`details: ${s.cells} cells, ${s.replaced} moved to a trip that connects, ${s.unresolved} with none; ${s.searches} searches (${s.failed} failed), ${s.none} flights not listed yet; ${s.ms}ms`);
+    console.log(`details: ${s.cells} cells, ${s.replaced} moved to another trip (connects, or cheaper as listed), ${s.unresolved} with none that connects; ${s.searches} searches (${s.failed} failed${s.error ? `, e.g. ${s.error}` : ''}), ${s.none} flights not listed yet; ${s.ms}ms`);
   } else {
     for (const rows of byHome.values()) for (const r of rows) delete r.cands;
   }
-  for (const [home, rows] of byHome) {
+  fs.rmSync(path.join(dataDir, 'derived', 'via'), { recursive: true, force: true });
+  fs.mkdirSync(path.join(dataDir, 'derived', 'via'), { recursive: true });
+  for (const [view, rows] of byHome) {
+    const [home, via] = view.split('|');
+    if (via) {
+      if (rows.length) fs.writeFileSync(path.join(dataDir, 'derived', 'via', `trips-${home}-${via}.json`), JSON.stringify({ generatedAt, home, via, rows }));
+      continue;
+    }
     for (const r of rows) {
       for (const cls of CLASSES) {
         if (!r[cls]) continue;
@@ -126,7 +147,7 @@ async function main() {
       }
     }
     fs.mkdirSync(path.join(dataDir, 'derived'), { recursive: true });
-    fs.writeFileSync(path.join(dataDir, 'derived', `trips-${home}.json`), JSON.stringify({ generatedAt, home, rows })); // compact: the phone loads it
+    fs.writeFileSync(path.join(dataDir, 'derived', `trips-${home}.json`), JSON.stringify({ generatedAt, home, vias, rows })); // compact: the phone loads it
     const top = rows[0]?.hybrid;
     console.log(`${home}: ${rows.length} rows${top ? `, best hybrid ${rows[0].in}/${rows[0].out} ${top.total} (${top.depart}…${top.ret})` : ''}`);
   }

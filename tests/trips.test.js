@@ -17,7 +17,7 @@ function world({ rt = {}, ow = {}, hops = {} }) {
     hop: (from, to, date) => hops[`${from}-${to}|${date}`] ?? null,
   };
 }
-const find = (trips, cls, i, o) => trips.find((t) => t.cls === cls && t.in === i && t.out === o);
+const find = (trips, cls, i, o) => trips.find((t) => !t.via && t.cls === cls && t.in === i && t.out === o);
 
 test('round trip to a city needs hops into and out of Da Nang for 5 nights', () => {
   const trips = buildTrips(world({

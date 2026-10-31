@@ -35,12 +35,13 @@ function parseOptions(html) {
   }).filter((o) => o.price != null && o.legs.length);
 }
 
-async function search(query) {
+/** One search's result rows. Google now and then serves a page without them: one retry. */
+async function search(query, tries = 2) {
   const r = await fetchPage(query);
-  if (r.status !== 200) throw new Error(`HTTP ${r.status}`);
-  const opts = parseOptions(r.html);
-  if (!opts) throw new Error('no results blob');
-  return opts;
+  const opts = r.status === 200 ? parseOptions(r.html) : null;
+  if (opts) return opts;
+  if (tries > 1) return search(query, tries - 1);
+  throw new Error(r.status === 200 ? 'no results blob' : `HTTP ${r.status}`);
 }
 
 module.exports = { parseOptions, search };

@@ -36,10 +36,11 @@ function greatCircle(a, b, n = 64) {
 
 /**
  * The trip as an SVG. legs: the flights in flying order, [{ from, to, cabin, tk }], tk being the
- * ticket's colour number; cities: the trip's own cities (any other airport is a connection). A
- * code without coordinates (YVR, YYJ, SEA…) is off the map, toward home.
+ * ticket's colour number; cities: the trip's own cities (any other airport is a connection);
+ * stays: city → nights for each overnight stay, noted under the city's name. A code without
+ * coordinates (YVR, YYJ, SEA…) is off the map, toward home.
  */
-export function tripMap(legs, home, cities) {
+export function tripMap(legs, home, cities, stays = new Map()) {
   const onMap = (c) => place(c).lon != null;
   legs = legs.filter((l) => onMap(l.from) || onMap(l.to));
   const stops = [...new Set(legs.flatMap((l) => [l.from, l.to]).filter(onMap))];
@@ -118,7 +119,8 @@ export function tripMap(legs, home, cities) {
     const left = x > W * 0.7;
     const via = !cities.includes(c);
     return `<circle class="city${via ? ' via' : ''}" cx="${f(x)}" cy="${f(y)}" r="${via ? 4.5 : 6}"/>
-      <text class="label${via ? ' via' : ''}" x="${f(x + (left ? -11 : 11))}" y="${f(y + 5)}" text-anchor="${left ? 'end' : 'start'}">${cityName(c)}</text>`;
+      <text class="label${via ? ' via' : ''}" x="${f(x + (left ? -11 : 11))}" y="${f(y + 5)}" text-anchor="${left ? 'end' : 'start'}">${cityName(c)}</text>${stays.has(c) ? `
+      <text class="label nights" x="${f(x + (left ? -11 : 11))}" y="${f(y + 24)}" text-anchor="${left ? 'end' : 'start'}">${stays.get(c).join(' + ')} night${stays.get(c).join() === '1' ? '' : 's'}</text>` : ''}`;
   }).join('');
 
   // Home, named where each long-haul line leaves the map: beside the line, on the inner side,

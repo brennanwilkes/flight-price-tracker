@@ -38,7 +38,8 @@ function flightsOf(trip, homes) {
 }
 /**
  * Fill `flights` on the given trips' tickets, and set each trip's `connects` (false when some
- * connection has no flight). Pass the same `cache` across calls to reuse searches.
+ * connection has no flight). A ticket with a listed flight takes its price (the graph's kept as
+ * `graph`) and the trip's total is re-summed. Pass the same `cache` across calls to reuse searches.
  * Returns { searches, failed, connection, none } (the last two: misses).
  */
 async function addDetails(trips, homes, cache = new Map()) {
@@ -57,7 +58,10 @@ async function addDetails(trips, homes, cache = new Map()) {
     while (next < queries.length) await searchOnce(queries[next++]);
   }));
   stats.searches = queries.length;
-  for (const q of queries) if ((await searchOnce(q)).error) stats.failed++;
+  for (const q of queries) {
+    const r = await searchOnce(q);
+    if (r.error) { stats.failed++; stats.error ??= `${q.from}-${q.to} ${q.out}: ${r.error}`; }
+  }
 
   for (const trip of trips) {
     let landed = null; // minutes, of the previous flight's arrival
@@ -93,8 +97,12 @@ async function addDetails(trips, homes, cache = new Map()) {
       }
       if (f.ticket.kind === 'rt' && f.dir === 'out') outAirlines = pick.airlines;
       f.ticket.flights[f.dir] = pick;
+      // The listed price is what booking costs; the graph's can be stale (seen: $4,262 graph,
+      // $5,012 cheapest listed). A return's price is on its outbound.
+      if (f.dir === 'out') { f.ticket.graph = f.ticket.price; f.ticket.price = pick.price; }
       landed = arrival(pick);
     }
+    trip.total = trip.tickets.reduce((sum, t) => sum + t.price, 0);
   }
   return stats;
 }

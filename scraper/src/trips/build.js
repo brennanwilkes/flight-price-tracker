@@ -112,6 +112,8 @@ function isSafe(d0, hops, backDate) {
  * }
  * Returns [{ home, cls: 'hybrid'|'economy', in, out, month, total, depart, ret, days, sameDay, safe, tickets, alts, fallbacks }],
  * fallbacks being the next cheapest trips for the same cell plus the cheapest safe one (isSafe).
+ * via: '' for the cell's cheapest overall; a city code for its cheapest that stays in that city
+ * (in, out or a hop's destination), for the dashboard's via filter. alts is 0 for those.
  * where alts counts the trip's other date sets (depart, ret) in its month within SIMILAR of its
  * price. The array also carries `.dateSets`: "home|cls|in|out" → Map("depart|ret" → cheapest
  * total), for counting across months (similarCount).
@@ -121,8 +123,16 @@ function buildTrips(fares) {
   const top = new Map(); // key → cheapest FALLBACKS + 1 trips, cheapest first
   const safe = new Map(); // key → cheapest safe trip
   const dateSets = new Map();
+  // Kept per cell (via ''), and again per cell and city the trip stays in (the via filter).
   const offer = (trip) => {
-    const key = `${trip.home}|${trip.cls}|${trip.in}|${trip.out}|${trip.month}`;
+    for (const via of ['', ...new Set(trip.tickets.map((t) => t.to).filter((c) => c !== trip.home))]) keep(trip, via);
+    const route = `${trip.home}|${trip.cls}|${trip.in}|${trip.out}`;
+    if (!dateSets.has(route)) dateSets.set(route, new Map());
+    const sets = dateSets.get(route), set = `${trip.depart}|${trip.ret}`;
+    if (!(sets.get(set) <= trip.total)) sets.set(set, trip.total);
+  };
+  const keep = (trip, via) => {
+    const key = `${trip.home}|${trip.cls}|${trip.in}|${trip.out}|${trip.month}|${via}`;
     const list = top.get(key) ?? [];
     if (list.length <= FALLBACKS || list.at(-1).total > trip.total) {
       const at = list.findIndex((t) => t.total > trip.total);
@@ -131,10 +141,6 @@ function buildTrips(fares) {
       top.set(key, list);
     }
     if (trip.safe && !(safe.get(key)?.total <= trip.total)) safe.set(key, trip);
-    const route = `${trip.home}|${trip.cls}|${trip.in}|${trip.out}`;
-    if (!dateSets.has(route)) dateSets.set(route, new Map());
-    const sets = dateSets.get(route), set = `${trip.depart}|${trip.ret}`;
-    if (!(sets.get(set) <= trip.total)) sets.set(set, trip.total);
   };
 
   for (const d0 of fares.departures) {
@@ -177,12 +183,13 @@ function buildTrips(fares) {
       }
     }
   }
+  // A trip can head several lists (its cell's and its cities'), so each entry is its own copy.
   const trips = [...top].map(([key, [first, ...rest]]) => {
     const s = safe.get(key);
-    first.fallbacks = s && !rest.includes(s) && s !== first ? [...rest, s] : rest;
-    return first;
+    const via = key.slice(key.lastIndexOf('|') + 1);
+    return { ...first, via, fallbacks: s && !rest.includes(s) && s !== first ? [...rest, s] : rest };
   }).sort((a, b) => a.total - b.total);
-  for (const t of trips) t.alts = similarCount(dateSets, t, t.month);
+  for (const t of trips) t.alts = t.via ? 0 : similarCount(dateSets, t, t.month);
   trips.dateSets = dateSets;
   return trips;
 }
