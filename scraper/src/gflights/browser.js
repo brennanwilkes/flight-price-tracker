@@ -18,6 +18,9 @@ const PAGE_LOADS = 3;
 // So wait long for a reply once the request is out, but re-click quickly if none went out.
 const GRAPH_TIMEOUT_MS = 60_000;
 const SENT_TIMEOUT_MS = 6_000;
+// A frozen tab can hang page.evaluate forever (seen: a sweep stuck 47 min). Each page gets a hard
+// deadline; closing it fails whatever is pending.
+const PAGE_DEADLINE_MS = 4 * 60_000;
 // Airlines load fares ~330 days out; the graph silently stops fetching there.
 // Measured 2026-10-30: last loaded return date = today + 329.
 const HORIZON_DAYS = 330;
@@ -53,6 +56,13 @@ const RECORDER = `(() => {
     return res;
   };
 })();`;
+
+async function newPage(ctx, ms = PAGE_DEADLINE_MS) {
+  const page = await ctx.newPage();
+  const timer = setTimeout(() => page.close().catch(() => {}), ms);
+  page.once('close', () => clearTimeout(timer));
+  return page;
+}
 
 async function openBrowser({ channel = process.env.PW_CHANNEL || undefined } = {}) {
   const browser = await chromium.launch({ channel, headless: true });
@@ -113,7 +123,7 @@ async function clickAndSend(page, button, rpc) {
 async function priceGraph(ctx, { from, to, cabin, tripLen = null, start, end }) {
   const span = tripLen ?? 0; // one-way when tripLen is null
   if (addDays(start, span) > addDays(today(), HORIZON_DAYS)) return []; // nothing loaded yet
-  const page = await ctx.newPage();
+  const page = await newPage(ctx);
   try {
     const url = pageUrl({ from, to, out: start, ret: tripLen == null ? null : addDays(start, tripLen), cabin });
     const graphBtn = page.getByRole('button', { name: 'Price graph' }).first();
@@ -176,7 +186,7 @@ async function clickCheapest(page) {
  * GetBookingResults (see parseBooking: airlineDirect, matchesCabin, fare, price).
  */
 async function bookingOptions(ctx, { from, to, out, ret, cabin }) {
-  const page = await ctx.newPage();
+  const page = await newPage(ctx);
   try {
     await page.goto(pageUrl({ from, to, out, ret, cabin }), { waitUntil: 'networkidle' });
     const listed = await clickCheapest(page);
@@ -195,11 +205,18 @@ async function bookingOptions(ctx, { from, to, out, ret, cabin }) {
  * inlines none (gflights/flights.js). Returns the payload, laid out like the inline ds:1 blob.
  */
 async function shoppingResults(ctx, query) {
-  const page = await ctx.newPage();
+  const page = await newPage(ctx, 90_000);
+  const label = `${query.from}-${query.to} ${query.out}`;
   try {
-    const [payload] = await capture(page, 'GetShoppingResults', (p) => [p],
-      () => page.goto(pageUrl(query), { waitUntil: 'domcontentloaded', timeout: PAGE_TIMEOUT_MS }), `${query.from}-${query.to} ${query.out}`, 30_000);
-    return payload;
+    const payloads = await capture(page, 'GetShoppingResults', (p) => [p],
+      () => page.goto(pageUrl(query), { waitUntil: 'domcontentloaded', timeout: PAGE_TIMEOUT_MS }), label, 30_000);
+    // The first reply is only Google's "top flights"; the rest (often the cheapest) load behind
+    // "View more flights".
+    const more = page.getByRole('button', { name: /more flights/i }).first();
+    if (await more.isVisible({ timeout: 3000 }).catch(() => false)) {
+      payloads.push(...await capture(page, 'GetShoppingResults', (p) => [p], () => more.click(), `${label} more`, 15_000).catch(() => []));
+    }
+    return payloads;
   } finally {
     await page.close();
   }

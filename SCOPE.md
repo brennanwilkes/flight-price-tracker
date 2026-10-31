@@ -82,6 +82,14 @@ the builder searches every combination and the dashboard shows the best N.
   lengths) hourly; other lengths and new gateways ~6 h; hops 12–24 h; each graph has a max age and a
   sweep does the most overdue work within a time budget. Be nice to Google; sweeps stay well under
   an hour.
+- **Vietnam anchor, not just Da Nang (added 2026-10-31):** the real destination is Hoi An, reached by
+  train/bus. A trip may fly into and out of any of DAD, HUI, HAN, SGN, and may be open-jaw inside
+  Vietnam (e.g. into Hanoi, out of Da Nang). Hoi An still needs ≥ 5 nights **after ground time**:
+  Da Nang and Hue cost 0 days, Hanoi and Ho Chi Minh City 1 day each way.
+- **Any mix of tickets:** one-ways, returns, and returns nested inside returns (e.g. YVR⇄Manila +
+  Manila⇄Da Nang). Return tickets between the Vietnamese cities and every gateway/hop city (only
+  over routes the discovery pass finds), at every length that fits; low-value pairs refreshed
+  slowly (layered/tiered, as above).
 
 **Dashboard**
 - **Colour means one thing each:** green/purple = price tiers; gold = business class; tickets get

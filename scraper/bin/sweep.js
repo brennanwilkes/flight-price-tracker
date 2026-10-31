@@ -81,6 +81,9 @@ function planHops(only, hopState, now) {
   return due.sort((x, y) => x.last - y.last).slice(0, maxPerRun).map((d) => d.q);
 }
 
+// Scraping stops starting combos after this, leaving the trip build and push inside the job limit.
+const BUDGET_MS = 20 * 60_000;
+
 async function withRetry(fn, label) {
   try {
     return await fn();
@@ -121,6 +124,7 @@ async function main() {
       const work = [...planLongLegs(only, homes), ...(hops ? planHops(only, hopState, Date.now()) : [])];
       await pool(work, CONCURRENCY, async (q) => {
         const label = q.tripLen == null ? q.routeId : `${q.routeId} ${q.tripLen}d`;
+        if (Date.now() - t0 > BUDGET_MS) { run.skipped = (run.skipped ?? 0) + 1; return; } // next sweep
         try {
           const cells = await withRetry(() => priceGraph(ctx, { ...q, start: wStart, end: wEnd }), label);
           const changes = recordCells(dataDir, q.routeId, q.tripLen ?? 0, cells, { observedAt, egress });
@@ -154,7 +158,7 @@ async function main() {
   health.runs = [{ ...run, success }, ...health.runs].slice(0, HEALTH_RUNS_KEPT);
   writeJson(healthFile, health);
 
-  const summary = `sweep ${observedAt} | ${success ? 'OK' : 'FAILED'} | ${run.ok}/${total} combos | ${run.priced} priced, ${run.changes} changed | control ${run.control} | ${egress} | ${run.seconds}s`;
+  const summary = `sweep ${observedAt} | ${success ? 'OK' : 'FAILED'} | ${run.ok}/${total} combos${run.skipped ? ` (${run.skipped} left for next sweep)` : ''} | ${run.priced} priced, ${run.changes} changed | control ${run.control} | ${egress} | ${run.seconds}s`;
   fs.writeFileSync(path.join(dataDir, '.sweep-summary'), `${summary}\n${run.errors.map((e) => `- ${e}`).join('\n')}\n`);
   console.log(summary);
   if (!success) process.exitCode = 1;

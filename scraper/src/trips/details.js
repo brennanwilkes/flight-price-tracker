@@ -10,7 +10,7 @@
  * option: { price, min, airlines, legs: [{ code, airline, from, to, dep, arr, depDate, arrDate,
  * min, plane }], stops: [{ at, min }], likely? }.
  */
-const { search } = require('../gflights/flights');
+const { search, parseResults } = require('../gflights/flights');
 
 const MIN_CONNECT_MIN = 4 * 60;
 const CONCURRENCY = 6; // searches in flight; a browser fallback (~10 s) holds one of these
@@ -41,7 +41,7 @@ function flightsOf(trip, homes) {
  * connection has no flight). A ticket with a listed flight takes its price (the graph's kept as
  * `graph`) and the trip's total is re-summed. Pass the same `cache` across calls to reuse searches;
  * `browser` (query → GetShoppingResults payload) answers searches whose page inlined no results.
- * Returns { searches, failed, connection, none } (the last two: misses).
+ * Returns { searches, failed, full, connection, none } (full: full-list page loads; the last two: misses).
  */
 async function addDetails(trips, homes, cache = new Map(), browser = null) {
   const searchOnce = (q) => {
@@ -49,7 +49,17 @@ async function addDetails(trips, homes, cache = new Map(), browser = null) {
     if (!cache.has(key)) cache.set(key, search(q, { browser }).catch((e) => ({ error: e.message })));
     return cache.get(key);
   };
-  const stats = { searches: 0, failed: 0, connection: 0, none: 0 };
+  // A plain search lists only Google's top flights (the cheapest among them); when none of those
+  // connects, or the search failed, the page's full list ("View more flights").
+  const fullOnce = (q) => {
+    const key = `full ${JSON.stringify(q)}`;
+    if (!cache.has(key)) {
+      cache.set(key, browser(q).then((ps) => ps.flatMap(parseResults)).catch((e) => ({ error: e.message })));
+      stats.full++;
+    }
+    return cache.get(key);
+  };
+  const stats = { searches: 0, failed: 0, full: 0, connection: 0, none: 0 };
 
   // Warm the cache with bounded concurrency, then pick sequentially per trip.
   const queries = [...new Map(trips.flatMap((t) => flightsOf(t, homes)).map((f) => [JSON.stringify(f.query), f.query])).values()]
@@ -61,7 +71,8 @@ async function addDetails(trips, homes, cache = new Map(), browser = null) {
   stats.searches = queries.length;
   for (const q of queries) {
     const r = await searchOnce(q);
-    if (r.error) { stats.failed++; stats.error ??= `${q.from}-${q.to} ${q.out}: ${r.error}`; }
+    if (r.error && browser) cache.set(JSON.stringify(q), await fullOnce(q)); // retried in a page
+    if ((await searchOnce(q)).error) { stats.failed++; stats.error ??= `${q.from}-${q.to} ${q.out}: ${r.error}`; }
   }
 
   for (const trip of trips) {
@@ -70,12 +81,18 @@ async function addDetails(trips, homes, cache = new Map(), browser = null) {
     const flights = flightsOf(trip, homes);
     trip.connects = true;
     for (const [i, f] of flights.entries()) {
-      const opts = await searchOnce(f.query);
+      let opts = await searchOnce(f.query);
       f.ticket.flights ??= {};
       if (opts.error) { landed = null; continue; } // unknown: don't judge the next connection
-      const ok = opts.filter((o) => landed == null || at(o.legs[0].depDate, o.legs[0].dep) >= landed + MIN_CONNECT_MIN);
+      const connects = (o) => landed == null || at(o.legs[0].depDate, o.legs[0].dep) >= landed + MIN_CONNECT_MIN;
+      if (browser && !opts.some(connects)) {
+        const all = await fullOnce(f.query);
+        if (!all.error && all.length) opts = all;
+      }
+      const ok = opts.filter(connects);
       let pick;
       if (f.dir === 'back') {
+        if (!outAirlines) continue; // which return goes with an unknown outbound can't be told
         const same = ok.filter((o) => o.airlines.some((a) => outAirlines?.includes(a)));
         pick = cheapest(same.length ? same : ok);
         if (pick) pick = { ...pick, likely: true };

@@ -39,17 +39,19 @@ function parseResults(ds1) {
   }).filter((o) => o.price != null && o.legs.length);
 }
 
+const dedupe = (opts) => [...new Map(opts.map((o) => [`${o.price} ${o.legs.map((l) => `${l.code} ${l.depDate}`)}`, o])).values()];
+
 /**
  * One search's result rows. Google now and then serves a page without them: one retry. Some
  * searches come back with none inlined although flights exist (seen: YVR⇄DAD, HAN→DAD); the
  * page then loads them through GetShoppingResults, so with `browser` (browser.shoppingResults
- * bound to a context) an empty answer is asked again in a real page.
+ * bound to a context: its payloads) an empty answer is asked again in a real page.
  */
 async function search(query, { browser = null, tries = 2 } = {}) {
   const r = await fetchPage(query);
   const opts = r.status === 200 ? parseOptions(r.html) : null;
   if (opts?.length) return opts;
-  if (opts && browser) return parseResults(await browser(query));
+  if (opts && browser) return dedupe((await browser(query)).flatMap(parseResults));
   if (opts) return opts;
   if (tries > 1) return search(query, { browser, tries: tries - 1 });
   throw new Error(r.status === 200 ? 'no results blob' : `HTTP ${r.status}`);
