@@ -14,8 +14,9 @@ const MIN_SPAN = 14; // smallest crop width, degrees of longitude
 const COMPACT = 20;
 const COMPACT_CROP = { pad: 1.5, minSpan: 10, longShown: 3 };
 const HOME = { lon: -123.18, lat: 49.19 }; // YVR; YYJ is the same direction at this scale
-// Label metrics at the largest label size (phones, style.css), in viewBox units: mono ≈ 0.6em wide.
-const CHAR_W = 16, LINE_H = 28;
+// Label metrics at the largest label sizes (phones, style.css: 26px names, 21px nights), in
+// viewBox units: mono ≈ 0.6em wide.
+const CHAR_W = 15.6, CHAR_W_SMALL = 12.6, LINE_H = 28;
 const LONG_SHOWN = 5; // of greatCircle's 64 steps (~7° of arc for these routes)
 
 const RAD = Math.PI / 180;
@@ -131,19 +132,51 @@ export function tripMap(legs, home, cities, stays = new Map()) {
   // Named only where the trip spends a night (or an overland stretch starts or ends): a city
   // only changed planes in keeps its dot, the route runs through it.
   const overland = new Set(legs.filter((l) => l.ground).flatMap((l) => [l.from, l.to]));
-  const boxes = []; // the city labels' rough extents, for placing home's clear of them
+  // Each label goes where it covers least: right of the dot (nights under, or over near the
+  // bottom), left, under or over it; scored against every dot, the labels already placed (×3) and
+  // the usual places of those still to come (×1), and the map's edges.
+  const labelled = stops.filter((c) => stays.has(c) || overland.has(c));
+  const nightsOf = (c) => (stays.has(c) ? `${stays.get(c).join(' + ')} night${stays.get(c).join() === '1' ? '' : 's'}` : '');
+  /** The label's lines and their extent at a place: 'right' | 'left' | 'under' | 'over', nights up or down. */
+  const layout = (c, where, up) => {
+    const [x, y] = pt(c);
+    const nights = nightsOf(c);
+    const w = Math.max(cityName(c).length * CHAR_W, nights.length * CHAR_W_SMALL);
+    const side = where === 'right' || where === 'left';
+    const tx = where === 'right' ? x + 11 : where === 'left' ? x - 11 : x;
+    const ty = side ? y : y + (where === 'under' ? 1 : -1) * LINE_H * (nights && where === 'over' ? 1.9 : 0.9);
+    const down = side ? !up : true; // nights under the name, but over it beside a dot near the bottom
+    const x0 = where === 'right' ? tx : where === 'left' ? tx - w : tx - w / 2;
+    return { c, tx, ty, down, anchor: where === 'right' ? 'start' : where === 'left' ? 'end' : 'middle', nights,
+      x0, x1: x0 + w, y0: ty - LINE_H / 2 - (nights && !down ? LINE_H * 1.4 : 0), y1: ty + LINE_H / 2 + (nights && down ? LINE_H * 1.4 : 0) };
+  };
+  const overlap = (a, b) => Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0)) * Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0));
+  const dotBoxes = stops.map((c) => { const [x, y] = pt(c); return { c, x0: x - 7, x1: x + 7, y0: y - 7, y1: y + 7 }; });
+  const usual = (c) => { const [x, y] = pt(c); return layout(c, x > W * 0.7 ? 'left' : 'right', y > H - 60); };
+  const boxes = []; // placed labels (home's label keeps clear of them too)
+  const placed = new Map();
+  for (const c of labelled) {
+    const [x, y] = pt(c);
+    const first = usual(c);
+    const tries = [first, ...['right', 'left', 'under', 'over'].flatMap((w) => [layout(c, w, false), layout(c, w, true)])];
+    const score = (b) => dotBoxes.reduce((s, d) => s + (d.c === c ? 0 : overlap(b, d)), 0)
+      + boxes.reduce((s, o) => s + 3 * overlap(b, o), 0)
+      + labelled.filter((o) => o !== c && !placed.has(o)).reduce((s, o) => s + overlap(b, usual(o)), 0)
+      + 4 * ((b.x1 - b.x0) * (b.y1 - b.y0) - overlap(b, { x0: 0, x1: W, y0: 0, y1: H }));
+    let best = first, bestScore = score(first);
+    for (const t of tries) { const sc = score(t); if (sc < bestScore - 1) { best = t; bestScore = sc; } }
+    placed.set(c, best);
+    boxes.push(best);
+  }
   const dots = stops.map((c) => {
     const [x, y] = pt(c);
-    const left = x > W * 0.7;
     const via = !cities.includes(c);
     const dot = `<circle class="city${via ? ' via' : ''}" cx="${f(x)}" cy="${f(y)}" r="${via ? 4.5 : 6}"/>`;
-    if (!stays.has(c) && !overland.has(c)) return dot;
-    const w = Math.max(cityName(c).length, stays.has(c) ? `${stays.get(c).join(' + ')} nights`.length : 0) * CHAR_W;
-    const below = y > H - 60 ? 0 : LINE_H * 1.4, above = stays.has(c) && !below ? LINE_H * 1.4 : 0;
-    boxes.push({ x0: left ? x - 11 - w : x + 11, x1: left ? x - 11 : x + 11 + w, y0: y - LINE_H / 2 - above, y1: y + LINE_H / 2 + (stays.has(c) ? below : 0) });
+    const l = placed.get(c);
+    if (!l) return dot;
     return `${dot}
-      <text class="label${via ? ' via' : ''}" x="${f(x + (left ? -11 : 11))}" y="${f(y)}" dominant-baseline="middle" text-anchor="${left ? 'end' : 'start'}">${cityName(c)}</text>${stays.has(c) ? `
-      <text class="label nights" x="${f(x + (left ? -11 : 11))}" y="${f(y)}" dy="${y > H - 60 ? -1.45 : 1.45}em" dominant-baseline="middle" text-anchor="${left ? 'end' : 'start'}">${stays.get(c).join(' + ')} night${stays.get(c).join() === '1' ? '' : 's'}</text>` : ''}`;
+      <text class="label${via ? ' via' : ''}" x="${f(l.tx)}" y="${f(l.ty)}" dominant-baseline="middle" text-anchor="${l.anchor}">${cityName(c)}</text>${l.nights ? `
+      <text class="label nights" x="${f(l.tx)}" y="${f(l.ty)}" dy="${l.down ? 1.45 : -1.45}em" dominant-baseline="middle" text-anchor="${l.anchor}">${l.nights}</text>` : ''}`;
   }).join('');
 
   // Home, named where each long-haul line leaves the map: beside the line, on the inner side,

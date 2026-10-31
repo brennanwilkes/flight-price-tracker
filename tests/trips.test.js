@@ -176,7 +176,11 @@ test('lowest ever: the ledger marks any-date and same-date lows, and only record
   const path = require('node:path');
   const { markLows } = require('../scraper/src/trips/lows');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lows-'));
-  const cell = (total, depart, connects = true) => ({ total, depart, ret: addDays(depart, 14), connects });
+  // Two tickets: the long return (total - 200) and a hop; the hop's price stays put.
+  const cell = (total, depart, connects = true) => ({ total, depart, ret: addDays(depart, 14), connects, tickets: [
+    { kind: 'rt', cabin: 'J', from: 'YVR', to: 'MNL', date: depart, ret: addDays(depart, 14), price: total - 200 },
+    { kind: 'ow', cabin: 'Y', from: 'MNL', to: 'DAD', date: addDays(depart, 2), price: 200 },
+  ] });
   const row = (trip) => ({ in: 'MNL', out: 'MNL', hybrid: trip, economy: null, months: {} });
   const at = '2026-11-01T00:00:00Z';
   markLows(dir, { YVR: [row(cell(4000, '2027-09-01'))] }, at);
@@ -185,6 +189,9 @@ test('lowest ever: the ledger marks any-date and same-date lows, and only record
   const r = row(cell(4100, '2027-09-01'));
   markLows(dir, { YVR: [r] }, at, { record: false });
   assert.deepStrictEqual(r.hybrid.low, { any: { total: 3900, depart: '2027-09-05', ret: '2027-09-19' }, same: { total: 4000, at } });
+  // Per ticket: the long return went up on these dates (it moved the total); the hop didn't.
+  assert.deepStrictEqual(r.hybrid.tickets[0].low, { any: { total: 3700, dates: '2027-09-05,2027-09-19' }, same: { total: 3800, at } });
+  assert.deepStrictEqual(r.hybrid.tickets[1].low, { any: { total: 200, dates: '2027-09-03' }, same: { total: 200, at } });
 });
 
 test('multi-city: two long one-ways become one open-jaw ticket, flights and order carried over', () => {

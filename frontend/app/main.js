@@ -179,7 +179,8 @@ function trend(trip) {
 /**
  * Against the lowest prices ever shown (builder: lows.js), as marks: 'best' ★ the route's cheapest
  * yet; 'dates' ☆ cheapest yet for these dates; 'any' ○ other dates were cheaper (mild); 'same' ●
- * these dates were cheaper before (bad). None without history.
+ * these dates were cheaper before (bad). None without history. For a trip, or a ticket as
+ * { total: its price, low } (lows.js marks tickets too: which leg moved the total).
  */
 function lowMarks(trip) {
   const low = trip.low;
@@ -194,17 +195,26 @@ const lowMark = (trip) => {
   return marks.length ? `<i class="lowmarks" aria-hidden="true">${marks.map((k) => `<i class="low ${k}">${LOW_MARK[k]}</i>`).join('')}</i>` : '';
 };
 const shortDate = (iso) => new Date(`${iso.slice(0, 10)}T12:00:00Z`).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', timeZone: 'UTC' });
-/** The stub's lines about past lows: the facts behind the marks. */
-function lowLines(trip) {
+/** A ticket's low dates ("2027-09-05" or "2027-09-05,2027-09-19,…") as "SEP 05" or "SEP 05–19". */
+const ticketDays = (dates) => {
+  const d = dates.split(',');
+  return d.length === 1 ? boardDate(d[0]) : range({ depart: d[0], ret: d.at(-1) });
+};
+/**
+ * The lines about past lows: the facts behind the marks. `only`: the marks worth a line (a
+ * ticket spells out only what it cost before; its ★/☆ sit by the price).
+ */
+function lowLines(x, only = null) {
   const line = {
     best: () => '★ Lowest yet',
     dates: () => '☆ Lowest yet for these dates',
-    same: () => `● These dates ${money(trip.low.same.total)} · ${shortDate(trip.low.same.at)}`,
-    any: () => `○ Lowest ${money(trip.low.any.total)} · ${range(trip.low.any)}`,
+    same: () => `● These dates ${money(x.low.same.total)} · ${shortDate(x.low.same.at)}`,
+    any: () => `○ Lowest ${money(x.low.any.total)} · ${x.low.any.dates ? ticketDays(x.low.any.dates) : range(x.low.any)}`,
   };
-  const marks = lowMarks(trip);
+  const marks = lowMarks(x);
   if (marks[0] === 'same') marks.push('any');
-  return marks.length ? `<p class="lows">${marks.map((k) => `<span class="low ${k}">${line[k]()}</span>`).join('')}</p>` : '';
+  const shown = marks.filter((k) => !only || only.includes(k));
+  return shown.length ? `<p class="lows">${shown.map((k) => `<span class="low ${k}">${line[k]()}</span>`).join('')}</p>` : '';
 }
 
 /** "SEP 05–22" (or "SEP 28–OCT 12"). */
@@ -384,14 +394,16 @@ function legItem(l, ticketOf) {
   // A ticket with several flights shows its price on the first.
   const first = l.t.kind === 'rt' ? l.leg === 'out' : l.t.kind === 'multi' ? l.leg === 'leg0' : true;
   const price = first ? money(l.t.price) : '';
+  const vsLows = { total: l.t.price, low: l.t.low }; // against the ticket's own lows
   const dow = new Date(`${l.date}T12:00:00Z`).toLocaleDateString('en-CA', { weekday: 'short', timeZone: 'UTC' }).toUpperCase().replace('.', '');
   return `<li class="leg ${l.cabin === 'J' ? 'biz' : 'eco'}" style="--tk: var(--tk${ticketOf.get(l.t)})">
     <a href="${flightsLink(l.t)}" target="_blank" rel="noopener">
       <span class="leg-head">
         <span class="day">${dow} ${boardDate(l.date)}</span>
         <b class="route"><span>${esc(cityName(l.from))}<span class="arrow">→</span></span> <span>${esc(cityName(l.to))}</span></b>
-        <b class="price">${price || '<span class="incl">incl.</span>'}</b>
+        <b class="price">${price ? `${lowMark(vsLows)}${price}` : '<span class="incl">incl.</span>'}</b>
       </span>
+      ${first ? lowLines(vsLows, ['same', 'any']) : ''}
       ${segments(l)}
     </a>
   </li>`;
