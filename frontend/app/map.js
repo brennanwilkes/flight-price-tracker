@@ -80,7 +80,12 @@ export function tripMap(legs, home, cities, stays = new Map()) {
   }).join('');
 
   const lines = [], arrows = [], exits = [], drawn = new Map(), once = new Set();
-  for (const { from: a, to: b, cabin, tk } of legs) {
+  for (const { from: a, to: b, cabin, tk, ground } of legs) {
+    if (ground) { // overland (Vietnam open jaw): a plain grey line, no ticket
+      const [p, q] = [pt(a), pt(b)];
+      lines.push(`<path class="ground" d="M${f(p[0])} ${f(p[1])}L${f(q[0])} ${f(q[1])}"/>`);
+      continue;
+    }
     const cls = `${cabin === 'J' ? 'biz' : 'eco'}" style="--c: var(--tk${tk})`;
     if (!onMap(a) || !onMap(b)) {
       // Long haul: the great circle toward home (from the city), until it leaves the crop.

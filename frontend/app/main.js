@@ -189,16 +189,22 @@ function flightsLink(t) {
 }
 
 /**
- * The trip's flights in flying order, numbered as on the map: the way out, the hops by date,
- * the way home. A round trip's two flights are one ticket.
+ * The trip's flights in flying order (trip.order from the builder), numbered as on the map.
+ * A round trip's two flights are one ticket.
  */
 function legs(trip) {
-  const all = trip.tickets.flatMap((t) => (t.kind === 'rt'
-    ? [{ t, leg: 'out', from: t.from, to: t.to, date: t.date }, { t, leg: 'back', from: t.to, to: t.from, date: t.ret }]
-    : [{ t, from: t.from, to: t.to, date: t.date }]));
-  all.sort((a, b) => (a.leg === 'back') - (b.leg === 'back') || a.date.localeCompare(b.date));
-  return all.map((l, i) => ({ ...l, n: i + 1, cabin: l.t.cabin }));
+  const order = trip.order ?? legacyOrder(trip);
+  return order.map(([i, leg], k) => {
+    const t = trip.tickets[i];
+    const l = leg === 'back' ? { t, leg, from: t.to, to: t.from, date: t.ret } : { t, leg, from: t.from, to: t.to, date: t.date };
+    return { ...l, n: k + 1, cabin: t.cabin };
+  });
 }
+// Data built before trip.order: one round trip at most, its return last.
+const legacyOrder = (trip) => {
+  const all = trip.tickets.flatMap((t, i) => (t.kind === 'rt' ? [[i, 'out', t.date], [i, 'back', t.ret]] : [[i, 'out', t.date]]));
+  return all.sort((a, b) => (a[1] === 'back') - (b[1] === 'back') || a[2].localeCompare(b[2])).map(([i, leg]) => [i, leg]);
+};
 
 // Long hauls land the day after they leave (Asia is a day ahead); hops land the same day.
 // Only a fallback: with flight details the real arrival is known.
@@ -214,6 +220,8 @@ function layover(prev, next) {
   const where = esc(cityName(prev.to));
   if (flightOf(next)?.miss === 'connection') return `<li class="layover bad"><span>Misses connection · ${where}</span></li>`;
   const { nights, wait } = stay(prev, next);
+  // In at one Vietnamese city, out of another: Hoi An in between, overland (build.js).
+  if (prev.to !== next.from) return `<li class="layover"><span>${nights} nights · ${where} → ${esc(cityName(next.from))} overland</span></li>`;
   if (nights > 0) return `<li class="layover"><span>${nights} night${nights > 1 ? 's' : ''} · ${where}</span></li>`;
   return `<li class="layover"><span>${wait != null ? `${dur(wait)} layover` : 'Same day'} · ${where}</span></li>`;
 }
@@ -282,16 +290,17 @@ function staysOf(list) {
   const out = new Map();
   for (let i = 1; i < list.length; i++) {
     const { nights } = stay(list[i - 1], list[i]);
-    if (nights > 0) out.set(list[i].from, [...(out.get(list[i].from) ?? []), nights]);
+    if (nights > 0) out.set(list[i - 1].to, [...(out.get(list[i - 1].to) ?? []), nights]);
   }
   return out;
 }
 
 /** Every flight actually flown, for the map: a leg's connections when known, else the leg. */
-const flown = (list, ticketOf) => list.flatMap((l) => {
+const flown = (list, ticketOf) => list.flatMap((l, i) => {
   const f = flightOf(l);
   const tk = ticketOf.get(l.t);
-  return f?.legs ? f.legs.map((g) => ({ from: g.from, to: g.to, cabin: l.cabin, tk })) : [{ from: l.from, to: l.to, cabin: l.cabin, tk }];
+  const overland = i && list[i - 1].to !== l.from ? [{ from: list[i - 1].to, to: l.from, ground: true }] : [];
+  return [...overland, ...(f?.legs ? f.legs.map((g) => ({ from: g.from, to: g.to, cabin: l.cabin, tk })) : [{ from: l.from, to: l.to, cabin: l.cabin, tk }])];
 });
 
 function openTrip(key, cls) {

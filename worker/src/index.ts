@@ -5,7 +5,7 @@
 //   GET  /health     push health      GET /vapid   VAPID public key
 import type { Env } from './types.ts';
 import { corsHeaders } from './cors.ts';
-import { dispatchSweep, homesForHour, manualSweep } from './dispatch.ts';
+import { dispatchSweep, manualSweep } from './dispatch.ts';
 import { readHealth, updateHealth } from './health.ts';
 import { sendPush, type PushMessage, type PushSubscriptionJson } from './push.ts';
 
@@ -97,7 +97,7 @@ export default {
     return json(req, { error: 'not found' }, 404);
   },
 
-  async scheduled(event: ScheduledController, env: Env): Promise<void> {
-    await dispatchSweep(env, homesForHour(new Date(event.scheduledTime).getUTCHours()));
+  async scheduled(_event: ScheduledController, env: Env): Promise<void> {
+    await dispatchSweep(env);
   },
 };

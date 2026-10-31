@@ -90,7 +90,7 @@ async function verify(byHome, trips) {
   let pending = [...byHome.values()].flatMap((rows) => rows.flatMap((r) => CLASSES.filter((c) => r[c]).map((cls) => ({ r, cls, i: 0, cand: r[cls], best: null, first: null }))));
   st.cells = pending.length;
   while (pending.length) {
-    const s = await addDetails(pending.map((p) => p.cand), config.origins, cache, browser);
+    const s = await addDetails(pending.map((p) => p.cand), cache, browser);
     st.searches += s.searches;
     st.failed += s.failed;
     st.error ??= s.error;

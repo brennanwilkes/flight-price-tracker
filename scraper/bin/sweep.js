@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 'use strict';
-/* Price-graph sweep across the travel window (config/sweep.json):
- *   - long legs every run: round trips (origin × destination × cabin × trip length) and one-ways
- *     in both directions (YVR-ICN-J-OW, ICN-YVR-J-OW)
- *   - economy hops between the Asia cities, the stalest first, until each is < maxAgeHours old
- *     (state/hops.json). Works with any run schedule.
+/* Price-graph sweep across the travel window (config/sweep.json, src/sweep/plan.js): long legs,
+ * hops and Asia round trips, each graph refreshed by its tier's max age, the most overdue first,
+ * until the time budget runs out (the rest waits for the next sweep). Before that, a slice of the
+ * hop network is re-checked (src/network). State: state/graphs.json, state/network.json.
  *
- *   node scraper/bin/sweep.js --data <dataDir> [--egress vpn|direct] [--homes YVR,YYJ] [--routes YVR-ICN,ICN-DAD] [--no-hops]
+ *   node scraper/bin/sweep.js --data <dataDir> [--egress vpn|direct] [--routes YVR-ICN,ICN-DAD]
  *
- * --homes limits the long legs to those home airports (the Worker sweeps YYJ every 3rd hour).
+ * --routes: only graphs of those city pairs, whatever their age (no network check).
  *
  * Control route first: if it returns no prices, Google (or our scraper) is broken, not the market,
  * so the run aborts as failed. Writes route files (src/store/routes.js), state/health.json, and a
@@ -17,8 +16,11 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const config = require('../config/sweep.json');
-const { openBrowser, priceGraph, addDays } = require('../src/gflights/browser');
+const { openBrowser, priceGraph, shoppingResults, addDays } = require('../src/gflights/browser');
 const { recordCells, readJson, writeJson } = require('../src/store/routes');
+const { planSweep, graphKey } = require('../src/sweep/plan');
+const { planNetwork, checkPairs, routesOf } = require('../src/network');
+const { airportsOf } = require('../../frontend/app/cities.js');
 
 const MAX_FAILED_SHARE = 0.25; // more failed combos than this = failed run
 const HEALTH_RUNS_KEPT = 200;
@@ -37,52 +39,8 @@ function arg(name, def) {
   return i > 0 ? process.argv[i + 1] : def;
 }
 
-const airportsOf = (city) => {
-  const a = config.destinations[city] ?? [city];
-  return a.length === 1 ? a[0] : a;
-};
-
-/** Long legs: every round trip and one-way between home and each Asia city. */
-function planLongLegs(only, homes) {
-  const { cabins, tripLengths, oneWay } = config.longLeg;
-  const combos = [];
-  for (const home of homes) {
-    for (const city of Object.keys(config.destinations)) {
-      for (const cabin of cabins) {
-        if (!only || only.includes(`${home}-${city}`)) {
-          for (const tripLen of tripLengths) {
-            combos.push({ routeId: `${home}-${city}-${cabin}`, from: home, to: airportsOf(city), cabin, tripLen });
-          }
-          if (oneWay) combos.push({ routeId: `${home}-${city}-${cabin}-OW`, from: home, to: airportsOf(city), cabin, tripLen: null });
-        }
-        if (oneWay && (!only || only.includes(`${city}-${home}`))) {
-          combos.push({ routeId: `${city}-${home}-${cabin}-OW`, from: airportsOf(city), to: home, cabin, tripLen: null });
-        }
-      }
-    }
-  }
-  return combos;
-}
-
-/** Hops due this run: never-swept first, then oldest, skipping any fresher than maxAgeHours. */
-function planHops(only, hopState, now) {
-  const { cabin, maxAgeHours, maxPerRun } = config.hops;
-  const cities = Object.keys(config.destinations);
-  const due = [];
-  for (const a of cities) {
-    for (const b of cities) {
-      if (a === b || (only && !only.includes(`${a}-${b}`))) continue;
-      const key = `${a}-${b}`;
-      const last = hopState[key] ? Date.parse(hopState[key]) : 0;
-      if (now - last < maxAgeHours * 3600e3) continue;
-      due.push({ last, q: { routeId: `${key}-${cabin}-OW`, hopKey: key, from: airportsOf(a), to: airportsOf(b), cabin, tripLen: null } });
-    }
-  }
-  return due.sort((x, y) => x.last - y.last).slice(0, maxPerRun).map((d) => d.q);
-}
-
 // Scraping stops starting combos after this, leaving the trip build and push inside the job limit.
-const BUDGET_MS = 20 * 60_000;
+const BUDGET_MS = config.budgetMinutes * 60_000;
 
 async function withRetry(fn, label) {
   try {
@@ -93,15 +51,22 @@ async function withRetry(fn, label) {
   }
 }
 
+/** state/graphs.json from the old state/hops.json ('A-B' → last scrape), once. */
+function migrateHops(dataDir) {
+  const hops = readJson(path.join(dataDir, 'state', 'hops.json'), {});
+  fs.rmSync(path.join(dataDir, 'state', 'hops.json'), { force: true });
+  return Object.fromEntries(Object.entries(hops).map(([k, at]) => [`${k}-Y-OW|0`, at]));
+}
+
 async function main() {
   const dataDir = arg('data');
   if (!dataDir) throw new Error('--data <dir> is required');
   const egress = arg('egress', 'direct');
   const only = arg('routes')?.split(',');
-  const homes = arg('homes')?.split(',') ?? config.origins;
-  const hops = !process.argv.includes('--no-hops');
-  const hopsFile = path.join(dataDir, 'state', 'hops.json');
-  const hopState = readJson(hopsFile, {});
+  const stateFile = path.join(dataDir, 'state', 'graphs.json');
+  const networkFile = path.join(dataDir, 'state', 'network.json');
+  const state = readJson(stateFile, null) ?? migrateHops(dataDir);
+  const network = readJson(networkFile, { pairs: {} });
   const observedAt = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   const t0 = Date.now();
   const run = { at: observedAt, egress, control: null, ok: 0, failed: 0, cells: 0, priced: 0, changes: 0, errors: [] };
@@ -120,15 +85,24 @@ async function main() {
     console.log(`control ${c.from}-${c.to} ${c.cabin}: ${run.control} priced days`);
 
     if (run.control > 0) {
+      // A slice of the hop network first (plain requests, ~2 min): the plan below uses it.
+      if (!only) {
+        const s = await checkPairs(network, planNetwork(network, Date.now(), config.networkPerSweep),
+          { browser: (q) => shoppingResults(ctx, q), at: observedAt });
+        run.network = { ...s, routes: routesOf(network).length };
+        writeJson(networkFile, network);
+        console.log(`network: ${s.checked} pairs checked, ${s.kept} short, ${s.failed} failed; ${run.network.routes} routes known`);
+      }
       const { start: wStart, end: wEnd } = config.window;
-      const work = [...planLongLegs(only, homes), ...(hops ? planHops(only, hopState, Date.now()) : [])];
+      const work = planSweep(config, state, network, Date.now(), only);
+      run.due = work.length;
       await pool(work, CONCURRENCY, async (q) => {
         const label = q.tripLen == null ? q.routeId : `${q.routeId} ${q.tripLen}d`;
         if (Date.now() - t0 > BUDGET_MS) { run.skipped = (run.skipped ?? 0) + 1; return; } // next sweep
         try {
-          const cells = await withRetry(() => priceGraph(ctx, { ...q, start: wStart, end: wEnd }), label);
+          const cells = await withRetry(() => priceGraph(ctx, { ...q, from: airportsOf(q.from), to: airportsOf(q.to), start: wStart, end: wEnd }), label);
           const changes = recordCells(dataDir, q.routeId, q.tripLen ?? 0, cells, { observedAt, egress });
-          if (q.hopKey) hopState[q.hopKey] = observedAt;
+          state[graphKey(q)] = observedAt;
           const priced = cells.filter((x) => x.price != null);
           run.ok++;
           run.cells += cells.length;
@@ -147,7 +121,7 @@ async function main() {
     await browser.close();
   }
 
-  writeJson(hopsFile, Object.fromEntries(Object.entries(hopState).sort()));
+  writeJson(stateFile, Object.fromEntries(Object.entries(state).sort()));
   run.seconds = Math.round((Date.now() - t0) / 1000);
   const total = run.ok + run.failed;
   const success = run.control > 0 && total > 0 && run.failed / total <= MAX_FAILED_SHARE;

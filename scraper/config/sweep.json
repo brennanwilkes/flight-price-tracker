@@ -1,20 +1,18 @@
 {
   "window": { "start": "2027-09-01", "end": "2028-02-29" },
   "origins": ["YVR", "YYJ"],
-  "destinations": {
-    "DAD": ["DAD"],
-    "ICN": ["ICN"],
-    "TPE": ["TPE"],
-    "HKG": ["HKG"],
-    "TYO": ["NRT", "HND"],
-    "MNL": ["MNL"],
-    "SIN": ["SIN"],
-    "HAN": ["HAN"],
-    "SGN": ["SGN"],
-    "BKK": ["BKK"],
-    "KUL": ["KUL"]
-  },
-  "longLeg": { "cabins": ["J", "Y"], "tripLengths": [14, 17, 21], "oneWay": true },
-  "hops": { "cabin": "Y", "maxAgeHours": 12, "maxPerRun": 40 },
+  "core": ["DAD", "ICN", "TPE", "HKG", "TYO", "MNL", "SIN", "HAN", "SGN", "BKK", "KUL"],
+  "longCabins": ["J", "Y"],
+  "budgetMinutes": 20,
+  "networkPerSweep": 100,
+  "tiers": [
+    { "kind": "long", "homes": ["YVR"], "cities": "core", "lengths": [14, 17, 21], "oneWay": true, "maxAgeHours": 2 },
+    { "kind": "long", "homes": ["YVR"], "cities": "core", "lengths": [15, 16, 18, 19, 20], "maxAgeHours": 6 },
+    { "kind": "long", "homes": ["YVR"], "cities": "other", "lengthRange": [14, 21], "oneWay": true, "maxAgeHours": 8 },
+    { "kind": "long", "homes": ["YYJ"], "cities": "all", "lengthRange": [14, 21], "oneWay": true, "maxAgeHours": 8 },
+    { "kind": "hops", "vietnam": true, "maxAgeHours": 12 },
+    { "kind": "hops", "vietnam": false, "maxAgeHours": 24 },
+    { "kind": "asiaRT", "lengthRange": [2, 19], "maxAgeHours": 168 }
+  ],
   "control": { "from": "YVR", "to": "ICN", "cabin": "Y", "tripLen": 14, "daysOut": 14, "days": 7 }
 }

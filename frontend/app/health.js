@@ -56,6 +56,8 @@ export async function renderHealth(el, base, settings) {
       ${box('Status', failing ? `Failing ×${failing}` : last ? 'OK' : '—', failing ? 'bad' : 'good')}
       ${box('Combos', last ? `${last.ok}/${last.ok + last.failed}` : '—')}
       ${box('Stale routes', `${stale.length}/${routes.length}`, stale.length ? 'bad' : '')}
+      ${box('Hop routes', last?.network ? num(last.network.routes) : '—')}
+      ${box('Backlog', last ? num(last.skipped ?? 0) : '—', last?.skipped ? 'bad' : '')}
     </div>
 
     <h3>Alerts</h3>

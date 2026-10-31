@@ -11,6 +11,7 @@
  * min, plane }], stops: [{ at, min }], likely? }.
  */
 const { search, parseResults } = require('../gflights/flights');
+const { airportsOf } = require('../../../frontend/app/cities.js');
 
 const MIN_CONNECT_MIN = 4 * 60;
 const CONCURRENCY = 6; // searches in flight; a browser fallback (~10 s) holds one of these
@@ -20,21 +21,14 @@ const at = (date, hm) => Date.parse(`${date}T${hm}:00Z`) / 60000; // minutes, lo
 const arrival = (o) => at(o.legs.at(-1).arrDate, o.legs.at(-1).arr);
 const cheapest = (opts) => opts.slice().sort((a, b) => a.price - b.price || a.min - b.min)[0];
 
-/** The trip's flights in flying order: [{ ticket, dir: 'out'|'back', query, price?, sameAirlineAs? }]. */
-function flightsOf(trip, homes) {
-  const rt = trip.tickets.find((t) => t.kind === 'rt');
-  const longs = trip.tickets.filter((t) => homes.includes(t.from) || homes.includes(t.to));
-  const hops = trip.tickets.filter((t) => !longs.includes(t)).sort((a, b) => a.date.localeCompare(b.date));
-  const one = (t) => ({ ticket: t, dir: 'out', query: { from: t.from, to: t.to, out: t.date, cabin: t.cabin }, price: t.price });
-  if (rt) {
-    return [
-      { ticket: rt, dir: 'out', query: { from: rt.from, to: rt.to, out: rt.date, ret: rt.ret, cabin: rt.cabin }, price: rt.price },
-      ...hops.map(one),
-      { ticket: rt, dir: 'back', query: { from: rt.to, to: rt.from, out: rt.ret, cabin: rt.cabin } },
-    ];
-  }
-  const [first, last] = longs.sort((a, b) => a.date.localeCompare(b.date));
-  return [one(first), ...hops.map(one), ...(last ? [one(last)] : [])];
+/** The trip's flights in flying order (trip.order, build.js): [{ ticket, dir: 'out'|'back', query, price? }]. */
+function flightsOf(trip) {
+  return trip.order.map(([i, dir]) => {
+    const t = trip.tickets[i];
+    if (dir === 'back') return { ticket: t, dir, query: { from: airportsOf(t.to), to: airportsOf(t.from), out: t.ret, cabin: t.cabin } };
+    const query = { from: airportsOf(t.from), to: airportsOf(t.to), out: t.date, cabin: t.cabin };
+    return { ticket: t, dir, query: t.kind === 'rt' ? { ...query, ret: t.ret } : query, price: t.price };
+  });
 }
 /**
  * Fill `flights` on the given trips' tickets, and set each trip's `connects` (false when some
@@ -43,7 +37,7 @@ function flightsOf(trip, homes) {
  * `browser` (query → GetShoppingResults payload) answers searches whose page inlined no results.
  * Returns { searches, failed, full, connection, none } (full: full-list page loads; the last two: misses).
  */
-async function addDetails(trips, homes, cache = new Map(), browser = null) {
+async function addDetails(trips, cache = new Map(), browser = null) {
   const searchOnce = (q) => {
     const key = JSON.stringify(q);
     if (!cache.has(key)) cache.set(key, search(q, { browser }).catch((e) => ({ error: e.message })));
@@ -62,7 +56,7 @@ async function addDetails(trips, homes, cache = new Map(), browser = null) {
   const stats = { searches: 0, failed: 0, full: 0, connection: 0, none: 0 };
 
   // Warm the cache with bounded concurrency, then pick sequentially per trip.
-  const queries = [...new Map(trips.flatMap((t) => flightsOf(t, homes)).map((f) => [JSON.stringify(f.query), f.query])).values()]
+  const queries = [...new Map(trips.flatMap(flightsOf).map((f) => [JSON.stringify(f.query), f.query])).values()]
     .filter((q) => !cache.has(JSON.stringify(q)));
   let next = 0;
   await Promise.all(Array.from({ length: CONCURRENCY }, async () => {
@@ -77,8 +71,8 @@ async function addDetails(trips, homes, cache = new Map(), browser = null) {
 
   for (const trip of trips) {
     let landed = null; // minutes, of the previous flight's arrival
-    let outAirlines = null;
-    const flights = flightsOf(trip, homes);
+    const outAirlines = new Map(); // round-trip ticket → its outbound's airlines
+    const flights = flightsOf(trip);
     trip.connects = true;
     for (const [i, f] of flights.entries()) {
       let opts = await searchOnce(f.query);
@@ -92,8 +86,9 @@ async function addDetails(trips, homes, cache = new Map(), browser = null) {
       const ok = opts.filter(connects);
       let pick;
       if (f.dir === 'back') {
-        if (!outAirlines) continue; // which return goes with an unknown outbound can't be told
-        const same = ok.filter((o) => o.airlines.some((a) => outAirlines?.includes(a)));
+        const airlines = outAirlines.get(f.ticket);
+        if (!airlines) { landed = null; continue; } // which return goes with an unknown outbound can't be told
+        const same = ok.filter((o) => o.airlines.some((a) => airlines.includes(a)));
         pick = cheapest(same.length ? same : ok);
         if (pick) pick = { ...pick, likely: true };
       } else {
@@ -113,7 +108,7 @@ async function addDetails(trips, homes, cache = new Map(), browser = null) {
         landed = null;
         continue;
       }
-      if (f.ticket.kind === 'rt' && f.dir === 'out') outAirlines = pick.airlines;
+      if (f.ticket.kind === 'rt' && f.dir === 'out') outAirlines.set(f.ticket, pick.airlines);
       f.ticket.flights[f.dir] = pick;
       // The listed price is what booking costs; the graph's can be stale (seen: $4,262 graph,
       // $5,012 cheapest listed). A return's price is on its outbound.

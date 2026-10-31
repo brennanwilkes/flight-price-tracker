@@ -1,7 +1,7 @@
 # Long-leg price sweep into the `data` branch. Egress: ProtonVPN first (M1: the runner's own IP
 # gets soft-blocked under load), the direct IP only if the tunnel won't come up.
 #
-# Clock: the Cloudflare Worker cron dispatches this hourly (YVR every hour, YYJ every 3rd), and
+# Clock: the Cloudflare Worker cron dispatches this hourly (what each run scrapes: sweep/plan.js), and
 # its POST /sweep for a full sweep on demand. No GitHub `schedule:` (it runs late and skips).
 name: Sweep
 
@@ -11,9 +11,6 @@ on:
       routes:
         description: Only these O-D routes (comma-separated, e.g. YVR-ICN); empty = all
         default: ''
-      homes:
-        description: Long legs from these homes (the Worker cron sends YVR, or YVR,YYJ every 3rd hour)
-        default: 'YVR,YYJ'
 
 permissions:
   contents: write  # push to the data branch
@@ -61,10 +58,9 @@ jobs:
         run: |
           args=()
           [[ -n "${{ inputs.routes }}" ]] && args+=(--routes "${{ inputs.routes }}")
-          [[ -n "${{ inputs.homes }}" ]] && args+=(--homes "${{ inputs.homes }}")
           scripts/run_sweep.sh "${args[@]}" 2>&1 | tee sweep.log
 
       - name: Summary
         if: always()
         run: |
-          { echo '```'; grep -E '^(control|sweep |.*FAILED)' sweep.log || true; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          { echo '```'; grep -E '^(control|network|sweep |.*FAILED)' sweep.log || true; echo '```'; } >> "$GITHUB_STEP_SUMMARY"

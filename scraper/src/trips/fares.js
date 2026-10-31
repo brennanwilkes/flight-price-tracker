@@ -1,20 +1,24 @@
 'use strict';
 /* Fare lookups for the trip builder, read from the data branch's routes/<ID>/current.json files
- * (src/store/routes.js). A cell not re-seen within maxAgeHours is dropped: Google stopped listing
- * it, or the sweep for it keeps failing; either way it's not a price to show.
+ * (src/store/routes.js). A cell not re-seen within twice its graph's max age (≥ 48 h,
+ * sweep/plan.js) is dropped: Google stopped listing it, or the sweep for it keeps failing; either
+ * way it's not a price to show.
  */
 const fs = require('node:fs');
 const path = require('node:path');
 const { readJson } = require('../store/routes');
+const { staleAfterHours } = require('../sweep/plan');
+const { citiesWith, CITIES } = require('../../../frontend/app/cities.js');
 
-function loadFares(dataDir, config, { now = Date.now(), maxAgeHours = 48 } = {}) {
+function loadFares(dataDir, config, { now = Date.now() } = {}) {
   const homes = config.origins;
-  const cities = Object.keys(config.destinations);
-  const fresh = (c) => c.price != null && now - Date.parse(c.seen) <= maxAgeHours * 3600e3;
+  const cities = citiesWith('gateway', 'hop');
+  const network = readJson(path.join(dataDir, 'state', 'network.json'), { pairs: {} });
+  const staleAfter = staleAfterHours(config, network);
   const routesDir = path.join(dataDir, 'routes');
   const ids = fs.existsSync(routesDir) ? fs.readdirSync(routesDir) : [];
 
-  const rt = new Map(); // "home|city|cabin|out" → [{ ret, price }]
+  const rt = new Map(); // "from|to|cabin|out" → [{ ret, price }]
   const ow = new Map(); // "from|to|cabin|date" → price (long legs and hops)
   const departures = new Set();
   for (const id of ids) {
@@ -22,8 +26,8 @@ function loadFares(dataDir, config, { now = Date.now(), maxAgeHours = 48 } = {})
     const oneWay = parts.at(-1) === 'OW';
     const [from, to, cabin] = parts;
     for (const [key, c] of Object.entries(readJson(path.join(routesDir, id, 'current.json'), {}))) {
-      if (!fresh(c)) continue;
-      const out = key.split('|')[0];
+      const [out, tripLen] = key.split('|');
+      if (c.price == null || now - Date.parse(c.seen) > staleAfter(id, Number(tripLen)) * 3600e3) continue;
       if (oneWay) {
         ow.set(`${from}|${to}|${cabin}|${out}`, c.price);
         if (homes.includes(from)) departures.add(out);
@@ -31,7 +35,7 @@ function loadFares(dataDir, config, { now = Date.now(), maxAgeHours = 48 } = {})
         const k = `${from}|${to}|${cabin}|${out}`;
         if (!rt.has(k)) rt.set(k, []);
         rt.get(k).push({ ret: c.ret, price: c.price });
-        departures.add(out);
+        if (homes.includes(from)) departures.add(out);
       }
     }
   }
@@ -39,10 +43,12 @@ function loadFares(dataDir, config, { now = Date.now(), maxAgeHours = 48 } = {})
   return {
     homes,
     cities,
+    anchors: Object.fromEntries(Object.entries(CITIES).filter(([, c]) => c.vietnam != null).map(([k, c]) => [k, c.vietnam])),
     departures: [...departures].sort(),
-    roundTrip: (home, city, cabin, out) => rt.get(`${home}|${city}|${cabin}|${out}`) ?? [],
+    roundTrip: (from, to, cabin, out) => rt.get(`${from}|${to}|${cabin}|${out}`) ?? [], // long legs and Asia returns
     oneWay: (from, to, cabin, date) => ow.get(`${from}|${to}|${cabin}|${date}`) ?? null,
-    hop: (from, to, date) => ow.get(`${from}|${to}|${config.hops.cabin}|${date}`) ?? null,
+    asiaRT: (from, to, date) => rt.get(`${from}|${to}|Y|${date}`) ?? [],
+    hop: (from, to, date) => ow.get(`${from}|${to}|Y|${date}`) ?? null,
   };
 }
 

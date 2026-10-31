@@ -1,13 +1,16 @@
 'use strict';
-/* Trip builder (SCOPE.md: Trip builder and dashboard).
+/* Trip builder (SCOPE.md: Trip builder and dashboard; Decisions 2026-10-31, coverage).
  *
- * A trip: a long leg home → city X (round trip, or a one-way), any number of economy hops within
- * Asia on separate tickets, a long leg city Y → home. 14-21 days home to home, both long legs in the
- * same cabin, and ≥ 5 nights in Da Nang somewhere along the way. Ranked by total price, nothing else.
+ * A trip: a long leg home → city X (round trip, or a one-way), any tickets within Asia (economy
+ * one-ways, and returns nested inside the trip), a long leg city Y → home. 14-21 days home to home,
+ * both long legs in the same cabin, and ≥ 5 nights in Hoi An somewhere along the way, reached
+ * overland from a Vietnam anchor city (Da Nang, Hue, Hanoi, Saigon; ground days each way from
+ * fares.anchors): in at one anchor, out at any. Ranked by total price, nothing else.
  *
- * The hops in between don't depend on the long legs, so for each arrival city X and departure day
- * a forward DP over (day, city, Da Nang done?) finds the cheapest hop sequence to every (Y, day);
- * each long-leg fare then just adds its price on top.
+ * The flights in Asia don't depend on the long legs, so for each arrival city X and departure day a
+ * forward DP over (day, city, Hoi An done?, open return?) finds the cheapest plan to every (Y, day);
+ * each long-leg fare then just adds its price on top. An Asia return A⇄B opens an obligation: be in
+ * B on its return day and fly B → A (already paid). One open at a time, closed before flying home.
  *
  * Day 0 is the departure from home; the Pacific crossing lands on day 1 (date line). Hops land the
  * day they leave. A flight on the day the previous ticket lands is a same-day connection: allowed
@@ -16,8 +19,7 @@
 
 const MIN_DAYS = 14;
 const MAX_DAYS = 21;
-const DAD = 'DAD';
-const DAD_NIGHTS = 5;
+const HOI_AN_NIGHTS = 5;
 const SIMILAR = 0.02; // "+N" on the dashboard: other dates within 2% of the best price
 // Fallbacks per cell, for when the detail pass finds a connection no listed flight makes.
 const FALLBACKS = 4;
@@ -25,51 +27,77 @@ const FALLBACKS = 4;
 const addDays = (iso, n) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
 
 /**
- * Cheapest hop plans from arrival city `x`, landing day 1 after departure `d0`.
- * Returns plan(y, t): the cheapest way to be in city y on day t, ready to fly home, having done
- * Da Nang; { cost, hops: [{ from, to, date, price }] } or null.
+ * Cheapest plans within Asia from arrival city `x`, landing day 1 after departure `d0`.
+ * Returns plan(y, t): the cheapest way to be in city y on day t, ready to fly home, Hoi An done and
+ * no return open; { cost, hops: [{ kind: 'ow'|'rt'|'back', from, to, date, ret?, price }] } or null
+ * ('back' is a nested return's second flight, paid with its 'rt').
  */
-function hopPlans(x, d0, cities, hopPrice) {
-  // best[t] maps "city|done" → { cost, prev: key at t (or at an earlier day for the Da Nang jump), t, hop }
+function hopPlans(x, d0, fares) {
+  const { cities, hop, anchors = { DAD: 0 } } = fares;
+  const asiaRT = fares.asiaRT ?? (() => []);
+  // best[t] maps "city|done|open" → { city, done, open, cost, prev: { t, key }, hop }
+  // open: '' or "B>A@day" (fly B → A on that day, already paid).
   const best = Array.from({ length: MAX_DAYS + 1 }, () => new Map());
-  const put = (t, city, done, cost, prev, hop) => {
-    if (t > MAX_DAYS) return false;
-    const key = `${city}|${done}`;
+  const dueOf = (open) => (open ? Number(open.slice(open.indexOf('@') + 1)) : Infinity);
+  const put = (t, city, done, open, cost, prev, hop) => {
+    if (t > MAX_DAYS || t > dueOf(open)) return false;
+    const key = `${city}|${done}|${open}`;
     const cur = best[t].get(key);
     if (cur && cur.cost <= cost) return false;
-    best[t].set(key, { city, done, cost, prev, hop });
+    best[t].set(key, { city, done, open, cost, prev, hop });
     return true;
   };
-  // Landing in Da Nang (not yet done) also offers "stay the 5 nights": done, 5 days later.
-  const land = (t, city, cost, prev, hop) => {
-    const changed = put(t, city, 0, cost, prev, hop);
-    if (city === DAD) put(t + DAD_NIGHTS, DAD, 1, cost, { t, key: `${DAD}|0` }, null);
+  // Landing at a Vietnam anchor also offers the Hoi An stay: overland there, the nights, overland
+  // to any anchor (open jaw); done on the day that leaves.
+  const land = (t, city, done, open, cost, prev, hop) => {
+    const changed = put(t, city, done, open, cost, prev, hop);
+    if (!done && city in anchors) {
+      for (const [w, g] of Object.entries(anchors)) {
+        put(t + anchors[city] + HOI_AN_NIGHTS + g, w, 1, open, cost, { t, key: `${city}|0|${open}` }, null);
+      }
+    }
     return changed;
   };
-  land(1, x, 0, null, null);
+  land(1, x, 0, '', 0, null, null);
 
   for (let t = 1; t <= MAX_DAYS; t++) {
-    if (t > 1) for (const [key, s] of best[t - 1]) put(t, s.city, s.done, s.cost, { t: t - 1, key }, null); // stay a night
+    if (t > 1) {
+      for (const [key, s] of best[t - 1]) put(t, s.city, s.done, s.open, s.cost, { t: t - 1, key }, null); // stay a night
+    }
     const date = addDays(d0, t);
-    // Hops on this day, chained same-day as long as it gets cheaper (prices > 0, so this ends).
+    // Flights on this day, chained same-day as long as it gets cheaper (prices > 0 but a nested
+    // return's second flight, which only closes an open return, so this ends).
     for (let changed = true; changed;) {
       changed = false;
       for (const [key, s] of [...best[t]]) {
         if (best[t].get(key) !== s) continue;
+        const prev = { t, key };
+        if (s.open) {
+          const [b, rest] = s.open.split('>');
+          const a = rest.slice(0, rest.indexOf('@'));
+          if (s.city === b && dueOf(s.open) === t) {
+            if (land(t, a, s.done, '', s.cost, prev, { kind: 'back', from: b, to: a, date, price: 0 })) changed = true;
+          }
+          if (dueOf(s.open) === t) continue; // the return day: only the return flight
+        }
         for (const to of cities) {
           if (to === s.city) continue;
-          const price = hopPrice(s.city, to, date);
-          if (price == null) continue;
-          const hop = { from: s.city, to, date, price };
-          const prev = { t, key };
-          if (s.done ? put(t, to, 1, s.cost + price, prev, hop) : land(t, to, s.cost + price, prev, hop)) changed = true;
+          const price = hop(s.city, to, date);
+          if (price != null && land(t, to, s.done, s.open, s.cost + price, prev, { kind: 'ow', from: s.city, to, date, price })) changed = true;
+          if (s.open) continue;
+          for (const r of asiaRT(s.city, to, date)) {
+            const due = t + (Date.parse(r.ret) - Date.parse(date)) / 864e5;
+            if (due > MAX_DAYS) continue;
+            const hopRt = { kind: 'rt', from: s.city, to, date, ret: r.ret, price: r.price };
+            if (land(t, to, s.done, `${to}>${s.city}@${due}`, s.cost + r.price, prev, hopRt)) changed = true;
+          }
         }
       }
     }
   }
 
   return (y, t) => {
-    const end = best[t]?.get(`${y}|1`);
+    const end = best[t]?.get(`${y}|1|`);
     if (!end) return null;
     const hops = [];
     for (let s = end; s.prev; s = best[s.prev.t].get(s.prev.key)) if (s.hop) hops.push(s.hop);
@@ -101,16 +129,40 @@ function isSafe(d0, hops, backDate) {
 }
 
 /**
+ * A trip's tickets and flying order from its long legs and Asia plan: `first` (a long round trip
+ * or one-way), the plan's hops (a nested return's 'back' is the second flight of its 'rt'), and
+ * `last` (the one-way home, or null when `first` is a round trip).
+ */
+function ticketsOf(first, hops, last) {
+  const tickets = [first];
+  const order = [[0, 'out']];
+  const open = [];
+  for (const h of hops) {
+    if (h.kind === 'back') { order.push([open.pop(), 'back']); continue; }
+    const { kind, ...rest } = h;
+    tickets.push({ kind, ...rest, cabin: 'Y' });
+    order.push([tickets.length - 1, 'out']);
+    if (kind === 'rt') open.push(tickets.length - 1);
+  }
+  if (last) { tickets.push(last); order.push([tickets.length - 1, 'out']); } else order.push([0, 'back']);
+  return { tickets, order };
+}
+
+/**
  * Every trip worth showing, as the cheapest per (home, class, in-city, out-city, departure month).
  *
  * fares: {
  *   homes, cities,                                  // e.g. ['YVR','YYJ'], ['DAD','ICN',…]
- *   roundTrip(home, city, cabin, out)  → [{ ret, price }]   (any trip lengths Google priced)
+ *   anchors                            → { city: ground days to Hoi An } (Vietnam anchors)
+ *   roundTrip(from, to, cabin, out)    → [{ ret, price }]   (any trip lengths Google priced)
  *   oneWay(from, to, cabin, date)      → price | null      (long legs, either direction)
  *   hop(from, to, date)                → price | null      (economy within Asia)
+ *   asiaRT(from, to, date)             → [{ ret, price }]   (economy returns within Asia)
  *   departures                         → sorted ISO dates to try as day 0
  * }
- * Returns [{ home, cls: 'hybrid'|'economy', in, out, month, total, depart, ret, days, sameDay, safe, tickets, alts, fallbacks }],
+ * Returns [{ home, cls: 'hybrid'|'economy', in, out, month, total, depart, ret, days, sameDay, safe, tickets, order, alts, fallbacks }],
+ * tickets: [{ kind: 'rt'|'ow', from, to, date, ret?, cabin, price }]; order: the flights in flying
+ * order as [ticket index, 'out'|'back'].
  * fallbacks being the next cheapest trips for the same cell plus the cheapest safe one (isSafe).
  * via: '' for the cell's cheapest overall; a city code for its cheapest that stays in that city
  * (in, out or a hop's destination), for the dashboard's via filter. alts is 0 for those.
@@ -145,7 +197,7 @@ function buildTrips(fares) {
 
   for (const d0 of fares.departures) {
     for (const x of fares.cities) {
-      const plan = hopPlans(x, d0, fares.cities, fares.hop);
+      const plan = hopPlans(x, d0, fares);
       for (const home of fares.homes) {
         for (const [cls, cabin] of classes) {
           const base = { home, cls, in: x, month: d0.slice(0, 7), depart: d0 };
@@ -156,7 +208,7 @@ function buildTrips(fares) {
             if (!p) continue;
             offer({
               ...base, out: x, total: price + p.cost, ret, days, sameDay: hasSameDay(d0, p.hops, ret), safe: isSafe(d0, p.hops, ret),
-              tickets: [{ kind: 'rt', from: home, to: x, date: d0, ret, cabin, price }, ...p.hops.map((h) => ({ kind: 'ow', ...h, cabin: 'Y' }))],
+              ...ticketsOf({ kind: 'rt', from: home, to: x, date: d0, ret, cabin, price }, p.hops, null),
             });
           }
           // Two one-ways: in and out may differ.
@@ -171,11 +223,8 @@ function buildTrips(fares) {
               if (!p) continue;
               offer({
                 ...base, out: y, total: outPrice + p.cost + backPrice, ret, days, sameDay: hasSameDay(d0, p.hops, ret), safe: isSafe(d0, p.hops, ret),
-                tickets: [
-                  { kind: 'ow', from: home, to: x, date: d0, cabin, price: outPrice },
-                  ...p.hops.map((h) => ({ kind: 'ow', ...h, cabin: 'Y' })),
-                  { kind: 'ow', from: y, to: home, date: ret, cabin, price: backPrice },
-                ],
+                ...ticketsOf({ kind: 'ow', from: home, to: x, date: d0, cabin, price: outPrice }, p.hops,
+                  { kind: 'ow', from: y, to: home, date: ret, cabin, price: backPrice }),
               });
             }
           }
@@ -204,4 +253,4 @@ function similarCount(dateSets, trip, month = null) {
   return n;
 }
 
-module.exports = { buildTrips, similarCount, hopPlans, hasSameDay, isSafe, addDays };
+module.exports = { buildTrips, similarCount, hopPlans, ticketsOf, hasSameDay, isSafe, addDays };
