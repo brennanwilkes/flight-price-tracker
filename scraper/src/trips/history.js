@@ -3,7 +3,8 @@
  *
  *   derived/history/<YYYY-MM>.csv   generated_at,home,class,in,out,total   (month = generated_at)
  *
- * One cell = the cheapest trip for (home, class, in-city, out-city) over all dates. A row is
+ * One cell = the cheapest trip for (home, class, board row) over all dates; out holds the row's
+ * throw-ins too, "+"-joined after it ("DPS+HAN+SIN", build.js rowId). A row is
  * written only when a cell's total changes, including to empty (no trip any more), so the files
  * replay to the value of every cell at any time.
  */
@@ -11,7 +12,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const HEADER = 'generated_at,home,class,in,out,total\n';
-const keyOf = (c) => `${c.home},${c.cls},${c.in},${c.out}`;
+const keyOf = (c) => `${c.home},${c.cls},${c.in},${c.out}${c.set ? `+${c.set}` : ''}`;
 const monthBefore = (ym) => {
   const [y, m] = ym.split('-').map(Number);
   return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`;
@@ -48,7 +49,7 @@ function lowestEver(dataDir) {
 }
 
 /**
- * Append the cells that changed since the last run. `cells`: [{ home, cls, in, out, total }], the
+ * Append the cells that changed since the last run. `cells`: [{ home, cls, in, out, set, total }], the
  * complete current set: a cell missing from it that had a value is recorded as gone.
  * Returns the number of rows written.
  */

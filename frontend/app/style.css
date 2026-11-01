@@ -122,9 +122,11 @@ option { background: var(--panel); color: var(--text); }
 .board { list-style: none; margin: 0; padding: 0; }
 .row { padding: 4px; margin-bottom: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
 .row:active { transform: scale(0.995); }
-/* Destination: the city name(s), wrapping only at the slash between an open jaw's two. */
+/* Destination: the crossing's city name(s), then the throw-ins (lighter); wrapping only between cities. */
 .dest { display: flex; flex-wrap: wrap; align-content: center; column-gap: 6px; padding: 6px 8px; min-width: 0; font-weight: 650; font-size: 16px; line-height: 1.25; }
 .dest span { white-space: nowrap; }
+.dest .plus { font-weight: 500; color: var(--muted); }
+.more { display: block; width: 100%; padding: 12px; margin-bottom: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; color: var(--muted); font: 600 12px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
 
 /* Fare tile: price, its dates, change vs yesterday; +N similar dates in the corner. */
 .fare { position: relative; display: flex; flex-direction: column; align-items: stretch; justify-content: center; gap: 2px; padding: 8px 0 0; text-align: center;

@@ -17,12 +17,16 @@
  */
 
 import { samePrice } from './price.js';
+import { CITIES, inVietnam } from './cities.js';
 
 const MIN_DAYS = 14;
 const MAX_DAYS = 21;
 const HOI_AN_NIGHTS = 5;
 // Fallbacks per cell, for when the detail pass finds a connection no listed flight makes.
 const FALLBACKS = 4;
+// Throw-in plans per (end city, day) besides the cheapest (hopPlans): the board's rows by cities
+// slept in each get a trip, not only the ones the cheapest plans happen to pass.
+const THROUGH = 4;
 
 /**
  * How a trip ranks, lower first: its price plus its shape penalties (pen: nights before Hoi An and
@@ -45,7 +49,8 @@ const ONE_NIGHT = 25; // flying on after a single night (a ~14 h overnight): 0 n
  * ONE_NIGHT; shapePen scores the same). Returns plans(y, t): the best ways to be in city y on day
  * t, ready to fly home, Hoi An done, no return open and a night in each of `need` (the via filter's
  * cities; staysOf's sense: a night there, or either end of the Hoi An stay); one with a night in x
- * first and one without (the board names rows by where a trip first sleeps, so each keeps its own);
+ * first and one without (different trips, kept both for the builder's choice); without prefs, also
+ * up to THROUGH more by way of other cities (throughs: the board's throw-in rows);
  * [{ cost, hops: [{ kind: 'ow'|'rt'|'back'|'stay', from, to, date, ret?, price }] }]
  * ('back' is a nested return's second flight, paid with its 'rt'; 'stay' marks the Hoi An stay).
  */
@@ -155,11 +160,54 @@ function hopPlans(x, d0, fares, need = [], prefs = false) {
   const endOf = (y, t, xs) => [0, 1, 2].map((run) => best[t]?.get(keyOf({ city: y, done: 1, open: NONE, seen: all, xs, run })))
     .filter(Boolean).map((e) => ({ e, score: e.score + (e.run === 1 ? ONE_NIGHT : 0) })).reduce(better, null);
   const better = (a, b) => (!a || (b && b.score < a.score) ? b : a);
-  return (y, t) => [endOf(y, t, 0), [1, 2, 3].map((xs) => endOf(y, t, xs)).reduce(better, null)].filter(Boolean).map(({ e: end, score }) => {
+  const hopsOf = (end) => {
     const hops = [];
     for (let s = end; s.prev; s = best[s.prev.t].get(s.prev.key)) if (s.hop) hops.push(s.hop);
-    return { cost: end.cost, hops: hops.reverse() };
-  });
+    return hops.reverse();
+  };
+  // Throw-ins (the board's rows by cities slept in, setOf): the cheapest way through each city c,
+  // Hoi An done and 2+ nights in c, then one hop to y (any nights there). Built on first ask:
+  // through.get(y)[t] → [{ cost, c, end, hop }], the THROUGH cheapest, each c once.
+  let through = null;
+  const throughs = () => {
+    through = new Map();
+    const doneAt = new Map(); // c → [day → cheapest state there, Hoi An done, nothing open]
+    for (let t = 1; t <= MAX_DAYS; t++) {
+      for (const s of best[t].values()) {
+        if (!s.done || s.open !== NONE || (s.seen | bit(s.city)) !== all || anchors[s.city] === 0) continue;
+        const at = doneAt.get(s.city) ?? doneAt.set(s.city, []).get(s.city);
+        if (!(at[t]?.score <= s.score)) at[t] = s;
+      }
+    }
+    for (const [c, at] of doneAt) {
+      const runs = new Map(); // y → [day → cheapest via c landing by then]
+      for (let t2 = 3; t2 <= MAX_DAYS; t2++) {
+        const s = at[t2 - 2];
+        if (!s) continue;
+        const date = addDays(d0, t2);
+        for (const [y, price] of hopsFrom(c, date)) {
+          const days = runs.get(y) ?? runs.set(y, []).get(y);
+          if (!(days[t2]?.cost <= s.cost + price)) days[t2] = { cost: s.cost + price, score: s.score + price, c, end: s, hop: { kind: 'ow', from: c, to: y, date, price } };
+        }
+      }
+      for (const [y, days] of runs) {
+        const list = through.get(y) ?? through.set(y, Array.from({ length: MAX_DAYS + 1 }, () => [])).get(y);
+        let held = null; // stay on in y: the cheapest landed by day t
+        for (let t = 3; t <= MAX_DAYS; t++) {
+          if (days[t] && !(held?.cost <= days[t].cost)) held = days[t];
+          if (held) list[t].push(held);
+        }
+      }
+    }
+    for (const list of through.values()) for (const l of list) l.sort((a, b) => a.cost - b.cost).splice(THROUGH);
+  };
+  return (y, t) => {
+    const plans = [endOf(y, t, 0), [1, 2, 3].map((xs) => endOf(y, t, xs)).reduce(better, null)].filter(Boolean)
+      .map(({ e: end }) => ({ cost: end.cost, hops: hopsOf(end) }));
+    if (prefs) return plans;
+    if (!through) throughs();
+    return [...plans, ...(through.get(y)?.[t] ?? []).filter((p) => p.c !== x).map((p) => ({ cost: p.cost, hops: [...hopsOf(p.end), p.hop] }))];
+  };
 }
 
 /**
@@ -257,7 +305,9 @@ function ticketsOf(first, hops, last) {
 /**
  * Where a trip actually stays: cities with at least a night between landing and the next flight
  * (a long haul lands the day after it leaves). A city only changed planes in doesn't count, so it
- * neither names the row (first, last: the first and last stays) nor appears in the via filter.
+ * isn't in the via filter. stays: in first-stayed order; nights: city → nights there (flown in and
+ * out of the same city; the Hoi An stay's overland ends aren't split); x, y: where the long flight
+ * out lands and the long flight home leaves (the crossing).
  */
 function staysOf(trip, homes) {
   const at = (iso) => Date.parse(iso) / 864e5;
@@ -268,18 +318,34 @@ function staysOf(trip, homes) {
     return { from: f.from, to: f.to, leave: at(f.date), land: at(f.date) + (long ? 1 : 0) };
   });
   const stays = [];
-  let first = null, last = null;
+  const nights = {};
   for (let k = 1; k < flights.length; k++) {
-    if (flights[k].leave - flights[k - 1].land < 1) continue;
-    first ??= flights[k - 1].to;
-    last = flights[k].from; // out of Vietnam overland: where the flight home leaves from
+    const n = flights[k].leave - flights[k - 1].land;
+    if (n < 1) continue;
     for (const c of [flights[k - 1].to, flights[k].from]) if (!stays.includes(c)) stays.push(c);
+    if (flights[k - 1].to === flights[k].from) nights[flights[k].from] = (nights[flights[k].from] ?? 0) + n;
   }
-  return { stays, first, last };
+  return { stays, nights, x: flights[0].to, y: flights.at(-1).from };
 }
 
 /**
- * Every trip worth showing, as the cheapest per (home, class, in-city, out-city, departure month).
+ * A row's throw-ins: the cities besides the crossing (x, y) a trip spends 2+ nights in, leaving out
+ * Vietnam (Hoi An is in every trip) unless the crossing is Vietnam too and there's nothing else;
+ * Hoi An's own anchors never. Codes sorted, "+"-joined; '' for none.
+ */
+function setOf({ nights, x, y }) {
+  const kept = (vn) => Object.keys(nights).filter((c) => nights[c] >= 2 && c !== x && c !== y && inVietnam(c) === vn && CITIES[c]?.vietnam !== 0);
+  let set = kept(false);
+  if (!set.length && inVietnam(x) && inVietnam(y)) set = kept(true);
+  return set.sort().join('+');
+}
+
+/** A row's id, for links and the page: "BKK-DPS", "BKK-DPS+HAN+SIN" (in-out+throw-ins). */
+const rowId = (r) => `${r.in}-${r.out}${r.set ? `+${r.set}` : ''}`;
+
+/**
+ * Every trip worth showing, as the cheapest per (home, class, crossing, throw-ins, departure month):
+ * in, out the crossing (staysOf x, y), set the throw-ins (setOf).
  *
  * fares: {
  *   homes, cities,                                  // e.g. ['YVR','YYJ'], ['DAD','ICN',…]
@@ -290,14 +356,14 @@ function staysOf(trip, homes) {
  *   asiaRT(from, to, date)             → [{ ret, price }]   (economy returns within Asia)
  *   departures                         → sorted ISO dates to try as day 0
  * }
- * Returns [{ home, cls: 'hybrid'|'economy', in, out, month, total, depart, ret, days, sameDay, safe, tickets, order, alts, fallbacks }],
+ * Returns [{ home, cls: 'hybrid'|'economy', in, out, set, month, total, depart, ret, days, sameDay, safe, tickets, order, alts, fallbacks }],
  * tickets: [{ kind: 'rt'|'ow', from, to, date, ret?, cabin, price }]; order: the flights in flying
  * order as [ticket index, 'out'|'back'].
  * fallbacks being the next cheapest trips for the same cell plus the cheapest safe one (isSafe).
  * via: '' for the cell's cheapest overall; a city code for its cheapest that stays in that city
  * (in, out or a hop's destination), for the dashboard's via filter. alts is 0 for those.
  * where alts counts the trip's other date sets (depart, ret) in its month within SIMILAR of its
- * price. The array also carries `.dateSets`: "home|cls|in|out" → Map("depart|ret" → cheapest
+ * price. The array also carries `.dateSets`: "home|cls|in|out|set" → Map("depart|ret" → cheapest
  * total), for counting across months (similarCount).
  *
  * opts.need: cities every trip must stay in (the page's multi-city via filter; then only via '');
@@ -310,17 +376,16 @@ function buildTrips(fares, { need = [], homes = fares.homes } = {}) {
   const dateSets = new Map();
   // Kept per cell (via ''), and again per cell and city the trip stays in (the via filter).
   const offer = (trip) => {
-    const { stays, first, last } = staysOf(trip, fares.homes);
-    trip.in = first;
-    trip.out = last;
-    for (const via of need.length ? [''] : ['', ...stays]) keep(trip, via);
-    const route = `${trip.home}|${trip.cls}|${trip.in}|${trip.out}`;
+    const st = staysOf(trip, fares.homes);
+    trip.set = setOf(st);
+    for (const via of need.length ? [''] : ['', ...st.stays]) keep(trip, via);
+    const route = `${trip.home}|${trip.cls}|${trip.in}|${trip.out}|${trip.set}`;
     if (!dateSets.has(route)) dateSets.set(route, new Map());
     const sets = dateSets.get(route), set = `${trip.depart}|${trip.ret}`;
     if (!(sets.get(set) <= trip.total)) sets.set(set, trip.total);
   };
   const keep = (trip, via) => {
-    const key = `${trip.home}|${trip.cls}|${trip.in}|${trip.out}|${trip.month}|${via}`;
+    const key = `${trip.home}|${trip.cls}|${trip.in}|${trip.out}|${trip.set}|${trip.month}|${via}`;
     const list = top.get(key) ?? [];
     if (list.length <= FALLBACKS || scoreOf(list.at(-1)) > scoreOf(trip)) {
       const at = list.findIndex((t) => scoreOf(t) > scoreOf(trip));
@@ -398,11 +463,11 @@ function buildTrips(fares, { need = [], homes = fares.homes } = {}) {
 /** Other date sets for trip's route and class (in `month`, or any) priced about the same (price.js). */
 function similarCount(dateSets, trip, month = null) {
   let n = 0;
-  for (const [set, total] of dateSets.get(`${trip.home}|${trip.cls}|${trip.in}|${trip.out}`) ?? []) {
+  for (const [set, total] of dateSets.get(`${trip.home}|${trip.cls}|${trip.in}|${trip.out}|${trip.set}`) ?? []) {
     if (set === `${trip.depart}|${trip.ret}` || (month && set.slice(0, 7) !== month)) continue;
     if (total <= trip.total * (1 + samePrice(trip.cls))) n++;
   }
   return n;
 }
 
-export { buildTrips, similarCount, scoreOf, hopPlans, ticketsOf, staysOf, hasSameDay, isSafe, addDays };
+export { buildTrips, similarCount, scoreOf, hopPlans, ticketsOf, staysOf, setOf, rowId, hasSameDay, isSafe, addDays };

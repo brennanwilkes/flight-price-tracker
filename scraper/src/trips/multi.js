@@ -95,9 +95,9 @@ async function applyMulti(dataDir, cells, homes, browser, { budget = 80, now = D
   const file = path.join(dataDir, 'state', 'multi.json');
   const cache = multiCache(dataDir, now);
   const stats = { searched: 0, failed: 0, merged: 0 };
-  const todo = [];
-  for (const trip of cells) for (const g of groupsOf(trip, homes)) if (!(keyOf(g) in cache) && !todo.some((x) => keyOf(x) === keyOf(g))) todo.push(g);
-  const ask = browser ? todo.slice(0, budget) : [];
+  const todo = new Map(); // key → grouping, in the cells' order
+  if (browser) for (const trip of cells) for (const g of groupsOf(trip, homes)) if (!(keyOf(g) in cache) && todo.size < budget) todo.set(keyOf(g), g);
+  const ask = [...todo.values()];
   let next = 0;
   await Promise.all(Array.from({ length: CONCURRENCY }, async () => {
     while (next < ask.length) {

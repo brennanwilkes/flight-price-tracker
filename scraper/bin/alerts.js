@@ -13,7 +13,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const config = require('../config/alerts.json');
 const sweepConfig = require('../config/sweep.json');
-const { cityName } = require('../../frontend/app/cities.js');
+const { cityName, rowName } = require('../../frontend/app/cities.js');
+const { rowId } = require('../../frontend/app/build.js');
 const { lows, findDeals, isNews } = require('../src/alerts/rules');
 
 const arg = (name) => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1] : null; };
@@ -23,11 +24,11 @@ const day = (iso) => new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-CA', { 
 const WORD = { buy: 'buy', 'cheap-j': `long flights under ${money(config.cheapBusinessLongLegs)}`, 'new-low': 'new low' };
 
 function dealUrl(d, sha) {
-  return `${config.dashboard}?home=${d.home}&sweep=1&v=${sha}#trip=${d.in}-${d.out}~${d.cls}`;
+  return `${config.dashboard}?home=${d.home}&sweep=1&v=${sha}#trip=${rowId(d)}~${d.cls}`;
 }
 
 function message(d, sha) {
-  const place = d.in === d.out ? cityName(d.in) : `${cityName(d.in)} / ${cityName(d.out)}`;
+  const place = rowName(d);
   const t = d.trip;
   return {
     title: `${place} ${d.cls === 'hybrid' ? 'business' : 'economy'} ${money(t.total)} · ${d.reasons.map((r) => WORD[r]).join(' · ')}`,
@@ -91,7 +92,7 @@ async function main() {
     for (const d of solo) if (await send(message(d, sha))) record(d);
     const rest = news.slice(solo.length);
     if (rest.length) {
-      const names = rest.map((d) => `${d.in === d.out ? cityName(d.in) : `${cityName(d.in)}/${cityName(d.out)}`} ${money(d.trip.total)}`);
+      const names = rest.map((d) => `${rowName(d)} ${money(d.trip.total)}`);
       if (await send({ title: `${rest.length} more deals`, body: names.join(' · ').slice(0, 180), url: `${config.dashboard}?sweep=1&v=${sha}`, tag: 'more' })) rest.forEach(record);
     }
     console.log(`alerts: ${deals.length} deals, ${news.length} new`);

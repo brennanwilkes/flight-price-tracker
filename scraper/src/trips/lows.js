@@ -4,7 +4,7 @@
  *   these exact dates were cheaper before (bad: the price went up)
  *   another date set on this route was cheaper (mildly bad)
  *
- * state/lows.json: { 'home,class,in,out': { 'depart,ret': { total, at } } }, from cells checked
+ * state/lows.json: { 'home,class,in,out[+set]': { 'depart,ret': { total, at } } }, from cells checked
  * against listed flights only (graph prices can be stale). Date sets already flown are dropped.
  *
  * And per ticket, so the trip view shows which leg moved the price: state/ticket-lows.json
@@ -16,9 +16,9 @@
  */
 const path = require('node:path');
 const { readJson, writeJson } = require('../store/routes');
-const { lowestEver } = require('./history');
+const { lowestEver, keyOf } = require('./history');
 
-const routeOf = (home, cls, r) => `${home},${cls},${r.in},${r.out}`;
+const routeOf = (home, cls, r) => keyOf({ home, cls, ...r });
 const ticketRoute = (t) => `${t.kind},${t.cabin},${t.kind === 'multi' ? t.legs.map((l) => `${l.from}-${l.to}`).join(' ') : `${t.from}-${t.to}`}`;
 const ticketDates = (t) => (t.kind === 'multi' ? t.legs.map((l) => l.date) : t.kind === 'rt' ? [t.date, t.ret] : [t.date]).join(',');
 

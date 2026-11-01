@@ -19,7 +19,7 @@ function world({ rt = {}, ow = {}, hops = {}, asiaRT = {} }) {
     hop: (from, to, date) => hops[`${from}-${to}|${date}`] ?? null,
   };
 }
-const find = (trips, cls, i, o) => trips.find((t) => !t.via && t.cls === cls && t.in === i && t.out === o);
+const find = (trips, cls, i, o, set = '') => trips.find((t) => !t.via && t.cls === cls && t.in === i && t.out === o && t.set === set);
 
 test('round trip to a city needs hops into and out of Da Nang for 5 nights', () => {
   const trips = buildTrips(world({
@@ -64,8 +64,8 @@ test('same-day connection is allowed but marked; trip length stays within 14-21 
       [`DAD-ICN|${day(14)}`]: 100, // the day the flight home leaves
     },
   }));
-  // No night in Seoul either way: the trip's row is Da Nang, where it stays.
-  const t = find(trips, 'hybrid', 'DAD', 'DAD');
+  // No night in Seoul either way: still its row, the crossing (Da Nang is Hoi An's, never named).
+  const t = find(trips, 'hybrid', 'ICN', 'ICN');
   assert.strictEqual(t.total, 4270);
   assert.strictEqual(t.days, 14);
   assert.strictEqual(t.sameDay, true);
@@ -73,16 +73,16 @@ test('same-day connection is allowed but marked; trip length stays within 14-21 
 
 test('alts counts other date sets about the same price (business 2%, economy 5%), per month and overall', () => {
   const { similarCount } = require('../frontend/app/build.js');
-  const sets = new Map([['YVR|hybrid|MNL|MNL', new Map([
+  const sets = new Map([['YVR|hybrid|MNL|MNL|', new Map([
     ['2027-09-05|2027-09-22', 4000], // the best
     ['2027-09-06|2027-09-23', 4080], // +2%: counts
     ['2027-09-07|2027-09-24', 4081], // just over
     ['2027-10-01|2027-10-18', 4010], // other month
   ])]]);
-  const trip = { home: 'YVR', cls: 'hybrid', in: 'MNL', out: 'MNL', total: 4000, depart: '2027-09-05', ret: '2027-09-22' };
+  const trip = { home: 'YVR', cls: 'hybrid', in: 'MNL', out: 'MNL', set: '', total: 4000, depart: '2027-09-05', ret: '2027-09-22' };
   assert.equal(similarCount(sets, trip, '2027-09'), 1);
   assert.equal(similarCount(sets, trip), 2);
-  const eco = new Map([['YVR|economy|MNL|MNL', new Map([['2027-09-05|2027-09-22', 1000], ['2027-09-06|2027-09-23', 1050], ['2027-09-07|2027-09-24', 1051]])]]);
+  const eco = new Map([['YVR|economy|MNL|MNL|', new Map([['2027-09-05|2027-09-22', 1000], ['2027-09-06|2027-09-23', 1050], ['2027-09-07|2027-09-24', 1051]])]]);
   assert.equal(similarCount(eco, { ...trip, cls: 'economy', total: 1000 }), 1);
 });
 
@@ -330,4 +330,33 @@ test('trip shape: a single overnight between flights counts against a trip', () 
     hops: { [`ICN-DAD|${day(2)}`]: 190, [`ICN-DAD|${day(3)}`]: 200, [`DAD-ICN|${day(13)}`]: 180 }, // back for 1 night: no hub at both ends
   })).find((x) => !x.via && x.cls === 'economy');
   assert.strictEqual(t.tickets[1].date, day(3));
+});
+
+test('rows: the crossing plus the other cities slept in 2+ nights, Vietnam named only when it is all there is', async () => {
+  const { setOf, rowId } = require('../frontend/app/build.js');
+  const { rowName } = await import('../frontend/app/cities.js');
+  assert.strictEqual(setOf({ nights: { HAN: 3, BKK: 2, DAD: 5, MNL: 1 }, x: 'ICN', y: 'ICN' }), 'BKK');
+  assert.strictEqual(setOf({ nights: { SIN: 2, BKK: 4 }, x: 'BKK', y: 'DPS' }), 'SIN');
+  assert.strictEqual(setOf({ nights: { HAN: 3 }, x: 'ICN', y: 'SGN' }), '');
+  assert.strictEqual(setOf({ nights: { HAN: 3, DAD: 5, PQC: 2 }, x: 'SGN', y: 'SGN' }), 'HAN+PQC');
+  const r = { in: 'BKK', out: 'DPS', set: 'SIN+HAN' };
+  assert.strictEqual(rowId(r), 'BKK-DPS+SIN+HAN');
+  assert.strictEqual(rowName(r), 'Bangkok / Bali + Hanoi + Singapore');
+  assert.strictEqual(rowName({ in: 'MNL', out: 'MNL', set: '' }), 'Manila');
+});
+
+test('rows: a crossing gets a row through another city even when that costs more than its cheapest', () => {
+  const trips = buildTrips(world({
+    rt: { [`YVR-ICN-J|${D0}`]: [{ ret: day(14), price: 4000 }] },
+    hops: {
+      [`ICN-DAD|${day(3)}`]: 200,
+      [`DAD-ICN|${day(8)}`]: 180, // the cheapest: straight back to Seoul
+      [`DAD-MNL|${day(8)}`]: 100,
+      [`MNL-ICN|${day(11)}`]: 150, // or 3 nights in Manila first
+    },
+  }));
+  assert.strictEqual(find(trips, 'hybrid', 'ICN', 'ICN').total, 4380);
+  const t = find(trips, 'hybrid', 'ICN', 'ICN', 'MNL');
+  assert.strictEqual(t.total, 4450);
+  assert.deepStrictEqual(t.tickets.slice(1).map((k) => `${k.from}-${k.to}`), ['ICN-DAD', 'DAD-MNL', 'MNL-ICN']);
 });

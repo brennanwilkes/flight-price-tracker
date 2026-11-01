@@ -1,6 +1,7 @@
 // Cities the trips are built from (SCOPE, coverage). role: gateway = long legs from home and hops;
 // hop = hops only. airports: what Google is asked for (default: the code itself). vietnam: an
-// anchor for the Hoi An stay, with the ground days from there to Hoi An each way.
+// anchor for the Hoi An stay, with the ground days from there to Hoi An each way; vn: in Vietnam,
+// not an anchor.
 export const CITIES = {
   YVR: { name: 'Vancouver', role: 'home' },
   YYJ: { name: 'Victoria', role: 'home' },
@@ -26,8 +27,8 @@ export const CITIES = {
   REP: { name: 'Siem Reap', lon: 104.22, lat: 13.37, role: 'hop', airports: ['SAI'] },
   PNH: { name: 'Phnom Penh', lon: 104.84, lat: 11.55, role: 'hop', airports: ['KTI'] },
   LPQ: { name: 'Luang Prabang', lon: 102.16, lat: 19.9, role: 'hop' },
-  PQC: { name: 'Phu Quoc', lon: 103.99, lat: 10.17, role: 'hop' },
-  CXR: { name: 'Nha Trang', lon: 109.22, lat: 12.0, role: 'hop' },
+  PQC: { name: 'Phu Quoc', lon: 103.99, lat: 10.17, role: 'hop', vn: true },
+  CXR: { name: 'Nha Trang', lon: 109.22, lat: 12.0, role: 'hop', vn: true },
   CNX: { name: 'Chiang Mai', lon: 98.96, lat: 18.77, role: 'hop' },
   HKT: { name: 'Phuket', lon: 98.32, lat: 8.11, role: 'hop' },
   KBV: { name: 'Krabi', lon: 98.99, lat: 8.1, role: 'hop' },
@@ -47,6 +48,8 @@ export const CITIES = {
   IAO: { name: 'Siargao', lon: 126.01, lat: 9.86, role: 'hop' },
 };
 
+/** Whether a city is in Vietnam (rows don't name it, inVietnam's users: build.js setOf). */
+export const inVietnam = (c) => CITIES[c]?.vietnam != null || !!CITIES[c]?.vn;
 /** Codes of the Asia cities with the given role(s). */
 export const citiesWith = (...roles) => Object.keys(CITIES).filter((c) => roles.includes(CITIES[c].role));
 /** What Google is asked for: one airport code, or several. */
@@ -82,3 +85,5 @@ export const AIRPORTS = {
 /** Name and map position for a city or airport code (no position: home, or off the map). */
 export const place = (code) => CITIES[code] ?? AIRPORTS[code] ?? { name: code };
 export const cityName = (code) => place(code).name;
+/** A board row's name: "Bangkok / Bali + Hanoi" (crossing, then throw-ins; build.js setOf). */
+export const rowName = (r) => [r.in === r.out ? cityName(r.in) : `${cityName(r.in)} / ${cityName(r.out)}`, ...(r.set ? r.set.split('+').map(cityName).sort() : [])].join(' + ');

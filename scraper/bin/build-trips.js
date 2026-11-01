@@ -2,12 +2,15 @@
 'use strict';
 /* Build trips from the data branch's current fares and write what the dashboard reads:
  *
- *   derived/trips-<HOME>.json   { generatedAt, home, rows: [{ in, out, hybrid, economy, months: { "<YYYY-MM>": { hybrid, economy } } }] }
+ *   derived/trips-<HOME>.json   { generatedAt, home, rows: [{ in, out, set, hybrid, economy, months: { "<YYYY-MM>": { hybrid, economy } } }] }
  *   derived/history/<YYYY-MM>.csv   (src/trips/history.js)
  *
- * One row per in/out city pair; each cell is that pair's cheapest trip (null when none), overall
- * and per departure month. Rows sorted by cheapest hybrid, then cheapest economy. Overall cells
- * carry `was`: the cell's total 24 h earlier, when known.
+ * One row per crossing (in: where the long flight out lands, out: where the long flight home
+ * leaves) and throw-ins (set: other cities with 2+ nights, build.js setOf); each cell is the row's
+ * cheapest trip (null when none), overall and per departure month. Each crossing's cheapest trip
+ * is in its row (checked first); its other rows are the cheapest found for their cities, at most
+ * THROW_INS per crossing and class (the cheapest). Rows sorted by cheapest hybrid, then cheapest
+ * economy. Overall cells carry `was`: the cell's total 24 h earlier, when known.
  *
  *   derived/via/trips-<HOME>-<CITY>.json   the same rows (no `was`), each cell the cheapest trip
  *                                           staying in CITY: the dashboard's via filter
@@ -40,7 +43,7 @@ const path = require('node:path');
 const zlib = require('node:zlib');
 const config = require('../config/sweep.json');
 const { loadFares, bundleOf, fareOf } = require('../src/trips/fares');
-const { buildTrips, similarCount, scoreOf } = require('../../frontend/app/build.js');
+const { buildTrips, similarCount, scoreOf, rowId } = require('../../frontend/app/build.js');
 const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
 const { addDetails } = require('../src/trips/details');
 const { openBrowser, shoppingResults } = require('../src/gflights/browser');
@@ -52,6 +55,7 @@ const { applyMulti, multiCache, multiSaving } = require('../src/trips/multi');
 
 const CLASSES = ['hybrid', 'economy'];
 const TRIES = 10;
+const THROW_INS = 4; // rows per crossing and class besides the one with its cheapest
 const MULTI_BUDGET = 80; // multi-city searches per build (trips/multi.js)
 const ROUNDS = 3;
 const CHECKED_HOURS = 24;
@@ -98,8 +102,8 @@ function rowsFor(home, trips, via = '') {
   const rows = new Map();
   for (const t of trips) {
     if (t.home !== home || t.via !== via) continue;
-    const key = `${t.in}-${t.out}`;
-    if (!rows.has(key)) rows.set(key, { in: t.in, out: t.out, hybrid: null, economy: null, months: {} });
+    const key = rowId(t);
+    if (!rows.has(key)) rows.set(key, { in: t.in, out: t.out, set: t.set, hybrid: null, economy: null, months: {} });
     const row = rows.get(key);
     row.months[t.month] ??= { hybrid: null, economy: null };
     row.months[t.month][t.cls] = strip(t);
@@ -112,12 +116,25 @@ function rowsFor(home, trips, via = '') {
       row[cls] = overall(row.cands[cls][0], trips);
     }
   }
-  return sortRows([...rows.values()]);
+  // Per crossing and class: the row with the cheapest (top: checked first) and THROW_INS more.
+  const crossings = Map.groupBy([...rows.values()], (r) => `${r.in}-${r.out}`);
+  for (const list of crossings.values()) {
+    for (const cls of CLASSES) {
+      const has = list.filter((r) => r[cls]).sort((a, b) => rankOf(a.cands[cls][0]) - rankOf(b.cands[cls][0]));
+      has.forEach((r, i) => {
+        if (i === 0) (r.top ??= {})[cls] = true;
+        if (i <= THROW_INS) return;
+        r[cls] = null;
+        for (const m of Object.values(r.months)) m[cls] = null;
+      });
+    }
+  }
+  return sortRows([...rows.values()].filter((r) => r.hybrid || r.economy));
 }
 
 // A trip as the dashboard stores it, without the builder's keys.
 // tier: the price tier word (config/alerts.json), shared with the alerts.
-const strip = ({ home, in: _i, out: _o, cls, month, safe, fallbacks, via, ...trip }) => ({ ...trip, tier: tierOf(alertConfig, cls, trip.total) });
+const strip = ({ home, in: _i, out: _o, set: _s, cls, month, safe, fallbacks, via, ...trip }) => ({ ...trip, tier: tierOf(alertConfig, cls, trip.total) });
 // A checked cell: its own copy of the tickets (flight details go there; a trip can be both an
 // overall and a month cell) and +N counted across months, or in `month`.
 const overall = (t, trips, month = null) => t && { ...strip(t), tickets: t.tickets.map((x) => ({ ...x })), alts: t.via ? 0 : similarCount(trips.dateSets, t, month) };
@@ -132,26 +149,27 @@ const sortRows = (rows) => rows.sort((a, b) => price(a.hybrid) - price(b.hybrid)
  * beat it, or after TRIES. None connects: the cell is dropped (a row with no overall
  * cell goes too); a trip that can't be flown is not a price. Searches are shared, so a month cell
  * walking the same trips as its overall cell costs nothing more. session: { cache, browser,
- * listed, deadline } shared across rounds (main). Searched in order of what's seen first: the
- * dashboard's overall cells, its month cells, then the via filter's; past the deadline the rest
- * keep their graph prices (st.late: searches not made).
+ * listed, deadline } shared across rounds (main). Searched in order of what matters most: the
+ * dashboard's overall cells with each crossing's cheapest, its other overall cells, the month cells
+ * alike, then the via filter's the same way; past the deadline the rest keep their graph prices
+ * (st.late: searches not made).
  */
 async function verify(byHome, trips, { cache, browser, listed, deadline }) {
   const t0 = Date.now();
   const st = { cells: 0, replaced: 0, unresolved: 0, searches: 0, failed: 0, late: 0, none: 0, stay: 0 };
-  const cellsOf = (r, rank) => CLASSES.filter((c) => r[c]).flatMap((cls) => [
-    { rank, cls, cands: r.cands[cls], cand: r[cls], put: (t) => { r[cls] = t; } },
+  const cellsOf = (r, base) => CLASSES.filter((c) => r[c]).flatMap((cls) => [
+    { rank: base + (r.top?.[cls] ? 0 : 1), cls, cands: r.cands[cls], cand: r[cls], put: (t) => { r[cls] = t; } },
     ...Object.entries(r.months).filter(([, m]) => m[cls]).map(([month, m]) => {
       const cands = r.cands[cls].filter((t) => t.depart.startsWith(month));
-      return { rank: rank + 1, cls, month, cands, cand: overall(cands[0], trips, month), put: (t) => { m[cls] = t; } };
+      return { rank: base + (r.top?.[cls] ? 2 : 3), cls, month, cands, cand: overall(cands[0], trips, month), put: (t) => { m[cls] = t; } };
     }),
   ]);
-  const cells = [...byHome].flatMap(([view, rows]) => rows.flatMap((r) => cellsOf(r, view.endsWith('|') ? 0 : 2)))
+  const cells = [...byHome].flatMap(([view, rows]) => rows.flatMap((r) => cellsOf(r, view.endsWith('|') ? 0 : 4)))
     .map((p) => ({ ...p, i: 0, best: null, first: null }));
   st.cells = cells.length;
   // Rank by rank, each walked to the end before the next starts: a dashboard cell's later
   // candidates come before any via cell's first.
-  for (let rank = 0; rank <= 3; rank++) {
+  for (let rank = 0; rank <= 7; rank++) {
     let pending = cells.filter((p) => p.rank === rank);
     while (pending.length) {
       const s = await addDetails(pending.map((p) => p.cand), cache, browser, listed, deadline);
@@ -179,7 +197,7 @@ async function verify(byHome, trips, { cache, browser, listed, deadline }) {
     }
   }
   for (const [view, rows] of byHome) {
-    for (const r of rows) delete r.cands;
+    for (const r of rows) { delete r.cands; delete r.top; }
     byHome.set(view, sortRows(rows.filter((r) => r.hybrid || r.economy)));
   }
   return { ...st, ms: Date.now() - t0 };
@@ -290,7 +308,7 @@ async function main() {
     fs.writeFileSync(checkedFile, JSON.stringify(checkedLog));
     console.log(`details: ${details.searches} searches (${details.browser} in a browser, ${details.failed} failed, ${details.late} skipped out of time${details.error ? `, e.g. ${details.error}` : ''}) over ${details.rounds} rounds`);
   } else {
-    for (const rows of byHome.values()) for (const r of rows) delete r.cands;
+    for (const rows of byHome.values()) for (const r of rows) { delete r.cands; delete r.top; }
   }
   const dayAgo = valuesAt(dataDir, new Date(Date.parse(generatedAt) - 864e5).toISOString().replace(/\.\d+Z$/, 'Z'));
   const cells = [];
@@ -321,7 +339,7 @@ async function main() {
     for (const r of rows) {
       for (const cls of CLASSES) {
         if (!r[cls]) continue;
-        const cell = { home, cls, in: r.in, out: r.out, total: r[cls].total };
+        const cell = { home, cls, in: r.in, out: r.out, set: r.set, total: r[cls].total };
         cells.push(cell);
         const was = dayAgo.get(keyOf(cell));
         if (was != null) r[cls].was = was;
@@ -330,7 +348,7 @@ async function main() {
     fs.mkdirSync(path.join(dataDir, 'derived'), { recursive: true });
     fs.writeFileSync(path.join(dataDir, 'derived', `trips-${home}.json`), JSON.stringify({ generatedAt, home, vias, rows })); // compact: the phone loads it
     const top = rows[0]?.hybrid;
-    console.log(`${home}: ${rows.length} rows${top ? `, best hybrid ${rows[0].in}/${rows[0].out} ${top.total} (${top.depart}…${top.ret})` : ''}`);
+    console.log(`${home}: ${rows.length} rows${top ? `, best hybrid ${rowId(rows[0])} ${top.total} (${top.depart}…${top.ret})` : ''}`);
   }
   const changed = recordHistory(dataDir, generatedAt, cells);
   fs.writeFileSync(path.join(dataDir, 'derived', 'fares.json'), JSON.stringify({ ...bundleOf(fares), tiers: alertConfig.tiers }));

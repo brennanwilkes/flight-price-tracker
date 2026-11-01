@@ -139,8 +139,21 @@ the builder searches every combination and the dashboard shows the best N.
 - **Board tile (2026-11-01):** price, dates, then a footer strip: ▼$/▲$ vs 24 h ago | +N similar
   dates. Each ticket in the trip view shows its own ▲/▼ vs 24 h ago beside its price
   (`state/ticket-prices.json`, 2 days of changes). History's x axis is days.
-- **Rows are named by where the trip sleeps:** the first and last cities with at least a night; a city
-  only changed planes in doesn't name the row or count for the via filter.
+- **Rows: the crossing plus the throw-ins (2026-11-01, replaces naming by where the trip first and
+  last sleeps):** "how do I cross the Pacific" first, "what else do I get to see" second, each
+  combination its own full row (tiles, marks, ▲/▼, +N, trip view, History line, alerts). The
+  crossing: where the long flight out lands and the long flight home leaves, slept in or not. The
+  throw-ins: other cities with 2+ nights, Vietnam left out (Hoi An is in every trip) unless the
+  crossing is Vietnam too and there's nothing else; Hoi An's own anchors never. "Bangkok / Bali" is
+  nothing else beyond Vietnam; "Bangkok / Bali + Singapore" adds 2+ nights in Singapore. No split
+  by airline. Guaranteed: each crossing's cheapest trip (within the same-price tolerance) is on the
+  board, in the row of whatever it sleeps in, and is flight-checked first. Best effort: its other
+  rows, the cheapest found per set of cities (the planner adds the cheapest way through each city
+  after Hoi An, `build.js` throughs), at most 4 more per crossing and class, checked after every
+  crossing's cheapest. The board draws the cheapest 100 rows, the rest on a tap. History keys the
+  same rows (`out` holds the throw-ins, "DPS+SIN"); rows whose crossing differs from their old
+  first/last-slept name start a new line. A city only changed planes in doesn't count for the via
+  filter.
 - **Stay ranges:** "4–12 nights" (the range replaces the count): each Asia one-way moved alone, long legs fixed, at about the same
   total, Hoi An minimum kept (`trips/flex.js`).
 - **Trip shape decides at about the same price (2026-11-01):** a trip ranks by its price plus
@@ -173,9 +186,8 @@ the builder searches every combination and the dashboard shows the best N.
   flight-checked; where both found the same trip the checked one stays). Chips pulse while it builds.
 - iOS installed app: solid sticky header padded by the safe-area inset + 30 px (status-bar fade).
 
-**Main page (phone-first):** one row per **in/out city pair** (e.g. "in Seoul / out Manila"), sorted by
-cheapest hybrid, with the top row visually set apart as the headline ticket. Brennan wants to revisit
-the row definition once real data is in.
+**Main page (phone-first):** one row per **crossing and throw-ins** (2026-11-01, see Decisions:
+"Rows"), sorted by cheapest hybrid, with the top row visually set apart as the headline ticket.
 - Columns: **Hybrid** (business long legs + economy hops, the headline), **Full economy**. No full
   business, no premium economy.
 - Each cell: cheapest over all dates and trip lengths, with its dates underneath, and a small ▲/▼ for

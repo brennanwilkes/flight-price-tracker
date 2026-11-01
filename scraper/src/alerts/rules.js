@@ -1,5 +1,5 @@
 'use strict';
-/* Deal alerts (SCOPE.md: Alerts). A deal is one dashboard cell: home, class, in-city, out-city.
+/* Deal alerts (SCOPE.md: Alerts). A deal is one dashboard cell: home, class, board row.
  *
  * A cell is a deal when its trip connects (checked against real flights) and any of:
  *   buy        it's in the top price tier
@@ -10,6 +10,7 @@
  */
 const fs = require('node:fs');
 const path = require('node:path');
+const { keyOf } = require('../trips/history');
 
 const TIER_RANK = { '': 0, good: 1, great: 2, buy: 3 };
 
@@ -18,7 +19,7 @@ const tierOf = (config, cls, total) => config.tiers[cls].find(([max]) => total <
 
 /**
  * Each cell's lowest total and first sighting in [since, before), from derived/history/*.csv.
- * Map "home,cls,in,out" → { low, first }.
+ * Map "home,cls,in,out[+set]" → { low, first } (history.js keyOf).
  */
 function lows(dataDir, since, before) {
   const out = new Map();
@@ -40,7 +41,7 @@ function lows(dataDir, since, before) {
 /**
  * Deals among the current cells. rows: { home: [row] } as in derived/trips-<HOME>.json; history:
  * lows() before this run (so this run's total isn't its own low). now: ISO.
- * Returns [{ key, home, cls, in, out, trip, tier, reasons, prevLow }].
+ * Returns [{ key, home, cls, in, out, set, trip, tier, reasons, prevLow }].
  */
 function findDeals(config, rows, history, now) {
   const deals = [];
@@ -50,7 +51,7 @@ function findDeals(config, rows, history, now) {
       for (const cls of ['hybrid', 'economy']) {
         const trip = r[cls];
         if (!trip || trip.connects !== true) continue;
-        const key = `${home},${cls},${r.in},${r.out}`;
+        const key = keyOf({ home, cls, ...r });
         const tier = tierOf(config, cls, trip.total);
         const reasons = [];
         if (tier === 'buy') reasons.push('buy');
@@ -58,7 +59,7 @@ function findDeals(config, rows, history, now) {
         if (cls === 'hybrid' && longJ && longJ < config.cheapBusinessLongLegs) reasons.push('cheap-j');
         const h = history.get(key);
         if (h && Date.parse(h.first) <= warm && trip.total < h.low) reasons.push('new-low');
-        if (reasons.length) deals.push({ key, home, cls, in: r.in, out: r.out, trip, tier, reasons, prevLow: h?.low ?? null });
+        if (reasons.length) deals.push({ key, home, cls, in: r.in, out: r.out, set: r.set, trip, tier, reasons, prevLow: h?.low ?? null });
       }
     }
   }

@@ -4,7 +4,7 @@
  *
  *   postMessage({ id, url, home, need }) → { id, rows } | { id, error }
  */
-import { buildTrips, similarCount } from './build.js';
+import { buildTrips, similarCount, rowId } from './build.js';
 import { faresOf } from './fares.js';
 import { flexOf } from './flex.js';
 
@@ -24,10 +24,10 @@ onmessage = async ({ data: { id, url, home, need } }) => {
   }
 };
 
-/** As scraper/bin/build-trips.js rowsFor: one row per in/out pair, cheapest per class overall and per month. */
+/** As scraper/bin/build-trips.js rowsFor: one row per crossing and throw-ins, cheapest per class overall and per month. */
 function rowsOf(fares, trips) {
   const tier = (cls, total) => fares.tiers?.[cls].find(([max]) => total <= max)?.[1] ?? '';
-  const cell = ({ home, in: _i, out: _o, cls, month, safe, fallbacks, via, ...t }) => {
+  const cell = ({ home, in: _i, out: _o, set: _s, cls, month, safe, fallbacks, via, ...t }) => {
     const flex = flexOf(t, fares);
     return { ...t, tier: tier(cls, t.total), ...(flex.length ? { flex } : {}) };
   };
@@ -35,8 +35,8 @@ function rowsOf(fares, trips) {
   // Nothing here is checked against real flights, so per cell the cheapest trip with no same-day
   // connection (build.js isSafe: connects whatever the times), when there is one.
   for (const t of trips.map((c) => [c, ...c.fallbacks].find((x) => x.safe) ?? c)) {
-    const key = `${t.in}-${t.out}`;
-    if (!rows.has(key)) rows.set(key, { in: t.in, out: t.out, hybrid: null, economy: null, months: {} });
+    const key = rowId(t);
+    if (!rows.has(key)) rows.set(key, { in: t.in, out: t.out, set: t.set, hybrid: null, economy: null, months: {} });
     const row = rows.get(key);
     (row.months[t.month] ??= { hybrid: null, economy: null })[t.cls] = cell(t);
     if (!(row[t.cls]?.total <= t.total)) row[t.cls] = { ...cell(t), alts: similarCount(trips.dateSets, t) };

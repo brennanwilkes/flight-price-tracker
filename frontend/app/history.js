@@ -4,7 +4,7 @@
 // recorded, one stepped line per route (a price holds until the next change). History is kept per
 // route overall, so the month and via filters pick the routes, not the values.
 // Chart.js is loaded from cdnjs the first time the tab opens.
-import { cityName } from './cities.js';
+import { rowName } from './cities.js';
 
 const CHART_JS = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
 const FIRST_MONTH = '2026-10'; // the first history file
@@ -17,7 +17,8 @@ const RANGE = { hybrid: [3000, 6000], economy: [500, 2000] };
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
 const money = (n) => `$${Math.round(n).toLocaleString('en-CA')}`;
 const fmtDates = (t) => `${new Date(`${t.depart}T12:00:00Z`).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', timeZone: 'UTC' })} – ${new Date(`${t.ret}T12:00:00Z`).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', timeZone: 'UTC' })}`;
-const label = (r) => (r.in === r.out ? cityName(r.in) : `${cityName(r.in)} / ${cityName(r.out)}`);
+// A board row as the files key it: "in,out", out with the row's throw-ins ("DPS+HAN").
+const routeOf = (r) => `${r.in},${r.out}${r.set ? `+${r.set}` : ''}`;
 
 let chartJs = null;
 const loadChartJs = () => (chartJs ??= new Promise((ok, fail) => {
@@ -28,7 +29,7 @@ const loadChartJs = () => (chartJs ??= new Promise((ok, fail) => {
   document.head.appendChild(s);
 }));
 
-const cache = new Map(); // base → Promise<Map("home,cls,in,out" → [[ms, total|null]])>
+const cache = new Map(); // base → Promise<Map("home,cls,in,out[+set]" → [[ms, total|null]])>
 function loadHistory(base) {
   if (cache.has(base)) return cache.get(base);
   const months = [];
@@ -84,15 +85,16 @@ export async function renderHistory(el, base, home, view, priority = 'hybrid') {
     return;
   }
   const picks = CLASSES.slice().sort(([a]) => (a === priority ? -1 : 1)).map(([cls, name]) => {
-    const shown = new Map(view.rows.map((r) => [`${r.in},${r.out}`, r.cells[cls]]));
-    const onBoard = new Set(view.all.map((r) => `${r.in},${r.out}`));
+    const shown = new Map(view.rows.map((r) => [routeOf(r), r.cells[cls]]));
+    const onBoard = new Set(view.all.map(routeOf));
     const top = [...series].flatMap(([key, pts]) => {
-      const [h, c, inn, out] = key.split(',');
-      const route = `${inn},${out}`;
+      const [h, c, inn, ends] = key.split(',');
+      const route = `${inn},${ends}`;
+      const [out, ...set] = ends.split('+');
       const low = Math.min(...pts.map(([, y]) => y ?? Infinity));
       if (h !== home || c !== cls || low === Infinity) return [];
       if ((onBoard.has(route) || view.via) && !shown.get(route)) return [];
-      return [{ r: { in: inn, out }, trip: shown.get(route), pts, low }];
+      return [{ r: { in: inn, out, set: set.join('+') }, trip: shown.get(route), pts, low }];
     }).sort((a, b) => a.low - b.low).slice(0, MAX_SERIES);
     return { cls, name, top };
   });
@@ -101,7 +103,7 @@ export async function renderHistory(el, base, home, view, priority = 'hybrid') {
       <h3>${name}</h3>
       ${top.length ? `<div class="chart-box"><canvas data-cls="${cls}" role="img" aria-label="${name}: cheapest trip over time, top ${top.length} routes"></canvas></div>
       <ol class="legend">${top.map(({ r, low }, i) => `
-        <li><button type="button" data-cls="${cls}" data-i="${i}" aria-pressed="true"><i style="background: var(--s${i + 1})"></i><span>${esc(label(r))}</span><b>${money(low)}</b></button></li>`).join('')}
+        <li><button type="button" data-cls="${cls}" data-i="${i}" aria-pressed="true"><i style="background: var(--s${i + 1})"></i><span>${esc(rowName(r))}</span><b>${money(low)}</b></button></li>`).join('')}
       </ol>` : '<p class="note">No history yet.</p>'}
     </section>`).join('');
 
@@ -118,7 +120,7 @@ export async function renderHistory(el, base, home, view, priority = 'hybrid') {
       type: 'line',
       data: {
         datasets: top.map(({ r, trip }, i) => ({
-          label: label(r), route: { trip }, data: values[i].map((y, j) => ({ x: times[j], y: clip(y), price: y })), stepped: true, borderColor: tok(`--s${i + 1}`), borderWidth: 2,
+          label: rowName(r), route: { trip }, data: values[i].map((y, j) => ({ x: times[j], y: clip(y), price: y })), stepped: true, borderColor: tok(`--s${i + 1}`), borderWidth: 2,
           segment: { borderDash: (ctx) => (held[i][ctx.p0DataIndex] || clip(values[i][ctx.p0DataIndex]) !== values[i][ctx.p0DataIndex] ? [4, 4] : undefined) },
           pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: tok(`--s${i + 1}`), pointHoverBorderColor: tok('--panel'), pointHoverBorderWidth: 2,
         })),

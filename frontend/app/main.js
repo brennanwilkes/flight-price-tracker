@@ -1,4 +1,4 @@
-// Main page: one row per in/out city pair, Hybrid and Full economy columns; tap a row for the
+// Main page: one row per crossing and throw-ins (build.js setOf), Hybrid and Full economy columns; tap a row for the
 // trip details. Reads derived/trips-<HOME>.json from the data branch (scraper/bin/build-trips.js).
 //
 // FRESHNESS: prices on screen are never older than the server's, and never go backwards.
@@ -9,14 +9,14 @@
 // - The current commit is checked on resume and every 5 min while visible. Newer data applies at
 //   once on resume; mid-use it's a tap-to-show bar, so prices don't change under a tap. Data
 //   whose generatedAt isn't newer than what's shown (a stale API answer) is ignored.
-import { CITIES, cityName } from './cities.js';
+import { CITIES, cityName, rowName } from './cities.js';
 import { samePrice } from './price.js';
 import { tripMap } from './map.js';
 import { sweepIfAsked } from './alerts.js';
 import { renderHealth } from './health.js';
 import { renderHistory } from './history.js';
 import { register, showBar, clearBar } from './pwa.js';
-import { staysOf as tripStays } from './build.js';
+import { staysOf as tripStays, rowId } from './build.js';
 
 const params = new URLSearchParams(location.search);
 const ALERT_SHA = /^[0-9a-f]{40}$/.test(params.get('v') ?? '') ? params.get('v') : null;
@@ -34,13 +34,16 @@ const TIERS = {
 const COLUMNS = [['hybrid', 'Business'], ['economy', 'Economy']];
 
 // sha: the data-branch commit the loaded files came from. The open trip lives in the URL hash
-// (#trip=IN-OUT~class), so the back gesture closes it and an alert can link straight to one.
+// (#trip=IN-OUT[+SET]~class), so the back gesture closes it and an alert can link straight to one.
 // ?home= (from an alert) picks the home airport, else the last one used.
 // vias: the via filter's cities (up to MAX_VIAS), trips staying in every one.
 // data: "HOME" (all trips) or "HOME-CITY" (one via city) → trips file; "HOME-CITY+CITY…" → built
 // in the page (multiVia).
 const HOMES = ['YVR', 'YYJ'];
 const MAX_VIAS = 3;
+// Board rows drawn at first (cheapest first); the rest on asking. Each crossing has a few rows,
+// one per set of throw-in cities, so the board runs to hundreds.
+const BOARD_ROWS = 100;
 const state = { home: /^(YVR|YYJ)$/.test(params.get('home') ?? '') ? params.get('home') : localGet('home') ?? 'YVR', month: '', vias: [], sha: null, data: {} };
 // Priority class, per device: sorts the board, opens first, leads History. Alerts cover both.
 state.priority = localGet('priority') === 'economy' ? 'economy' : 'hybrid';
@@ -62,7 +65,6 @@ const weekday = (iso) => new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-CA'
 const fmtMonth = (ym) => new Date(`${ym}-15T12:00:00Z`).toLocaleDateString('en-CA', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 const tier = (cls, total) => TIERS[cls].find(([max]) => total <= max)?.[1] ?? '';
 const tierOfTrip = (cls, t) => t.tier ?? tier(cls, t.total); // the builder's (config/alerts.json), else the fallback
-const pairLabel = (r) => (r.in === r.out ? cityName(r.in) : `${cityName(r.in)} → ${cityName(r.out)}`);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
 
 /**
@@ -112,8 +114,8 @@ function approxOf(files, need) {
   const better = (a, b) => (stays(b) && !(a?.total <= b.total) ? b : a);
   const rows = new Map();
   for (const r of files.flatMap((f) => f.rows)) {
-    const key = `${r.in}-${r.out}`;
-    if (!rows.has(key)) rows.set(key, { in: r.in, out: r.out, hybrid: null, economy: null, months: {} });
+    const key = rowId(r);
+    if (!rows.has(key)) rows.set(key, { in: r.in, out: r.out, set: r.set, hybrid: null, economy: null, months: {} });
     const row = rows.get(key);
     for (const [cls] of COLUMNS) {
       row[cls] = better(row[cls], r[cls]);
@@ -141,7 +143,7 @@ function multiVia(key, need) {
       waiting.delete(id);
       const approx = state.data[w.key];
       if (w.sha !== state.sha || !approx) return; // newer data since
-      state.data[w.key] = error ? { ...approx, approx: false } : { rows: rows.map((r) => keepChecked(r, approx.rows.find((a) => a.in === r.in && a.out === r.out))) };
+      state.data[w.key] = error ? { ...approx, approx: false } : { rows: rows.map((r) => keepChecked(r, approx.rows.find((a) => rowId(a) === rowId(r)))) };
       if (viewKey() === w.key) render();
     };
   }
@@ -225,12 +227,15 @@ function fare(cls, trip) {
   </button>`;
 }
 
-/** "Hong Kong / Tokyo", breaking only at the slash. */
-const pairName = (r) => (r.in === r.out ? `<span>${esc(cityName(r.in))}</span>` : `<span>${esc(cityName(r.in))} /</span> <span>${esc(cityName(r.out))}</span>`);
+/** "Hong Kong / Tokyo", then the throw-ins, "+ Bali"; breaking only between cities. */
+const pairName = (r) => [
+  r.in === r.out ? `<span>${esc(cityName(r.in))}</span>` : `<span>${esc(cityName(r.in))} /</span> <span>${esc(cityName(r.out))}</span>`,
+  ...(r.set ? r.set.split('+').map(cityName).sort().map((n) => `<span class="plus">+ ${esc(n)}</span>`) : []),
+].join(' ');
 
 /** One board row: the destination, then a fare tile per class. */
 function boardRow(r, i) {
-  return `<li class="row${i === 0 ? ' headline' : ''}" data-row="${r.in}-${r.out}">
+  return `<li class="row${i === 0 ? ' headline' : ''}" data-row="${rowId(r)}">
     <div class="dest">${pairName(r)}</div>
     ${COLUMNS.map(([cls]) => fare(cls, r.cells[cls])).join('')}
   </li>`;
@@ -273,10 +278,13 @@ function render() {
 
   fillFilters(data);
   const list = rows(data);
+  const shown = state.allRows ? list : list.slice(0, BOARD_ROWS);
   $('#view').innerHTML = list.length
     ? `<div class="board-head"><span>Destination</span>${COLUMNS.map(([cls, name]) => `<button type="button" data-sort="${cls}" aria-pressed="${cls === state.priority}">${name}</button>`).join('')}</div>
-      <ol class="board">${list.map(boardRow).join('')}</ol>`
+      <ol class="board">${shown.map(boardRow).join('')}</ol>
+      ${shown.length < list.length ? `<button type="button" class="more" id="more">${list.length - shown.length} more</button>` : ''}`
     : '<p class="note">No complete trips yet.</p>';
+  $('#more')?.addEventListener('click', () => { state.allRows = true; render(); });
 
   // A column head sorts the board by that class (and becomes this device's priority).
   for (const b of document.querySelectorAll('[data-sort]')) {
@@ -466,11 +474,11 @@ function closeTrip() {
   else { history.replaceState(null, '', location.pathname + location.search); renderSheet(); }
 }
 
-/** The full-screen trip view for #trip=IN-OUT~class, or nothing. */
+/** The full-screen trip view for #trip=IN-OUT[+SET]~class (build.js rowId), or nothing. */
 function renderSheet() {
-  const m = /^#trip=([A-Z]{3}-[A-Z]{3})~(hybrid|economy)$/.exec(location.hash);
+  const m = /^#trip=([A-Z]{3}-[A-Z]{3}(?:\+[A-Z]{3})*)~(hybrid|economy)$/.exec(location.hash);
   const data = state.data[viewKey()];
-  const row = m && data && rows(data).find((r) => `${r.in}-${r.out}` === m[1]);
+  const row = m && data && rows(data).find((r) => rowId(r) === m[1]);
   let sheet = $('#sheet');
   if (!row) {
     sheet?.remove();
@@ -492,7 +500,7 @@ function renderSheet() {
     document.body.appendChild(sheet);
     document.body.classList.add('sheet-open');
   }
-  sheet.setAttribute('aria-label', pairLabel(row));
+  sheet.setAttribute('aria-label', rowName(row));
   sheet.innerHTML = `
     <div class="sheet-bar">
       <div class="seg" role="tablist">${COLUMNS.filter(([c]) => row.cells[c]).map(([c, label]) => `
