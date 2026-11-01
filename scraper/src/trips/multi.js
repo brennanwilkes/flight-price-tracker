@@ -69,14 +69,31 @@ function merge(trip, g, price) {
   trip.total = tickets.reduce((s, t) => s + t.price, 0);
 }
 
+/** The cached prices (state/multi.json), fresh ones only: key → { price, at }. */
+function multiCache(dataDir, now = Date.now()) {
+  const cache = readJson(path.join(dataDir, 'state', 'multi.json'), {});
+  for (const [k, v] of Object.entries(cache)) if (now - Date.parse(v.at) > MAX_AGE_MS) delete cache[k];
+  return cache;
+}
+
+/** What one ticket would save `trip`, by the cached prices only (a real search's, never an estimate): ≥ 0. */
+function multiSaving(cache, trip, homes) {
+  let best = 0;
+  for (const g of groupsOf(trip, homes)) {
+    const price = cache[keyOf(g)]?.price;
+    if (price == null || g.replace.some((i) => !trip.tickets[i])) continue;
+    best = Math.max(best, g.replace.reduce((s, i) => s + trip.tickets[i].price, 0) - price);
+  }
+  return best;
+}
+
 /**
  * Price groupings for `cells` (shown trips, most promising first) and merge the cheaper ones.
  * `browser(query, opts)` → GetShoppingResults payloads (null: cached results only). Returns stats.
  */
 async function applyMulti(dataDir, cells, homes, browser, { budget = 80, now = Date.now() } = {}) {
   const file = path.join(dataDir, 'state', 'multi.json');
-  const cache = readJson(file, {});
-  for (const [k, v] of Object.entries(cache)) if (now - Date.parse(v.at) > MAX_AGE_MS) delete cache[k];
+  const cache = multiCache(dataDir, now);
   const stats = { searched: 0, failed: 0, merged: 0 };
   const todo = [];
   for (const trip of cells) for (const g of groupsOf(trip, homes)) if (!(keyOf(g) in cache) && !todo.some((x) => keyOf(x) === keyOf(g))) todo.push(g);
@@ -105,4 +122,4 @@ async function applyMulti(dataDir, cells, homes, browser, { budget = 80, now = D
   return stats;
 }
 
-module.exports = { applyMulti, groupsOf, merge, flightAt };
+module.exports = { applyMulti, multiCache, multiSaving, groupsOf, merge, flightAt };

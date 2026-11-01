@@ -48,7 +48,7 @@ const alertConfig = require('../config/alerts.json');
 const { tierOf } = require('../src/alerts/rules');
 const { flexOf } = require('../../frontend/app/flex.js');
 const { markLows } = require('../src/trips/lows');
-const { applyMulti } = require('../src/trips/multi');
+const { applyMulti, multiCache, multiSaving } = require('../src/trips/multi');
 
 const CLASSES = ['hybrid', 'economy'];
 const TRIES = 10;
@@ -89,6 +89,11 @@ function arg(name, def) {
   return i > 0 ? process.argv[i + 1] : def;
 }
 
+// How a candidate ranks: scoreOf, less what one ticket would save it at a cached multi-city price
+// (a real search, under a day old): a trip only cheap as one ticket competes as such, before the
+// multi-city pass merges it. Set in main.
+let rankOf = scoreOf;
+
 function rowsFor(home, trips, via = '') {
   const rows = new Map();
   for (const t of trips) {
@@ -103,7 +108,7 @@ function rowsFor(home, trips, via = '') {
   }
   for (const row of rows.values()) {
     for (const cls of CLASSES) {
-      row.cands[cls].sort((a, b) => scoreOf(a) - scoreOf(b));
+      row.cands[cls].sort((a, b) => rankOf(a) - rankOf(b));
       row[cls] = overall(row.cands[cls][0], trips);
     }
   }
@@ -158,10 +163,10 @@ async function verify(byHome, trips, { cache, browser, listed, deadline }) {
       st.stay += s.stay;
       pending = pending.filter((p) => {
         p.first ??= p.cand;
-        if (p.cand.connects && !(scoreOf(p.best) <= scoreOf(p.cand))) p.best = p.cand;
+        if (p.cand.connects && !(p.best && rankOf(p.best) <= rankOf(p.cand))) p.best = p.cand;
         const next = p.cands[++p.i];
-        // conn is only known once checked: a candidate's score can only rise from its builder score.
-        if (next && p.i < TRIES && !(p.best && scoreOf(next) >= scoreOf(p.best))) {
+        // conn is only known once checked: a candidate's rank can only rise from its builder rank.
+        if (next && p.i < TRIES && !(p.best && rankOf(next) >= rankOf(p.best))) {
           p.cand = overall(next, trips, p.month);
           return true;
         }
@@ -250,6 +255,8 @@ async function main() {
   const checkedLog = Object.fromEntries(Object.entries(fs.existsSync(checkedFile) ? JSON.parse(fs.readFileSync(checkedFile, 'utf8')) : {})
     .filter(([, c]) => Date.parse(generatedAt) - Date.parse(c.at) < CHECKED_HOURS * 3600e3));
   const checked = () => new Map(Object.entries(checkedLog).map(([k, c]) => [k, c.price]));
+  const multi = multiCache(dataDir, Date.parse(generatedAt));
+  rankOf = (t) => scoreOf(t) - multiSaving(multi, t, config.origins);
   let fares = loadFares(dataDir, config, { checked: checked() });
   let trips = buildTrips(fares);
   let { vias, byHome } = viewsOf(trips);

@@ -154,6 +154,10 @@ the builder searches every combination and the dashboard shows the best N.
   the cheapest plans it had. Checked on 2026-11-01 data: no cell over the tolerance (largest +2.1%,
   economy), single overnights 429 → 48, nights before Hoi An 3.3 → 2.0, hub at both ends 21 → 4;
   build 72 s → 146 s.
+- **One-ticket prices take part in the pick:** a candidate ranks at the cheaper of its separate
+  tickets and a cached multi-city price for it (a real search, under a day old), so a trip only
+  cheap as one ticket isn't passed over for one whose one-ticket price was never searched (seen:
+  Bangkok/Bali business $5,374 as one ticket → $6,386 on other dates as two).
 - **Stay ranges move the first and last long flights too** (trip kept 14–21 days), one-ways and
   returns only: a multi-city ticket has no price on other days, and nothing is claimed without one.
 - **Low lines** read "Lowest seen (any dates)" / "(exact dates)"; the any-dates low also counts the
