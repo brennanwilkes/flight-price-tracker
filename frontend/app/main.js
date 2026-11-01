@@ -10,6 +10,7 @@
 //   once on resume; mid-use it's a tap-to-show bar, so prices don't change under a tap. Data
 //   whose generatedAt isn't newer than what's shown (a stale API answer) is ignored.
 import { CITIES, cityName } from './cities.js';
+import { samePrice } from './price.js';
 import { tripMap } from './map.js';
 import { sweepIfAsked } from './alerts.js';
 import { renderHealth } from './health.js';
@@ -181,13 +182,12 @@ function trend(trip, after = '') {
  * yet; 'dates' ☆ cheapest yet for these dates; 'any' ○ other dates were cheaper (mild); 'same' ●
  * these dates were cheaper before (bad). None without history. For a trip, or a ticket as
  * { total: its price, low } (lows.js marks tickets too: which leg moved the total).
- * Cheaper before by NEAR or less isn't worth a mark.
+ * Cheaper before by about the same (price.js) isn't worth a mark.
  */
-const NEAR = 0.02;
 function lowMarks(trip) {
   const low = trip.low;
   if (!low?.any) return [];
-  const above = (was) => trip.total > was * (1 + NEAR);
+  const above = (was) => trip.total > was * (1 + samePrice(trip));
   if (low.same && above(low.same.total)) return ['same'];
   if (trip.total <= low.any.total) return ['best'];
   const marks = low.same && trip.total <= low.same.total ? ['dates'] : [];
@@ -214,7 +214,7 @@ function lowLines(x) {
 
 /** "SEP 05–22" (or "SEP 28–OCT 12"). */
 const range = (t) => (t.depart.slice(0, 7) === t.ret.slice(0, 7) ? `${boardDate(t.depart)}–${t.ret.slice(8)}` : `${boardDate(t.depart)}–${boardDate(t.ret)}`);
-const alts = (t) => (t.alts ? `<i class="alts" title="${t.alts} other date${t.alts > 1 ? 's' : ''} within 2% of this price">+${t.alts}</i>` : '');
+const alts = (t) => (t.alts ? `<i class="alts" title="${t.alts} other date${t.alts > 1 ? 's' : ''} within ${samePrice(t) * 100}% of this price">+${t.alts}</i>` : '');
 
 /** A fare tile: price, its dates, then a footer: the change vs yesterday | +N similar dates. */
 function fare(cls, trip) {
@@ -394,7 +394,7 @@ function legItem(l, ticketOf) {
   // A ticket with several flights shows its price on the first.
   const first = l.t.kind === 'rt' ? l.leg === 'out' : l.t.kind === 'multi' ? l.leg === 'leg0' : true;
   const price = first ? money(l.t.price) : '';
-  const vsLows = { total: l.t.price, low: l.t.low }; // against the ticket's own lows
+  const vsLows = { total: l.t.price, low: l.t.low, cabin: l.t.cabin }; // against the ticket's own lows
   const dow = new Date(`${l.date}T12:00:00Z`).toLocaleDateString('en-CA', { weekday: 'short', timeZone: 'UTC' }).toUpperCase().replace('.', '');
   return `<li class="leg ${l.cabin === 'J' ? 'biz' : 'eco'}" style="--tk: var(--tk${ticketOf.get(l.t)})">
     <a href="${flightsLink(l.t)}" target="_blank" rel="noopener">

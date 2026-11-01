@@ -16,10 +16,11 @@
  * (≥ 4 h, SCOPE) but the price graph has no times, so the trip is marked `sameDay` to verify.
  */
 
+import { samePrice } from './price.js';
+
 const MIN_DAYS = 14;
 const MAX_DAYS = 21;
 const HOI_AN_NIGHTS = 5;
-const SIMILAR = 0.02; // "+N" on the dashboard: other dates within 2% of the best price
 // Fallbacks per cell, for when the detail pass finds a connection no listed flight makes.
 const FALLBACKS = 4;
 
@@ -315,12 +316,12 @@ function buildTrips(fares, { need = [], homes = fares.homes } = {}) {
   return trips;
 }
 
-/** Other date sets for trip's route and class (in `month`, or any) priced within SIMILAR of it. */
+/** Other date sets for trip's route and class (in `month`, or any) priced about the same (price.js). */
 function similarCount(dateSets, trip, month = null) {
   let n = 0;
   for (const [set, total] of dateSets.get(`${trip.home}|${trip.cls}|${trip.in}|${trip.out}`) ?? []) {
     if (set === `${trip.depart}|${trip.ret}` || (month && set.slice(0, 7) !== month)) continue;
-    if (total <= trip.total * (1 + SIMILAR)) n++;
+    if (total <= trip.total * (1 + samePrice(trip.cls))) n++;
   }
   return n;
 }

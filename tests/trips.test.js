@@ -71,7 +71,7 @@ test('same-day connection is allowed but marked; trip length stays within 14-21 
   assert.strictEqual(t.sameDay, true);
 });
 
-test('alts counts other date sets within 2% of the best, per month and overall', () => {
+test('alts counts other date sets about the same price (business 2%, economy 5%), per month and overall', () => {
   const { similarCount } = require('../frontend/app/build.js');
   const sets = new Map([['YVR|hybrid|MNL|MNL', new Map([
     ['2027-09-05|2027-09-22', 4000], // the best
@@ -82,6 +82,8 @@ test('alts counts other date sets within 2% of the best, per month and overall',
   const trip = { home: 'YVR', cls: 'hybrid', in: 'MNL', out: 'MNL', total: 4000, depart: '2027-09-05', ret: '2027-09-22' };
   assert.equal(similarCount(sets, trip, '2027-09'), 1);
   assert.equal(similarCount(sets, trip), 2);
+  const eco = new Map([['YVR|economy|MNL|MNL', new Map([['2027-09-05|2027-09-22', 1000], ['2027-09-06|2027-09-23', 1050], ['2027-09-07|2027-09-24', 1051]])]]);
+  assert.equal(similarCount(eco, { ...trip, cls: 'economy', total: 1000 }), 1);
 });
 
 test('isSafe: no flight on the day the previous one lands (long haul counted as landing day 1)', () => {
@@ -158,7 +160,7 @@ test('the Hoi An stay is checked against real flights: an overnight flight in le
 
 test('stay ranges: a hop that can move a few days at about the same price widens the stays around it', () => {
   const hops = { [`ICN-DAD|${day(3)}`]: 200, [`DAD-ICN|${day(8)}`]: 180 };
-  for (let n = 9; n <= 11; n++) hops[`DAD-ICN|${day(n)}`] = 185; // within 3% of a 1280 total
+  for (let n = 9; n <= 11; n++) hops[`DAD-ICN|${day(n)}`] = 185; // within 5% (economy) of a 1280 total
   hops[`DAD-ICN|${day(12)}`] = 400;
   hops[`ICN-DAD|${day(1)}`] = 205;
   const fares = world({ rt: { [`YVR-ICN-Y|${D0}`]: [{ ret: day(14), price: 900 }] }, hops });

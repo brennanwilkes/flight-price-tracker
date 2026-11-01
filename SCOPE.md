@@ -133,7 +133,7 @@ the builder searches every combination and the dashboard shows the best N.
   these exact dates were cheaper before (bad). Tile corner on the board; the ticket stub spells out
   the earlier prices. Each ticket in the trip view is marked the same way against its own lows
   (`state/ticket-lows.json`), with what it cost before under it: which leg moved the total.
-  Cheaper before by 2% or less gets no ○/● (board, stubs and tickets alike).
+  Cheaper before by about the same price or less gets no ○/● (board, stubs and tickets alike).
   Spelled out as "Lowest seen" (★ any dates, ☆ these dates) or "Lowest seen: $X" (○ the any-dates
   low, ● bold: the same-dates low): the mark, filled or not, tells which; no dates; ● alone.
 - **Board tile (2026-11-01):** price, dates, then a footer strip: ▼$/▲$ vs 24 h ago | +N similar
@@ -141,8 +141,10 @@ the builder searches every combination and the dashboard shows the best N.
   (`state/ticket-prices.json`, 2 days of changes). History's x axis is days.
 - **Rows are named by where the trip sleeps:** the first and last cities with at least a night; a city
   only changed planes in doesn't name the row or count for the via filter.
-- **Stay ranges:** "4–12 nights" (the range replaces the count): each Asia one-way moved alone, long legs fixed, within 3% of
-  the total, Hoi An minimum kept (`trips/flex.js`).
+- **Stay ranges:** "4–12 nights" (the range replaces the count): each Asia one-way moved alone, long legs fixed, at about the same
+  total, Hoi An minimum kept (`trips/flex.js`).
+- **"About the same price" is one rule everywhere (2026-11-01):** within 2% in business, 5% in
+  economy (`frontend/app/price.js`): +N similar dates, ○/● marks, stay ranges.
 - **The Hoi An stay is checked against real flights** (an overnight arrival can't eat a night);
   stays outside Da Nang/Hue read "Hanoi + Hoi An" or "Hanoi → Hoi An → Saigon".
 - **Via filter, up to 3 cities (AND: a night in each).** One city: its flight-checked file. Two or

@@ -2,11 +2,12 @@
  *
  * Each economy one-way inside Asia is moved earlier or later on its own, the long legs and any
  * return tickets fixed, keeping every flight in order (same-day connections allowed) and the Hoi An
- * stay ≥ its need (build.js). A move costing at most TOLERANCE of the trip's total widens the range
+ * stay ≥ its need (build.js). A move costing about the same (price.js: a share of the trip's total) widens the range
  * of the stays on both sides of that flight. trip.flex: [[stay, fewer, more]], stay k being the one
  * between order[k] and order[k + 1]: nights can be `fewer` less or `more` more.
  */
-const TOLERANCE = 0.03;
+import { samePrice } from './price.js';
+
 const MAX_SHIFT = 14;
 
 const dayNo = (iso) => Date.parse(`${iso}T00:00:00Z`) / 864e5;
@@ -23,7 +24,7 @@ function flexOf(trip, fares) {
   });
   const span = fl.slice(0, -1).map(() => [0, 0]); // per stay: [fewer, more]
   const widen = (k, d) => { if (span[k]) { span[k][0] = Math.max(span[k][0], -d); span[k][1] = Math.max(span[k][1], d); } };
-  const budget = trip.total * TOLERANCE;
+  const budget = trip.total * samePrice(trip);
   for (let k = 1; k < fl.length - 1; k++) {
     const f = fl[k];
     if (!f.movable) continue;
@@ -42,4 +43,4 @@ function flexOf(trip, fares) {
   return span.map(([fewer, more], k) => [k, fewer, more]).filter(([, fewer, more]) => fewer || more);
 }
 
-export { flexOf, TOLERANCE };
+export { flexOf };
