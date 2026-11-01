@@ -170,10 +170,10 @@ function rows(data) {
 }
 
 /** ▲/▼ and the change vs 24 h ago (overall cells only: the builder sets `was` there). */
-function trend(trip) {
+function trend(trip, after = '') {
   if (trip.was == null || trip.was === trip.total) return '';
   const d = trip.total - trip.was;
-  return `<span class="trend ${d < 0 ? 'down' : 'up'}" title="24 h ago: ${money(trip.was)}">${d < 0 ? '▼' : '▲'}${Math.abs(d).toLocaleString('en-CA')}</span>`;
+  return `<span class="trend ${d < 0 ? 'down' : 'up'}" title="24 h ago: ${money(trip.was)}">${d < 0 ? '▼' : '▲'}${money(Math.abs(d))}${after}</span>`;
 }
 
 /**
@@ -198,24 +198,17 @@ const lowMark = (trip) => {
   const marks = lowMarks(trip);
   return marks.length ? `<i class="lowmarks" aria-hidden="true">${marks.map((k) => `<i class="low ${k}">${LOW_MARK[k]}</i>`).join('')}</i>` : '';
 };
-const shortDate = (iso) => new Date(`${iso.slice(0, 10)}T12:00:00Z`).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', timeZone: 'UTC' });
-/** A ticket's low dates ("2027-09-05" or "2027-09-05,2027-09-19,…") as "SEP 05" or "SEP 05–19". */
-const ticketDays = (dates) => {
-  const d = dates.split(',');
-  return d.length === 1 ? boardDate(d[0]) : range({ depart: d[0], ret: d.at(-1) });
-};
 /**
  * The lines about past lows: the facts behind the marks (a ticket's on each of its flights).
  */
 function lowLines(x) {
   const line = {
-    best: () => '★ Lowest yet',
-    dates: () => '☆ Lowest yet for these dates',
-    same: () => `● These dates ${money(x.low.same.total)} · ${shortDate(x.low.same.at)}`,
-    any: () => `○ Lowest ${money(x.low.any.total)} · ${x.low.any.dates ? ticketDays(x.low.any.dates) : range(x.low.any)}`,
+    best: () => '★ Lowest seen',
+    dates: () => '☆ Lowest seen',
+    same: () => `● Lowest seen: ${money(x.low.same.total)}`, // filled, bold: these very dates were cheaper
+    any: () => `○ Lowest seen: ${money(x.low.any.total)}`,
   };
   const marks = lowMarks(x);
-  if (marks[0] === 'same') marks.push('any');
   return marks.length ? `<p class="lows">${marks.map((k) => `<span class="low ${k}">${line[k]()}</span>`).join('')}</p>` : '';
 }
 
@@ -223,11 +216,12 @@ function lowLines(x) {
 const range = (t) => (t.depart.slice(0, 7) === t.ret.slice(0, 7) ? `${boardDate(t.depart)}–${t.ret.slice(8)}` : `${boardDate(t.depart)}–${boardDate(t.ret)}`);
 const alts = (t) => (t.alts ? `<i class="alts" title="${t.alts} other date${t.alts > 1 ? 's' : ''} within 2% of this price">+${t.alts}</i>` : '');
 
-/** A fare tile: price, its dates, the change vs yesterday, and +N similar dates. */
+/** A fare tile: price, its dates, then a footer: the change vs yesterday | +N similar dates. */
 function fare(cls, trip) {
   if (!trip) return '<span class="fare none">—</span>';
   return `<button type="button" class="fare ${tierOfTrip(cls, trip)}" data-cls="${cls}">
-    ${lowMark(trip)}<b>${money(trip.total)}</b><span class="tdates">${range(trip)}${alts(trip)}</span>${trend(trip)}
+    ${lowMark(trip)}<b>${money(trip.total)}</b><span class="tdates">${range(trip)}</span>
+    <span class="tfoot${trend(trip) || alts(trip) ? '' : ' blank'}">${trend(trip) || '<span></span>'}${alts(trip) || '<span></span>'}</span>
   </button>`;
 }
 
@@ -407,7 +401,7 @@ function legItem(l, ticketOf) {
       <span class="leg-head">
         <span class="day">${dow} ${boardDate(l.date)}</span>
         <b class="route"><span>${esc(cityName(l.from))}<span class="arrow">→</span></span> <span>${esc(cityName(l.to))}</span></b>
-        <b class="price">${price || '<span class="incl">incl.</span>'}</b>
+        <b class="price">${first ? trend({ total: l.t.price, was: l.t.was }) : ''}${price || '<span class="incl">incl.</span>'}</b>
       </span>
       ${lowLines(vsLows)}
       ${segments(l)}
@@ -507,7 +501,11 @@ function renderSheet() {
       <button type="button" class="close" aria-label="Close">✕</button>
     </div>
     <div class="ticket ${tierOfTrip(cls, trip)}">
-      <div class="stub"><small>Total</small><b>${money(trip.total)}</b>${trend(trip)}${trip.alts ? `<span class="similar">+${trip.alts} similar dates</span>` : ''}${lowLines(trip)}</div>
+      <div class="stub">
+        <div class="sum"><small>Total</small><b>${money(trip.total)}</b></div>
+        <div class="meta">${trend(trip, ' <small>24 h</small>')}${trip.alts ? `<span class="similar">+${trip.alts} similar date${trip.alts > 1 ? 's' : ''}</span>` : ''}</div>
+        ${lowLines(trip)}
+      </div>
       <div class="span">
         <div class="cal"><small>${weekday(trip.depart)}</small><b>${boardDate(trip.depart)}</b></div>
         <div class="line"><span>${trip.days} days</span><span>${trip.tickets.length} ticket${trip.tickets.length > 1 ? "s" : ""}</span></div>

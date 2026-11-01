@@ -145,14 +145,19 @@ export async function renderHistory(el, base, home, view, priority = 'hybrid') {
         scales: {
           x: {
             type: 'linear', min: times[0], max: times.at(-1), grid: { display: false }, border: { color: tok('--line') },
+            // A tick at each midnight (at most 6, evenly thinned), labelled with the day.
+            afterBuildTicks(axis) {
+              const days = [];
+              const d = new Date(axis.min);
+              d.setHours(0, 0, 0, 0);
+              if (d.getTime() < axis.min) d.setDate(d.getDate() + 1);
+              for (; d.getTime() <= axis.max; d.setDate(d.getDate() + 1)) days.push({ value: d.getTime() });
+              const step = Math.ceil(days.length / 6);
+              axis.ticks = days.length ? days.filter((_, i) => i % step === 0) : [{ value: axis.min }];
+            },
             ticks: {
-              color: tok('--muted'), font: { family: 'JetBrains Mono', size: 10 }, maxTicksLimit: 5, maxRotation: 0,
-              // Times while the history is under two days long, dates after.
-              callback(v) {
-                return this.max - this.min < 2 * 864e5
-                  ? new Date(v).toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', hour12: false })
-                  : new Date(v).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
-              },
+              color: tok('--muted'), font: { family: 'JetBrains Mono', size: 10 }, maxRotation: 0, autoSkip: false,
+              callback: (v) => new Date(v).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }),
             },
           },
           y: { min: lo, max: hi, grid: { color: tok('--line') }, border: { display: false }, ticks: { color: tok('--muted'), font: { family: 'JetBrains Mono', size: 10 }, maxTicksLimit: 5, callback: (v) => money(v) } },

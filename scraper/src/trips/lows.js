@@ -10,6 +10,9 @@
  * And per ticket, so the trip view shows which leg moved the price: state/ticket-lows.json
  * { 'kind,cabin,route': { dates: { total, at } } } (route "YVR-MNL", or a multi-city ticket's
  * "YVR-MNL SGN-YVR"; dates its flights' days, a return's two), each ticket's `low` alike.
+ *
+ * And each ticket's price changes over the last 2 days, for its ▲/▼ like the board's (vs 24 h ago):
+ * state/ticket-prices.json { 'kind,cabin,route': { dates: [[at, total], …] } }, each ticket's `was`.
  */
 const path = require('node:path');
 const { readJson, writeJson } = require('../store/routes');
@@ -29,6 +32,18 @@ const keepLow = (ledger, route, dates, total, at) => {
   ledger[route] ??= {};
   if (!(ledger[route][dates]?.total <= total)) ledger[route][dates] = { total, at };
 };
+const DAY = 864e5;
+/** A price series' value at `when` (the last change at or before it), or null. */
+const priceAt = (series, when) => series?.findLast(([at]) => Date.parse(at) <= when)?.[1] ?? null;
+/** Keep 2 days of changes, and the one in force at the start of them. */
+function trimSeries(prices, now) {
+  for (const route of Object.values(prices)) {
+    for (const [k, series] of Object.entries(route)) {
+      const from = series.findLastIndex(([at]) => Date.parse(at) <= now - 2 * DAY);
+      if (from > 0) route[k] = series.slice(from);
+    }
+  }
+}
 /** Drop date sets already flown (a key's first date before today) and emptied routes. */
 function prune(ledger, today) {
   for (const route of Object.keys(ledger)) {
@@ -47,6 +62,9 @@ function markLows(dataDir, rowsByHome, at, { record: save = true } = {}) {
   const ticketFile = path.join(dataDir, 'state', 'ticket-lows.json');
   const ledger = readJson(file, {});
   const tickets = readJson(ticketFile, {});
+  const priceFile = path.join(dataDir, 'state', 'ticket-prices.json');
+  const prices = readJson(priceFile, {});
+  const dayAgo = Date.parse(at) - DAY;
   const lowOf = (route, trip) => {
     const low = lowIn(ledger[route], `${trip.depart},${trip.ret}`);
     if (!low) return null;
@@ -65,6 +83,8 @@ function markLows(dataDir, rowsByHome, at, { record: save = true } = {}) {
           for (const t of trip.tickets ?? []) {
             const tl = lowIn(tickets[ticketRoute(t)], ticketDates(t));
             if (tl) t.low = tl;
+            const was = priceAt(prices[ticketRoute(t)]?.[ticketDates(t)], dayAgo);
+            if (was != null && was !== t.price) t.was = was;
           }
         }
         if (save && r[cls]?.connects === true) record.push([route, r[cls]]);
@@ -73,13 +93,21 @@ function markLows(dataDir, rowsByHome, at, { record: save = true } = {}) {
   }
   for (const [route, trip] of record) {
     keepLow(ledger, route, `${trip.depart},${trip.ret}`, trip.total, at);
-    for (const t of trip.tickets ?? []) keepLow(tickets, ticketRoute(t), ticketDates(t), t.price, at);
+    for (const t of trip.tickets ?? []) {
+      keepLow(tickets, ticketRoute(t), ticketDates(t), t.price, at);
+      const route = (prices[ticketRoute(t)] ??= {});
+      const series = (route[ticketDates(t)] ??= []);
+      if (series.at(-1)?.[1] !== t.price) series.push([at, t.price]);
+    }
   }
   if (!save) return;
   prune(ledger, at.slice(0, 10));
   prune(tickets, at.slice(0, 10));
   writeJson(file, ledger);
   writeJson(ticketFile, tickets);
+  prune(prices, at.slice(0, 10));
+  trimSeries(prices, Date.parse(at));
+  writeJson(priceFile, prices);
 }
 
 module.exports = { markLows };

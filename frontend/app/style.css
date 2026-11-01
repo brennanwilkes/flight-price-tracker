@@ -115,12 +115,17 @@ header { flex-wrap: wrap; }
 .dest span { white-space: nowrap; }
 
 /* Fare tile: price, its dates, change vs yesterday; +N similar dates in the corner. */
-.fare { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 8px 2px 6px;
+.fare { position: relative; display: flex; flex-direction: column; align-items: stretch; justify-content: center; gap: 2px; padding: 8px 0 0; text-align: center;
   font: inherit; color: inherit; background: var(--cell); border: 1px solid var(--line); border-radius: 7px; cursor: pointer; min-height: 58px; }
 .fare b { font: 700 15px var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
 .fare .tdates { font: 500 10px var(--mono); color: var(--muted); letter-spacing: 0.02em; white-space: nowrap; }
 .fare.none { color: var(--muted); font-family: var(--mono); }
-.alts { margin-left: 4px; font: normal 700 9px var(--mono); padding: 0 3px; border: 1px solid currentColor; border-radius: 4px; }
+/* The tile's footer: change vs yesterday | +N similar dates, halves of one strip under a hairline. */
+.fare .tfoot { display: grid; grid-template-columns: 3fr 2fr; margin-top: 4px; border-top: 1px solid color-mix(in srgb, currentColor 14%, transparent); min-height: 19px; }
+.fare .tfoot > * { display: flex; align-items: center; justify-content: center; padding: 3px 0; }
+.fare .tfoot > * + * { border-left: 1px solid color-mix(in srgb, currentColor 14%, transparent); }
+.fare .tfoot.blank, .fare .tfoot.blank > * { border-color: transparent; } /* keeps the tiles of a row aligned */
+.alts { font: normal 700 10px var(--mono); color: var(--muted); }
 .trend { font: 700 10px var(--mono); white-space: nowrap; }
 /* Against past lows (main.js lowMarks): gold ★ cheapest yet, faint gold ☆ cheapest for these
    dates, red ○ other dates were cheaper, bold red ● these dates were cheaper. */
@@ -131,15 +136,17 @@ header { flex-wrap: wrap; }
 .low.same { color: var(--up); font-weight: 800; }
 .fare .lowmarks { position: absolute; top: 3px; right: 5px; display: flex; gap: 2px; font-style: normal; font-size: 11px; line-height: 1; }
 .fare .low.same { font-size: 13px; }
-.ticket .lows { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 2px 14px; margin: 2px 0 0; font: 600 11px var(--mono); }
+.ticket .stub .lows { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 4px; margin: 0; padding-top: 10px; border-top: 1px solid color-mix(in srgb, currentColor 14%, transparent); font: 600 11px var(--mono); }
 /* A ticket's marks, spelled out under the route line. */
+.leg .price .trend { margin-right: 8px; font-size: 11px; vertical-align: 1px; }
 .leg .lows { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 2px 14px; margin: -2px 0 0; padding: 0 8px 6px; font: 600 11px var(--mono); }
 .trend.down { color: var(--eco); }
 .trend.up { color: var(--up); }
 .fare.good { background: var(--good); }
 .fare.great { background: var(--great); }
 .fare.buy { background: var(--buy); color: var(--buy-text); border-color: transparent; }
-.fare.buy .tdates, .fare.buy .trend, .fare.buy .alts { color: inherit; opacity: 0.85; border-color: currentColor; }
+.fare.buy .tdates, .fare.buy .trend, .fare.buy .alts { color: inherit; opacity: 0.85; }
+.fare.good .alts, .fare.great .alts { color: var(--text); opacity: 0.7; }
 .fare.good .tdates, .fare.great .tdates { color: var(--text); opacity: 0.7; }
 
 /* The cheapest row: the headline, set apart. */
@@ -165,16 +172,20 @@ body.sheet-open { overflow: hidden; }
    both edges), above the two dates joined by a line carrying the length and ticket count. */
 .ticket { position: relative; margin-top: 12px; margin-bottom: 12px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line);
   background-image: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--text) 3%, transparent) 6px 7px); }
-.ticket .stub { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; padding: 14px 16px 16px; border-bottom: 2px dashed var(--line); border-radius: 12px 12px 0 0; }
+/* Total | its change and similar dates, then the lows as an aligned list under a hairline. */
+.ticket .stub { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 8px 12px; padding: 14px 16px 16px; border-bottom: 2px dashed var(--line); border-radius: 12px 12px 0 0; }
 .ticket .stub { position: relative; }
 .ticket .stub::before, .ticket .stub::after { content: ""; position: absolute; bottom: -11px; width: 20px; height: 20px; border-radius: 50%;
   background: var(--bg); border: 1px solid var(--line); }
 .ticket .stub::before { left: -11px; clip-path: inset(0 0 0 50%); }
 .ticket .stub::after { right: -11px; clip-path: inset(0 50% 0 0); }
 .ticket small { font: 600 10px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
-.ticket .stub b { font: 700 30px var(--mono); letter-spacing: -0.02em; }
-.ticket .stub .trend { font-size: 12px; }
-.ticket .similar { margin-left: auto; font: 600 11px var(--mono); color: var(--muted); }
+.ticket .stub .sum { display: flex; flex-direction: column; gap: 2px; }
+.ticket .stub b { font: 700 30px var(--mono); letter-spacing: -0.02em; line-height: 1; }
+.ticket .stub .meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; padding-bottom: 2px; }
+.ticket .stub .trend { font-size: 13px; }
+.ticket .stub .trend small { font-weight: 600; font-size: 10px; color: var(--muted); }
+.ticket .similar { font: 600 11px var(--mono); color: var(--muted); }
 .ticket.good .stub, .ticket.great .stub, .ticket.buy .stub { background-image: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, #fff 6%, transparent) 6px 7px); }
 .ticket.good .stub { background-color: var(--good); }
 .ticket.great .stub { background-color: var(--great); }

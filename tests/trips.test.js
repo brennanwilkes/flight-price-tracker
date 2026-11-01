@@ -250,3 +250,20 @@ test('flights are picked together: a cheaper long haul landing later wins if the
   assert.deepStrictEqual(trip.tickets.map((t) => t.flights.out.airlines[0]), ['PR', 'VN']);
   assert.strictEqual(trip.total, 5326);
 });
+
+test('ticket ▲/▼: its price 24 h before, from state/ticket-prices.json', () => {
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const path = require('node:path');
+  const { markLows } = require('../scraper/src/trips/lows');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prices-'));
+  const cell = (price) => ({ total: price, depart: '2027-09-01', ret: '2027-09-15', connects: true, tickets: [
+    { kind: 'ow', cabin: 'Y', from: 'YVR', to: 'MNL', date: '2027-09-01', price },
+  ] });
+  const run = (price, at) => { const r = { in: 'MNL', out: 'MNL', hybrid: cell(price), economy: null, months: {} }; markLows(dir, { YVR: [r] }, at); return r.hybrid.tickets[0].was; };
+  assert.strictEqual(run(1200, '2026-11-01T00:00:00Z'), undefined);
+  assert.strictEqual(run(1250, '2026-11-01T12:00:00Z'), undefined); // nothing a day old yet
+  assert.strictEqual(run(1231, '2026-11-02T06:00:00Z'), 1200); // in force 24 h before: the first price
+  assert.strictEqual(run(1231, '2026-11-02T13:00:00Z'), 1250);
+  assert.strictEqual(run(1231, '2026-11-05T00:00:00Z'), undefined); // unchanged for days: no change shown
+});
