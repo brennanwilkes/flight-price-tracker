@@ -65,6 +65,9 @@ the builder searches every combination and the dashboard shows the best N.
   fare lists at a new price. A cell's trip is then the cheapest over every date that fits, as far
   as the checks have seen (seen: Bangkok→Hanoi graphed $138 every day, listed $232 on the day
   picked and $116 a week later).
+- **A trip's flights are picked together**: the cheapest listed flights where each connects to the
+  next (≥ 4 h) and the Hoi An stay holds, not the earliest-landing one near the graph price (seen:
+  JAL $5,220 landing the night before picked over Philippine $5,066 landing that noon).
 - **Some searches inline no results** although flights exist (YVR⇄DAD, HAN→DAD…): those are asked
   again in a real page (`browser.shoppingResults`, GetShoppingResults, ~10 s). "Not scheduled yet"
   only when the browser also finds nothing.

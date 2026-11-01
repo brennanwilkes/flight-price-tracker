@@ -1,9 +1,9 @@
 'use strict';
 /* Detail pass: the actual flights behind the dashboard's top trips (gflights/flights.js).
  *
- * Flights are picked in flying order, each leaving ≥ MIN_CONNECT after the previous one lands
- * (separate tickets, SCOPE), so a same-day connection the price graph couldn't check gets checked
- * here. A flight with no departure late enough is recorded as { miss: 'connection' }; a date Google
+ * A trip's flights are picked together: the cheapest set where each leaves ≥ MIN_CONNECT after the
+ * previous one lands (separate tickets, SCOPE), so a same-day connection the price graph couldn't
+ * check gets checked here. A flight with no departure late enough is recorded as { miss: 'connection' }; a date Google
  * lists no flights for at all (schedules not loaded that far yet) as { miss: 'none' }.
  *
  * Writes `flights` onto each ticket: { out, back? } (back only for a round trip), each one
@@ -16,13 +16,49 @@ const { fareKey } = require('./fares');
 
 const MIN_CONNECT_MIN = 4 * 60;
 const CONCURRENCY = 6; // searches in flight; a browser fallback (~10 s) holds one of these
-const PRICE_TOL = 0.03;
 const SLOW_PAGE_MS = 60_000; // retries and full lists: some searches (YYJ business returns) take Google > 30 s
 
 const at = (date, hm) => Date.parse(`${date}T${hm}:00Z`) / 60000; // minutes, local clock (comparisons only within one city)
 const arrival = (o) => at(o.legs.at(-1).arrDate, o.legs.at(-1).arr);
 const cheapest = (opts) => opts.slice().sort((a, b) => a.price - b.price || a.min - b.min)[0];
 
+const priceOf = (f, o) => (f.dir === 'out' ? o.price : 0); // a return's price is on its outbound
+const misses = (picks) => picks.filter((p) => p?.miss === 'connection').length;
+/** Flight b (flight i of the trip) can follow a: leaves ≥ MIN_CONNECT after a lands, and keeps the Hoi An stay. */
+function fits(stay, i, a, b) {
+  if (at(b.legs[0].depDate, b.legs[0].dep) < arrival(a) + MIN_CONNECT_MIN) return false;
+  return !stay || i !== stay.after + 1 || (Date.parse(b.legs[0].depDate) - Date.parse(a.legs.at(-1).arrDate)) / 864e5 >= stay.need;
+}
+/**
+ * Each flight's pick: the cheapest flights that connect, chosen together (a cheaper flight that
+ * lands later can beat an earlier one if the next flight still connects). A shortest path over the
+ * options, flight by flight. A failed search (null pick) breaks the chain; a flight with no listed
+ * option is { miss: 'none' }, one where nothing connects { miss: 'connection' }.
+ */
+function plan(flights, lists, stay = null) {
+  const picks = new Array(flights.length).fill(null);
+  let layer = null; // the previous flight's options: [{ o, cost, prev }], cost of the cheapest path to each
+  const close = (i) => { // pick along the cheapest path ending at flight i - 1
+    let e = layer?.reduce((a, b) => (b.cost < a.cost ? b : a));
+    for (let j = i - 1; e; j--, e = e.prev) picks[j] = e.o;
+    layer = null;
+  };
+  for (const [i, f] of flights.entries()) {
+    const opts = lists[i];
+    if (opts.error || !opts.length) { close(i); picks[i] = opts.error ? null : { miss: 'none' }; continue; }
+    const next = [];
+    for (const o of opts.slice().sort((a, b) => a.price - b.price || a.min - b.min)) {
+      let best = null;
+      if (layer) for (const p of layer) if (fits(stay, i, p.o, o) && (!best || p.cost < best.cost)) best = p;
+      if (layer && !best) continue;
+      next.push({ o, cost: (best?.cost ?? 0) + priceOf(f, o), prev: best });
+    }
+    if (!next.length) { close(i); picks[i] = { miss: 'connection' }; continue; }
+    layer = next;
+  }
+  close(flights.length);
+  return picks;
+}
 /** The trip's flights in flying order (trip.order, build.js): [{ ticket, dir: 'out'|'back', query, price? }]. */
 function flightsOf(trip) {
   return trip.order.map(([i, dir]) => {
@@ -74,51 +110,45 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
   }
 
   for (const trip of trips) {
-    let landed = null; // minutes, of the previous flight's arrival
-    const outAirlines = new Map(); // round-trip ticket → its outbound's airlines
     const flights = flightsOf(trip);
+    const lists = await Promise.all(flights.map((f) => searchOnce(f.query)));
+    // A plain search lists only Google's top flights; where none of those connects, the full list.
+    let picks;
+    for (const full = new Set(); ;) {
+      picks = plan(flights, lists, trip.stay);
+      if (trip.stay && misses(picks)) { const loose = plan(flights, lists); if (misses(loose) < misses(picks)) picks = loose; }
+      const i = browser ? picks.findIndex((p, j) => p?.miss === 'connection' && !full.has(j)) : -1;
+      if (i < 0) break;
+      full.add(i);
+      const all = await fullOnce(flights[i].query);
+      if (!all.error && all.length) lists[i] = all;
+    }
     trip.connects = true;
     for (const [i, f] of flights.entries()) {
-      let opts = await searchOnce(f.query);
       f.ticket.flights ??= {};
-      if (opts.error) { landed = null; continue; } // unknown: don't judge the next connection
-      const connects = (o) => landed == null || at(o.legs[0].depDate, o.legs[0].dep) >= landed + MIN_CONNECT_MIN;
-      if (browser && !opts.some(connects)) {
-        const all = await fullOnce(f.query);
-        if (!all.error && all.length) opts = all;
-      }
-      if (listed && f.dir === 'out' && opts.length && (f.ticket.kind === 'ow' || f.ticket.kind === 'rt')) listed.set(fareKey(f.ticket), cheapest(opts).price);
-      const ok = opts.filter(connects);
-      let pick;
-      if (f.dir === 'back') {
-        const airlines = outAirlines.get(f.ticket);
-        if (!airlines) { landed = null; continue; } // which return goes with an unknown outbound can't be told
-        const same = ok.filter((o) => o.airlines.some((a) => airlines.includes(a)));
-        pick = cheapest(same.length ? same : ok);
-        if (pick) pick = { ...pick, likely: true };
-      } else {
-        // Of the flights at the graph's price, the one landing earliest leaves the most room for
-        // the next connection (the last flight just takes the cheapest). Nothing at that price
-        // that connects: the cheapest that does, its own price shown.
-        const atPrice = ok.filter((o) => o.price <= f.price * (1 + PRICE_TOL) + 5);
-        pick = !atPrice.length ? cheapest(ok)
-          : i === flights.length - 1 ? cheapest(atPrice)
-          : atPrice.slice().sort((a, b) => arrival(a) - arrival(b) || a.price - b.price)[0];
-      }
-      if (!pick) {
-        const miss = opts.length ? 'connection' : 'none';
-        f.ticket.flights[f.dir] = { miss };
-        stats[miss]++;
-        if (miss === 'connection') trip.connects = false;
-        landed = null;
+      if (listed && f.dir === 'out' && !lists[i].error && lists[i].length && (f.ticket.kind === 'ow' || f.ticket.kind === 'rt')) listed.set(fareKey(f.ticket), cheapest(lists[i]).price);
+      let pick = picks[i];
+      if (!pick) continue; // search failed: unknown
+      if (pick.miss) {
+        f.ticket.flights[f.dir] = pick;
+        stats[pick.miss]++;
+        if (pick.miss === 'connection') trip.connects = false;
         continue;
       }
-      if (f.ticket.kind === 'rt' && f.dir === 'out') outAirlines.set(f.ticket, pick.airlines);
+      if (f.dir === 'back') {
+        // A return's price is on its outbound, so which return goes with it is a guess: the same
+        // airline as the outbound, of those that still fit the flights either side.
+        const airlines = picks[flights.findIndex((g) => g.ticket === f.ticket && g.dir === 'out')]?.airlines;
+        if (!airlines) continue; // unknown outbound: can't tell
+        const [prev, next] = [picks[i - 1], picks[i + 1]].map((p) => (p?.legs ? p : null));
+        const ok = lists[i].filter((o) => (!prev || fits(trip.stay, i, prev, o)) && (!next || fits(trip.stay, i + 1, o, next)));
+        const same = ok.filter((o) => o.airlines.some((a) => airlines.includes(a)));
+        pick = { ...cheapest(same.length ? same : ok), likely: true };
+      }
       f.ticket.flights[f.dir] = pick;
       // The listed price is what booking costs; the graph's can be stale (seen: $4,262 graph,
-      // $5,012 cheapest listed). A return's price is on its outbound.
+      // $5,012 cheapest listed).
       if (f.dir === 'out') { f.ticket.graph = f.ticket.price; f.ticket.price = pick.price; }
-      landed = arrival(pick);
     }
     // The Hoi An stay, from the real landing to the real departure: a flight that lands the next
     // day (overnight connection, long haul) eats into it. Short: not a trip, like a missed connection.

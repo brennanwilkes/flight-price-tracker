@@ -230,3 +230,23 @@ test('need: only trips with a night in every listed city, the cheapest of those'
   assert.ok(trips.every((x) => !x.via));
   assert.strictEqual(buildTrips(w, { need: ['MNL', 'HAN'] }).length, 0);
 });
+
+test('flights are picked together: a cheaper long haul landing later wins if the next flight still connects', async () => {
+  const { addDetails, flightsOf } = require('../scraper/src/trips/details');
+  const leg = (from, to, depDate, dep, arrDate, arr, price, airline) => ({ price, min: 0, airlines: [airline], stops: [], legs: [{ code: `${airline}1`, airline, from, to, dep, arr, depDate, arrDate, min: 0 }] });
+  const trip = {
+    order: [[0, 'out'], [1, 'out']],
+    tickets: [
+      { kind: 'ow', cabin: 'J', from: 'YVR', to: 'BKK', date: '2027-09-01', price: 5100 },
+      { kind: 'ow', cabin: 'Y', from: 'BKK', to: 'HAN', date: '2027-09-03', price: 232 },
+    ],
+  };
+  const answers = [
+    [leg('YVR', 'BKK', '2027-09-01', '14:00', '2027-09-02', '23:00', 5220, 'JL'), leg('YVR', 'BKK', '2027-09-01', '23:55', '2027-09-03', '12:05', 5066, 'PR')],
+    [leg('DMK', 'HAN', '2027-09-03', '06:40', '2027-09-03', '08:30', 232, 'FD'), leg('BKK', 'HAN', '2027-09-03', '17:00', '2027-09-03', '19:00', 260, 'VN')],
+  ];
+  const cache = new Map(flightsOf(trip).map((f, i) => [JSON.stringify(f.query), Promise.resolve(answers[i])]));
+  await addDetails([trip], cache);
+  assert.deepStrictEqual(trip.tickets.map((t) => t.flights.out.airlines[0]), ['PR', 'VN']);
+  assert.strictEqual(trip.total, 5326);
+});
