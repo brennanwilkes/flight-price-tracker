@@ -128,7 +128,14 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
     if ((await searchOnce(q)).error) { stats.failed++; stats.error ??= `${q.from}-${q.to} ${q.out}: ${r.error}`; }
   }
 
-  for (const trip of trips) {
+  // Trips picked CONCURRENCY at a time: a trip waiting on a full list (a page, 10-60 s) holds one.
+  let nextTrip = 0;
+  await Promise.all(Array.from({ length: CONCURRENCY }, async () => {
+    while (nextTrip < trips.length) await pickFlights(trips[nextTrip++]);
+  }));
+  return stats;
+
+  async function pickFlights(trip) {
     const flights = flightsOf(trip);
     const lists = await Promise.all(flights.map((f) => searchOnce(f.query)));
     // A plain search lists only Google's top flights; where none of those connects, the full list.
@@ -184,7 +191,6 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
     if (trip.connects && lists.some((l) => l.error)) trip.connects = null;
     trip.total = trip.tickets.reduce((sum, t) => sum + t.price, 0);
   }
-  return stats;
 }
 
 module.exports = { addDetails, flightsOf };
