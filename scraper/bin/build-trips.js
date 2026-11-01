@@ -27,13 +27,17 @@
  *   derived/status.json   for the Health tab: this build's detail-check stats, each route's
  *                         freshness (cells, oldest and newest sighting), the alert thresholds
  *
- *   node scraper/bin/build-trips.js --data <dataDir> [--no-details] [--deadline <epoch seconds>]
+ *   node scraper/bin/build-trips.js --data <dataDir> [--no-details] [--deadline <epoch seconds>] [--search-cache <file.json.gz>]
+ *
+ * --search-cache: a file keeping the flight checks' search results across builds, each reused for
+ * SEARCH_HOURS (CI keeps it in the Actions cache): most cells are the same trips hour to hour.
  *
  * --deadline: when the build must be done (CI's job limit). Flight checks start no search after
  * DETAILS_RESERVE before it, the multi-city pass searches only with MULTI_RESERVE left.
  */
 const fs = require('node:fs');
 const path = require('node:path');
+const zlib = require('node:zlib');
 const config = require('../config/sweep.json');
 const { loadFares, bundleOf, fareOf } = require('../src/trips/fares');
 const { buildTrips, similarCount } = require('../../frontend/app/build.js');
@@ -53,6 +57,32 @@ const ROUNDS = 3;
 const CHECKED_HOURS = 24;
 const DETAILS_RESERVE = 8 * 60e3; // multi-city ~4 min, a page still loading ≤ 4 min
 const MULTI_RESERVE = 5 * 60e3;
+const SEARCH_HOURS = 3; // the fares behind them are 2-48 h old already
+
+/** Search results from earlier builds, under SEARCH_HOURS old: { cache: key → result, at: key → ISO time }. */
+function loadSearches(file, now) {
+  const cache = new Map(), at = new Map();
+  if (!file || !fs.existsSync(file)) return { cache, at };
+  try {
+    for (const [k, when, v] of JSON.parse(zlib.gunzipSync(fs.readFileSync(file)))) {
+      if (now - Date.parse(when) < SEARCH_HOURS * 3600e3) { cache.set(k, Promise.resolve(v)); at.set(k, when); }
+    }
+  } catch (e) {
+    console.log(`search cache unreadable, starting empty: ${e.message}`);
+  }
+  return { cache, at };
+}
+/** This build's successful searches, with the time each was made. */
+async function saveSearches(file, { cache, at }, now) {
+  if (!file) return;
+  const rows = [];
+  for (const [k, p] of cache) {
+    const v = await p;
+    if (Array.isArray(v) && v.length) rows.push([k, at.get(k) ?? now, v]);
+  }
+  fs.writeFileSync(file, zlib.gzipSync(JSON.stringify(rows)));
+  console.log(`search cache: ${rows.length} kept`);
+}
 
 function arg(name, def) {
   const i = process.argv.indexOf(`--${name}`);
@@ -220,7 +250,9 @@ async function main() {
   if (!process.argv.includes('--no-details')) {
     // Searches whose page inlines no results are asked again in a real page (gflights/flights.js).
     const { browser: chrome, ctx } = await openBrowser();
-    const session = { cache: new Map(), browser: (q, opts) => { details.browser++; return shoppingResults(ctx, q, opts); }, listed: new Map(), deadline: deadline - DETAILS_RESERVE };
+    const searches = loadSearches(arg('search-cache'), Date.parse(generatedAt));
+    console.log(`search cache: ${searches.cache.size} under ${SEARCH_HOURS} h old`);
+    const session = { cache: searches.cache, browser: (q, opts) => { details.browser++; return shoppingResults(ctx, q, opts); }, listed: new Map(), deadline: deadline - DETAILS_RESERVE };
     details = { browser: 0, rounds: 0, searches: 0, failed: 0, late: 0, ms: 0 };
     try {
       for (;;) {
@@ -239,6 +271,7 @@ async function main() {
     } finally {
       await chrome.close();
     }
+    await saveSearches(arg('search-cache'), searches, generatedAt);
     fs.mkdirSync(path.dirname(checkedFile), { recursive: true });
     fs.writeFileSync(checkedFile, JSON.stringify(checkedLog));
     console.log(`details: ${details.searches} searches (${details.browser} in a browser, ${details.failed} failed, ${details.late} skipped out of time${details.error ? `, e.g. ${details.error}` : ''}) over ${details.rounds} rounds`);

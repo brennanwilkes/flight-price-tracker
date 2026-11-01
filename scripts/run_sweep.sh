@@ -53,9 +53,10 @@ rm -f "$summary_file"
 commit_push "$msg"
 
 # Trips from whatever fares are current, even after a failed sweep (stale cells age out).
-# BUILD_DEADLINE (epoch seconds, CI): when the build must be done.
+# BUILD_DEADLINE (epoch seconds, CI): when the build must be done. The search cache: flight checks
+# reused across builds (CI restores and saves it with actions/cache).
 set +e
-node scraper/bin/build-trips.js --data "$DATA_DIR" ${BUILD_DEADLINE:+--deadline "$BUILD_DEADLINE"} || rc=1
+node scraper/bin/build-trips.js --data "$DATA_DIR" ${BUILD_DEADLINE:+--deadline "$BUILD_DEADLINE"} --search-cache "$REPO_ROOT/.search-cache.json.gz" || rc=1
 set -e
 commit_push "build $(date -u +%FT%TZ)"
 

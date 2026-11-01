@@ -28,7 +28,7 @@ const CONCURRENCY = Number(process.env.SWEEP_CONCURRENCY || 3); // pages open at
 // While a big backlog builds up (new graphs' first scrapes), more pages at once and a bigger hop
 // network slice until every pair has been checked once; both back to normal by themselves.
 const BACKLOG = 400;
-const CONCURRENCY_BACKLOG = 5;
+const CONCURRENCY_BACKLOG = 6;
 
 /** Run `fn` over `items` with at most `n` in flight. */
 async function pool(items, n, fn) {

@@ -3,7 +3,7 @@
   "origins": ["YVR", "YYJ"],
   "core": ["DAD", "ICN", "TPE", "HKG", "TYO", "MNL", "SIN", "HAN", "SGN", "BKK", "KUL"],
   "longCabins": ["J", "Y"],
-  "budgetMinutes": 15,
+  "budgetMinutes": 25,
   "networkPerSweep": 100,
   "tiers": [
     { "kind": "long", "homes": ["YVR"], "cities": "core", "lengths": [14, 17, 21], "oneWay": true, "maxAgeHours": 2 },

@@ -26,7 +26,7 @@ defaults:
 jobs:
   sweep:
     runs-on: ubuntu-24.04
-    timeout-minutes: 58  # scrape budget 15, then the build until BUILD_DEADLINE; the next hourly run queues
+    timeout-minutes: 58  # scrape budget 25, then the build until BUILD_DEADLINE; the next hourly run queues
     steps:
       - uses: actions/checkout@v4
 
@@ -51,6 +51,14 @@ jobs:
           WG_CONF: ${{ secrets.PROTONVPN_WG_CONF }}
         run: scripts/vpn_up.sh
 
+      # Flight-check searches, reused for a few hours across runs (build-trips.js --search-cache).
+      - name: Restore search cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .search-cache.json.gz
+          key: searches-${{ github.run_id }}
+          restore-keys: searches-
+
       - name: Sweep
         env:
           EGRESS: ${{ steps.vpn.outputs.vpn_ok == 'true' && 'vpn' || 'direct' }}
@@ -60,6 +68,13 @@ jobs:
           args=()
           [[ -n "${{ inputs.routes }}" ]] && args+=(--routes "${{ inputs.routes }}")
           scripts/run_sweep.sh "${args[@]}" 2>&1 | tee sweep.log
+
+      - name: Save search cache
+        if: always() && hashFiles('.search-cache.json.gz') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: .search-cache.json.gz
+          key: searches-${{ github.run_id }}
 
       - name: Summary
         if: always()

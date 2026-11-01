@@ -90,6 +90,10 @@ the builder searches every combination and the dashboard shows the best N.
   lengths) hourly; other lengths and new gateways ~6 h; hops 12–24 h; each graph has a max age and a
   sweep does the most overdue work within a time budget. Be nice to Google; sweeps stay well under
   an hour.
+- **Run budget (2026-11-01):** each hourly job scrapes graphs for 25 min (6 pages at once while a
+  backlog lasts, else 3), commits that, then builds to a deadline 49 min in: flight checks cheapest
+  overall cells first, results reused 3 h across runs (Actions cache), so a slow build skips checks
+  instead of losing the run. ~420 graphs/h against ~250/h the tiers need at steady state.
 - **Vietnam anchor, not just Da Nang (added 2026-10-31):** the real destination is Hoi An, reached by
   train/bus. A trip may fly into and out of any of DAD, HUI, HAN, SGN, and may be open-jaw inside
   Vietnam (e.g. into Hanoi, out of Da Nang). Hoi An still needs ≥ 5 nights **after ground time**:
