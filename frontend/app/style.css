@@ -96,6 +96,13 @@ option { background: var(--panel); color: var(--text); }
 #vias button { font: 600 12px var(--mono); color: var(--text); background: var(--cell); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; cursor: pointer; white-space: nowrap; }
 #vias button span { margin-left: 6px; color: var(--muted); }
 .cityfield:has(#vias button) select { min-width: 3.2em; } /* "+": the rest of the line, or a line of its own */
+/* Phones: smaller month and home controls; once a city is chosen, the field gets a row of its own
+   so its chips sit side by side. */
+@media (max-width: 520px) {
+  header select, .toggle button { font-size: 12px; padding: 6px 6px; }
+  .cityfield { padding: 2px; }
+  .cityfield:has(#vias button) { order: 9; flex-basis: 100%; }
+}
 #vias.pending button { border-style: dashed; animation: pending 1.2s ease-in-out infinite alternate; }
 @keyframes pending { to { border-color: var(--muted); } }
 @media (prefers-reduced-motion: reduce) { #vias.pending button { animation: none; } }

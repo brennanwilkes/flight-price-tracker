@@ -1,8 +1,9 @@
 /* How flexible a trip's stays are: "10 nights (4–12)" on the dashboard.
  *
  * Each flight that can move on its own is moved earlier or later: economy one-ways inside Asia, and
- * the first and last long flights (the trip kept 14–21 days; a return or multi-city ticket priced
- * from the graph's other days for that flight). Every flight stays in order (same-day connections
+ * the first and last long flights (the trip kept 14–21 days; a one-way or return priced from the
+ * graph's other days for that flight). A multi-city ticket's flights stay put: the graph has no
+ * price for that ticket on other days, and a range is only claimed from real prices. Every flight stays in order (same-day connections
  * allowed) and the Hoi An stay ≥ its need (build.js). A move costing about the same (price.js: a
  * share of the trip's total) widens the range of the stays on both sides of that flight.
  * trip.flex: [[stay, fewer, more]], stay k being the one between order[k] and order[k + 1]: nights
@@ -43,7 +44,7 @@ function flexOf(trip, fares) {
       const out = f.dir === 'back' ? f.t.date : iso, ret = f.dir === 'back' ? iso : f.t.ret;
       return fares.roundTrip(f.t.from, f.t.to, f.t.cabin, out).find((r) => r.ret === ret)?.price ?? null;
     }
-    return fares.oneWay(f.from, f.to, f.t.cabin, iso); // a one-way, or a multi-city ticket's leg
+    return f.t.kind === 'ow' ? fares.oneWay(f.from, f.to, f.t.cabin, iso) : null;
   };
   const span = fl.slice(0, -1).map(() => [0, 0]); // per stay: [fewer, more]
   const widen = (k, d) => { if (span[k]) { span[k][0] = Math.max(span[k][0], -d); span[k][1] = Math.max(span[k][1], d); } };

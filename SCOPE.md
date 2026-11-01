@@ -153,8 +153,8 @@ the builder searches every combination and the dashboard shows the best N.
   on 2026-11-01 data: nights before Hoi An 3.3 → 1.1 on average, hub at both ends 21 cells → 0;
   6 of 1,032 cells over the tolerance (a cheaper plan that first slept in a hop city now skips it
   and moves rows).
-- **Stay ranges move the first and last long flights too** (trip kept 14–21 days; a multi-city
-  ticket priced from its legs' one-ways).
+- **Stay ranges move the first and last long flights too** (trip kept 14–21 days), one-ways and
+  returns only: a multi-city ticket has no price on other days, and nothing is claimed without one.
 - **Low lines** read "Lowest seen (any dates)" / "(exact dates)"; the any-dates low also counts the
   route's price history from before the ledger (`history.js` lowestEver).
 - **"About the same price" is one rule everywhere (2026-11-01):** within 2% in business, 5% in
