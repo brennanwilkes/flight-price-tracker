@@ -205,10 +205,9 @@ const ticketDays = (dates) => {
   return d.length === 1 ? boardDate(d[0]) : range({ depart: d[0], ret: d.at(-1) });
 };
 /**
- * The lines about past lows: the facts behind the marks. `only`: the marks worth a line (a
- * ticket spells out only what it cost before; its mark sits by the route).
+ * The lines about past lows: the facts behind the marks (a ticket's on each of its flights).
  */
-function lowLines(x, only = null) {
+function lowLines(x) {
   const line = {
     best: () => '★ Lowest yet',
     dates: () => '☆ Lowest yet for these dates',
@@ -217,8 +216,7 @@ function lowLines(x, only = null) {
   };
   const marks = lowMarks(x);
   if (marks[0] === 'same') marks.push('any');
-  const shown = marks.filter((k) => !only || only.includes(k));
-  return shown.length ? `<p class="lows">${shown.map((k) => `<span class="low ${k}">${line[k]()}</span>`).join('')}</p>` : '';
+  return marks.length ? `<p class="lows">${marks.map((k) => `<span class="low ${k}">${line[k]()}</span>`).join('')}</p>` : '';
 }
 
 /** "SEP 05–22" (or "SEP 28–OCT 12"). */
@@ -408,10 +406,10 @@ function legItem(l, ticketOf) {
     <a href="${flightsLink(l.t)}" target="_blank" rel="noopener">
       <span class="leg-head">
         <span class="day">${dow} ${boardDate(l.date)}</span>
-        <b class="route"><span>${esc(cityName(l.from))}<span class="arrow">→</span></span> <span>${esc(cityName(l.to))}${lowMark(vsLows)}</span></b>
+        <b class="route"><span>${esc(cityName(l.from))}<span class="arrow">→</span></span> <span>${esc(cityName(l.to))}</span></b>
         <b class="price">${price || '<span class="incl">incl.</span>'}</b>
       </span>
-      ${first ? lowLines(vsLows, ['same', 'any']) : ''}
+      ${lowLines(vsLows)}
       ${segments(l)}
     </a>
   </li>`;
