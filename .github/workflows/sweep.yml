@@ -59,15 +59,25 @@ jobs:
           key: searches-${{ github.run_id }}
           restore-keys: searches-
 
-      - name: Sweep
+      - name: Scrape
         env:
           EGRESS: ${{ steps.vpn.outputs.vpn_ok == 'true' && 'vpn' || 'direct' }}
-          NOTIFY_SECRET: ${{ secrets.NOTIFY_SECRET }}
         run: |
-          export BUILD_DEADLINE=$(( $(date +%s) + 49 * 60 ))  # this step starts ~1 min in: leaves ~8 min to commit, push, alert
+          echo "BUILD_DEADLINE=$(( $(date +%s) + 49 * 60 ))" >> "$GITHUB_ENV"  # this step starts ~1 min in: leaves ~8 min to commit, push, alert
           args=()
           [[ -n "${{ inputs.routes }}" ]] && args+=(--routes "${{ inputs.routes }}")
-          scripts/run_sweep.sh "${args[@]}" 2>&1 | tee sweep.log
+          scripts/run_sweep.sh scrape "${args[@]}" 2>&1 | tee sweep.log
+
+      # Even after a failed scrape: trips from whatever fares are current.
+      - name: Build trips
+        if: ${{ !cancelled() && steps.vpn.outcome == 'success' }}
+        run: scripts/run_sweep.sh build 2>&1 | tee -a sweep.log
+
+      - name: Alerts
+        if: ${{ !cancelled() && steps.vpn.outcome == 'success' }}
+        env:
+          NOTIFY_SECRET: ${{ secrets.NOTIFY_SECRET }}
+        run: scripts/run_sweep.sh alerts 2>&1 | tee -a sweep.log
 
       - name: Save search cache
         if: always() && hashFiles('.search-cache.json.gz') != ''

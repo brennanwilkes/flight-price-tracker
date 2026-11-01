@@ -288,9 +288,14 @@ async function main() {
   const checked = () => new Map(Object.entries(checkedLog).map(([k, c]) => [k, c.price]));
   const multi = multiCache(dataDir, Date.parse(generatedAt));
   rankOf = (t) => scoreOf(t) - multiSaving(multi, t, config.origins);
+  // Phase timings: where a slow build spends its time, in the CI log as it runs.
+  const lap = (what) => console.log(`${what}: ${Math.round((Date.now() - t0) / 1000)} s in, heap ${Math.round(process.memoryUsage().heapUsed / 2 ** 20)} MB`);
   let fares = loadFares(dataDir, config, { checked: checked() });
+  lap('fares loaded');
   let trips = buildTrips(fares);
+  lap(`${trips.length} trips planned`);
   let { vias, byHome } = viewsOf(trips);
+  lap(`rows for ${vias.length} vias`);
   let details = null;
   if (!process.argv.includes('--no-details')) {
     // Searches whose page inlines no results are asked again in a real page (gflights/flights.js).
@@ -312,6 +317,7 @@ async function main() {
         fares = loadFares(dataDir, config, { checked: checked() });
         trips = buildTrips(fares);
         ({ vias, byHome } = viewsOf(trips));
+        lap('planned again');
       }
     } finally {
       await chrome.close();
@@ -337,6 +343,7 @@ async function main() {
       }
     }
   }
+  lap('stay ranges');
   const views = (main) => Object.fromEntries([...byHome].filter(([v]) => v.endsWith('|') === main).map(([v, rows]) => [v, rows]));
   // Via views first: every view is marked against the lows before this build, then the main ones record.
   for (const [v, rows] of Object.entries(views(false))) markLows(dataDir, { [v.split('|')[0]]: rows }, generatedAt, { record: false });

@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Run one sweep into the `data` branch, rebuild trips (derived/), and push it.
 #
-#   EGRESS=vpn|direct scripts/run_sweep.sh [extra sweep.js args, e.g. --routes YVR-ICN]
+#   EGRESS=vpn|direct scripts/run_sweep.sh [scrape|build|alerts] [extra sweep.js args, e.g. --routes YVR-ICN]
+#
+# With no step, all three in order. CI runs each as its own workflow step (sweep.yml).
 #
 # The data branch is checked out as a worktree at .worktrees/data (created as an orphan branch on
 # the first run). The sweep's exit code is passed through AFTER committing, so a failed run still
@@ -42,6 +44,11 @@ commit_push() { # message
 	fi
 }
 
+step=all
+[[ "${1:-}" =~ ^(scrape|build|alerts)$ ]] && { step=$1; shift; }
+rc=0
+
+if [[ $step == all || $step == scrape ]]; then
 set +e
 node scraper/bin/sweep.js --data "$DATA_DIR" --egress "${EGRESS:-direct}" "$@"
 rc=$?
@@ -51,7 +58,9 @@ summary_file="$DATA_DIR/.sweep-summary"
 msg="$(cat "$summary_file" 2>/dev/null || echo "sweep $(date -u +%FT%TZ) | CRASHED (exit $rc)")"
 rm -f "$summary_file"
 commit_push "$msg"
+fi
 
+if [[ $step == all || $step == build ]]; then
 # Trips from whatever fares are current, even after a failed sweep (stale cells age out).
 # BUILD_DEADLINE (epoch seconds, CI): when the build must be done. The search cache: flight checks
 # reused across builds (CI restores and saves it with actions/cache).
@@ -59,7 +68,9 @@ set +e
 node scraper/bin/build-trips.js --data "$DATA_DIR" ${BUILD_DEADLINE:+--deadline "$BUILD_DEADLINE"} --search-cache "$REPO_ROOT/.search-cache.json.gz" || rc=1
 set -e
 commit_push "build $(date -u +%FT%TZ)"
+fi
 
+if [[ $step == all || $step == alerts ]]; then
 cd "$DATA_DIR"
 # Deal alerts, linking to the commit just pushed; then the ledger they wrote.
 if node "$REPO_ROOT/scraper/bin/alerts.js" --data "$DATA_DIR" --sha "$(git rev-parse HEAD)"; then
@@ -70,5 +81,7 @@ if node "$REPO_ROOT/scraper/bin/alerts.js" --data "$DATA_DIR" --sha "$(git rev-p
 	fi
 else
 	echo "alerts failed" >&2
+	rc=1
+fi
 fi
 exit "$rc"
