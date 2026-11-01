@@ -147,12 +147,13 @@ the builder searches every combination and the dashboard shows the best N.
   penalties, capped at the "same price" tolerance (`build.js` scoreOf), so a pick never costs
   more than that over the trip it beat. (A) a long connection on one ticket (not a stop between
   tickets): beyond 3 h, up to the full tolerance at 24 h (`details.js` connPen); (B) 2+ nights in
-  the arrival city both before and after Hoi An: $30; (C) each night elsewhere before Hoi An: $4.
-  B and C are in the planner, so plans on the same dates compete; it keeps a plan with a night in
-  the arrival city first and one without, as rows are named by where a trip first sleeps. Checked
-  on 2026-11-01 data: nights before Hoi An 3.3 → 1.1 on average, hub at both ends 21 cells → 0;
-  6 of 1,032 cells over the tolerance (a cheaper plan that first slept in a hop city now skips it
-  and moves rows).
+  the arrival city both before and after Hoi An: $30; (C) each night elsewhere before Hoi An: $4;
+  (D) a stay of exactly one night (an awkward ~14 h overnight; not the Hoi An stay or its exit
+  city): $25. The planner runs twice per arrival day, cheapest and preferred (B–D inside it, so
+  plans on the same dates compete), and both sets are scored alike (shapePen): every row keeps
+  the cheapest plans it had. Checked on 2026-11-01 data: no cell over the tolerance (largest +2.1%,
+  economy), single overnights 429 → 48, nights before Hoi An 3.3 → 2.0, hub at both ends 21 → 4;
+  build 72 s → 146 s.
 - **Stay ranges move the first and last long flights too** (trip kept 14–21 days), one-ways and
   returns only: a multi-city ticket has no price on other days, and nothing is claimed without one.
 - **Low lines** read "Lowest seen (any dates)" / "(exact dates)"; the any-dates low also counts the

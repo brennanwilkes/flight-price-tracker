@@ -279,8 +279,9 @@ test('trip shape, at about the same price: Hoi An first, then the other city (C)
   const hops = (t) => t.tickets.slice(1).map((k) => `${k.from}-${k.to} ${k.date}`);
   const pick = (first) => buildTrips(fares(first)).find((x) => !x.via && x.cls === 'economy');
   assert.strictEqual(hops(pick(0))[0], `ICN-DAD ${day(1)}`); // straight to Hoi An
-  // Hoi An first $40 dearer: more than 6 nights' worth of the preference, so price wins.
-  assert.deepStrictEqual(hops(pick(40)), [`ICN-DAD ${day(7)}`, `DAD-ICN ${day(13)}`]);
+  // Hoi An first $60 dearer: more than Seoul first's penalties (6 nights before Hoi An, one night
+  // in Seoul at the end: $49), so price wins.
+  assert.deepStrictEqual(hops(pick(60)), [`ICN-DAD ${day(7)}`, `DAD-ICN ${day(13)}`]);
 });
 
 test('trip shape: 2+ nights in the hub at both ends counts against a trip (B)', () => {
@@ -320,4 +321,13 @@ test('stay ranges: the long flight home can move too, the trip kept 14–21 days
   // The last stay (Seoul, before flying home): 2 more nights within 5% of $1,380; never shorter
   // than a 14-day trip.
   assert.deepStrictEqual(flexOf(t, fares).find(([k]) => k === 2), [2, 0, 2]);
+});
+
+test('trip shape: a single overnight between flights counts against a trip', () => {
+  // Into Hoi An from Seoul after 1 night, or after 2 nights for $10 more: 2 nights wins.
+  const t = buildTrips(world({
+    rt: { [`YVR-ICN-Y|${D0}`]: [{ ret: day(14), price: 900 }] },
+    hops: { [`ICN-DAD|${day(2)}`]: 190, [`ICN-DAD|${day(3)}`]: 200, [`DAD-ICN|${day(13)}`]: 180 }, // back for 1 night: no hub at both ends
+  })).find((x) => !x.via && x.cls === 'economy');
+  assert.strictEqual(t.tickets[1].date, day(3));
 });
