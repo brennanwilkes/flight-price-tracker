@@ -81,7 +81,8 @@ function flightsOf(trip) {
 }
 /**
  * Fill `flights` on the given trips' tickets, and set each trip's `connects` (false when some
- * connection has no flight, or the real flights leave the Hoi An stay short). A ticket with a
+ * connection has no flight, or the real flights leave the Hoi An stay short; null when a search
+ * was skipped or failed). A ticket with a
  * listed flight takes its price (the graph's kept as `graph`) and the trip's total is re-summed. Pass the same `cache` across calls to reuse searches;
  * `browser` (query → GetShoppingResults payload) answers searches whose page inlined no results.
  * Returns { searches, failed, late, full, connection, none, stay } (full: full-list page loads; connection,
@@ -179,6 +180,8 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
         if (days < trip.stay.need) { trip.connects = false; stats.stay++; }
       }
     }
+    // A search skipped (out of time) or failed: the trip is unknown, not a trip that connects.
+    if (trip.connects && lists.some((l) => l.error)) trip.connects = null;
     trip.total = trip.tickets.reduce((sum, t) => sum + t.price, 0);
   }
   return stats;

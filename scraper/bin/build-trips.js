@@ -146,7 +146,8 @@ const sortRows = (rows) => rows.sort((a, b) => price(a.hybrid) - price(b.hybrid)
  * lists). Each cell walks its candidates best first (scoreOf: price plus trip-shape penalties,
  * graph prices; a month cell only that month's), keeping the best that connects at listed prices
  * (long connections on a ticket now counted too), until the next candidate's builder score can't
- * beat it, or after TRIES. None connects: the cell is dropped (a row with no overall
+ * beat it, or after TRIES. None connects, or none with its flights checked (searches skipped out
+ * of time): the cell is dropped (a row with no overall
  * cell goes too); a trip that can't be flown is not a price. Searches are shared, so a month cell
  * walking the same trips as its overall cell costs nothing more. session: { cache, browser,
  * listed, deadline } shared across rounds (main). Searched in order of what matters most: the
@@ -156,7 +157,7 @@ const sortRows = (rows) => rows.sort((a, b) => price(a.hybrid) - price(b.hybrid)
  */
 async function verify(byHome, trips, { cache, browser, listed, deadline }) {
   const t0 = Date.now();
-  const st = { cells: 0, replaced: 0, unresolved: 0, searches: 0, failed: 0, late: 0, none: 0, stay: 0 };
+  const st = { cells: 0, replaced: 0, unresolved: 0, unknown: 0, searches: 0, failed: 0, late: 0, none: 0, stay: 0 };
   const cellsOf = (r, base) => CLASSES.filter((c) => r[c]).flatMap((cls) => [
     { rank: base + (r.top?.[cls] ? 0 : 1), cls, cands: r.cands[cls], cand: r[cls], put: (t) => { r[cls] = t; } },
     ...Object.entries(r.months).filter(([, m]) => m[cls]).map(([month, m]) => {
@@ -181,6 +182,7 @@ async function verify(byHome, trips, { cache, browser, listed, deadline }) {
       st.stay += s.stay;
       pending = pending.filter((p) => {
         p.first ??= p.cand;
+        if (p.cand.connects === null) p.unknown = true;
         if (p.cand.connects && !(p.best && rankOf(p.best) <= rankOf(p.cand))) p.best = p.cand;
         const next = p.cands[++p.i];
         // conn is only known once checked: a candidate's rank can only rise from its builder rank.
@@ -190,7 +192,7 @@ async function verify(byHome, trips, { cache, browser, listed, deadline }) {
         }
         if (p.best) p.best.tier = tierOf(alertConfig, p.cls, p.best.total);
         p.put(p.best);
-        if (!p.best) st.unresolved++;
+        if (!p.best) st[p.unknown ? 'unknown' : 'unresolved']++;
         else if (p.best !== p.first) st.replaced++;
         return false;
       });
@@ -294,7 +296,7 @@ async function main() {
         const moved = [...session.listed].filter(([k, p]) => { const was = fareOf(fares, k); return was != null && Math.abs(p - was) > Math.max(2, was * 0.01); });
         for (const [k, price] of session.listed) checkedLog[k] = { price, at: generatedAt };
         session.listed.clear();
-        console.log(`details round ${details.rounds}: ${s.cells} cells, ${s.replaced} moved to another trip (connects, or cheaper as listed), ${s.unresolved} with none that connects; ${s.searches} searches${s.late ? ` (${s.late} skipped, out of time)` : ''}, ${s.none} flights not listed yet, ${s.stay} trips with a short Hoi An stay; ${moved.length} fares listed at a new price; ${s.ms}ms`);
+        console.log(`details round ${details.rounds}: ${s.cells} cells, ${s.replaced} moved to another trip (connects, or cheaper as listed), ${s.unresolved} with none that connects, ${s.unknown} hidden with no flights checked; ${s.searches} searches${s.late ? ` (${s.late} skipped, out of time)` : ''}, ${s.none} flights not listed yet, ${s.stay} trips with a short Hoi An stay; ${moved.length} fares listed at a new price; ${s.ms}ms`);
         if (!moved.length || details.rounds >= ROUNDS || Date.now() > session.deadline) break;
         fares = loadFares(dataDir, config, { checked: checked() });
         trips = buildTrips(fares);
