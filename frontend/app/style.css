@@ -195,7 +195,7 @@ body.sheet-open { overflow: hidden; }
 .ticket .stub::after { right: -11px; clip-path: inset(0 50% 0 0); }
 .ticket small { font: 600 10px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
 .ticket .stub .sum { display: flex; flex-direction: column; gap: 2px; }
-.ticket .stub b { font: 700 30px var(--mono); letter-spacing: -0.02em; line-height: 1; }
+.ticket .stub b { font: 700 30px var(--mono); font-variant-numeric: tabular-nums; letter-spacing: 0.04em; line-height: 1; }
 .ticket .stub .meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; padding-bottom: 2px; }
 .ticket .stub .trend { font-size: 13px; }
 .ticket .stub .trend small { font-weight: 600; font-size: 10px; color: var(--muted); }
