@@ -143,6 +143,20 @@ the builder searches every combination and the dashboard shows the best N.
   only changed planes in doesn't name the row or count for the via filter.
 - **Stay ranges:** "4–12 nights" (the range replaces the count): each Asia one-way moved alone, long legs fixed, at about the same
   total, Hoi An minimum kept (`trips/flex.js`).
+- **Trip shape decides at about the same price (2026-11-01):** a trip ranks by its price plus
+  penalties, capped at the "same price" tolerance (`build.js` scoreOf), so a pick never costs
+  more than that over the trip it beat. (A) a long connection on one ticket (not a stop between
+  tickets): beyond 3 h, up to the full tolerance at 24 h (`details.js` connPen); (B) 2+ nights in
+  the arrival city both before and after Hoi An: $30; (C) each night elsewhere before Hoi An: $4.
+  B and C are in the planner, so plans on the same dates compete; it keeps a plan with a night in
+  the arrival city first and one without, as rows are named by where a trip first sleeps. Checked
+  on 2026-11-01 data: nights before Hoi An 3.3 → 1.1 on average, hub at both ends 21 cells → 0;
+  6 of 1,032 cells over the tolerance (a cheaper plan that first slept in a hop city now skips it
+  and moves rows).
+- **Stay ranges move the first and last long flights too** (trip kept 14–21 days; a multi-city
+  ticket priced from its legs' one-ways).
+- **Low lines** read "Lowest seen (any dates)" / "(exact dates)"; the any-dates low also counts the
+  route's price history from before the ledger (`history.js` lowestEver).
 - **"About the same price" is one rule everywhere (2026-11-01):** within 2% in business, 5% in
   economy (`frontend/app/price.js`): +N similar dates, ○/● marks, stay ranges.
 - **The Hoi An stay is checked against real flights** (an overnight arrival can't eat a night);

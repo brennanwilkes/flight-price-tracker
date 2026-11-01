@@ -16,6 +16,7 @@
  */
 const path = require('node:path');
 const { readJson, writeJson } = require('../store/routes');
+const { lowestEver } = require('./history');
 
 const routeOf = (home, cls, r) => `${home},${cls},${r.in},${r.out}`;
 const ticketRoute = (t) => `${t.kind},${t.cabin},${t.kind === 'multi' ? t.legs.map((l) => `${l.from}-${l.to}`).join(' ') : `${t.from}-${t.to}`}`;
@@ -65,11 +66,15 @@ function markLows(dataDir, rowsByHome, at, { record: save = true } = {}) {
   const priceFile = path.join(dataDir, 'state', 'ticket-prices.json');
   const prices = readJson(priceFile, {});
   const dayAgo = Date.parse(at) - DAY;
+  // The route's any-dates low also counts its price history from before the ledger (History tab):
+  // its dates aren't known, and aren't shown.
+  const ever = lowestEver(dataDir);
   const lowOf = (route, trip) => {
     const low = lowIn(ledger[route], `${trip.depart},${trip.ret}`);
-    if (!low) return null;
+    const hist = ever.get(route);
+    if (!low) return hist == null ? null : { any: { total: hist } };
     const [depart, ret] = low.any.dates.split(',');
-    return { ...low, any: { total: low.any.total, depart, ret } };
+    return { ...low, any: hist < low.any.total ? { total: hist } : { total: low.any.total, depart, ret } };
   };
   const record = [];
   for (const [home, rows] of Object.entries(rowsByHome)) {

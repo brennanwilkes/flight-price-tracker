@@ -131,7 +131,7 @@ option { background: var(--panel); color: var(--text); }
 .fare .tfoot { display: grid; grid-template-columns: 3fr 2fr; margin-top: 4px; border-top: 1px solid color-mix(in srgb, currentColor 14%, transparent); min-height: 19px; }
 .fare .tfoot > * { display: flex; align-items: center; justify-content: center; padding: 3px 0; }
 .fare .tfoot > * + * { border-left: 1px solid color-mix(in srgb, currentColor 14%, transparent); }
-.fare .tfoot.blank, .fare .tfoot.blank > * { border-color: transparent; } /* keeps the tiles of a row aligned */
+.fare .tfoot.blank { display: none; }
 .alts { font: normal 700 10px var(--mono); color: var(--muted); }
 .trend { font: 700 10px var(--mono); white-space: nowrap; }
 /* Against past lows (main.js lowMarks): gold ★ cheapest yet, faint gold ☆ cheapest for these

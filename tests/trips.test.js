@@ -162,7 +162,7 @@ test('stay ranges: a hop that can move a few days at about the same price widens
   const hops = { [`ICN-DAD|${day(3)}`]: 200, [`DAD-ICN|${day(8)}`]: 180 };
   for (let n = 9; n <= 11; n++) hops[`DAD-ICN|${day(n)}`] = 185; // within 5% (economy) of a 1280 total
   hops[`DAD-ICN|${day(12)}`] = 400;
-  hops[`ICN-DAD|${day(1)}`] = 205;
+  hops[`ICN-DAD|${day(1)}`] = 260; // over day 3 by more than its shape penalties (2 nights before Hoi An, Seoul at both ends: build.js)
   const fares = world({ rt: { [`YVR-ICN-Y|${D0}`]: [{ ret: day(14), price: 900 }] }, hops });
   const t = buildTrips(fares).find((x) => !x.via && x.cls === 'economy');
   const { flexOf } = require('../frontend/app/flex.js');
@@ -268,4 +268,56 @@ test('ticket ▲/▼: its price 24 h before, from state/ticket-prices.json', () 
   assert.strictEqual(run(1231, '2026-11-02T06:00:00Z'), 1200); // in force 24 h before: the first price
   assert.strictEqual(run(1231, '2026-11-02T13:00:00Z'), 1250);
   assert.strictEqual(run(1231, '2026-11-05T00:00:00Z'), undefined); // unchanged for days: no change shown
+});
+
+test('trip shape, at about the same price: Hoi An first, then the other city (C)', () => {
+  // Seoul 6 nights then Hoi An, or Hoi An then Seoul 6 nights: same price, Hoi An first wins.
+  const fares = (first) => world({
+    rt: { [`YVR-ICN-Y|${D0}`]: [{ ret: day(14), price: 900 }] },
+    hops: { [`ICN-DAD|${day(1)}`]: 200 + first, [`DAD-ICN|${day(7)}`]: 200, [`ICN-DAD|${day(7)}`]: 200, [`DAD-ICN|${day(13)}`]: 200 },
+  });
+  const hops = (t) => t.tickets.slice(1).map((k) => `${k.from}-${k.to} ${k.date}`);
+  const pick = (first) => buildTrips(fares(first)).find((x) => !x.via && x.cls === 'economy');
+  assert.strictEqual(hops(pick(0))[0], `ICN-DAD ${day(1)}`); // straight to Hoi An
+  // Hoi An first $40 dearer: more than 6 nights' worth of the preference, so price wins.
+  assert.deepStrictEqual(hops(pick(40)), [`ICN-DAD ${day(7)}`, `DAD-ICN ${day(13)}`]);
+});
+
+test('trip shape: 2+ nights in the hub at both ends counts against a trip (B)', () => {
+  // Seoul 3 nights first either way (no earlier flight to Vietnam). After Hoi An: back to Seoul for
+  // 3 nights, or Manila then home through Seoul the same day: $20 more, but Seoul at only one end.
+  const t = buildTrips(world({
+    rt: { [`YVR-ICN-Y|${D0}`]: [{ ret: day(14), price: 900 }] },
+    hops: { [`ICN-DAD|${day(4)}`]: 180, [`DAD-ICN|${day(11)}`]: 180, [`DAD-MNL|${day(10)}`]: 100, [`MNL-ICN|${day(14)}`]: 100 },
+  })).find((x) => !x.via && x.cls === 'economy');
+  assert.deepStrictEqual(t.tickets.slice(1).map((k) => `${k.from}-${k.to}`), ['ICN-DAD', 'DAD-MNL', 'MNL-ICN']);
+  assert.strictEqual(t.total, 900 + 380);
+});
+
+test('flights at about the same price: a short connection on a ticket beats a long one (A)', async () => {
+  const { addDetails, flightsOf } = require('../scraper/src/trips/details');
+  const opt = (price, layover) => ({ price, min: 0, airlines: ['PR'], stops: [{ at: 'MNL', min: layover }], legs: [
+    { code: 'PR1', airline: 'PR', from: 'YVR', to: 'MNL', dep: '10:00', arr: '15:00', depDate: '2027-09-01', arrDate: '2027-09-02', min: 0 },
+    { code: 'PR2', airline: 'PR', from: 'MNL', to: 'BKK', dep: '18:00', arr: '20:00', depDate: '2027-09-03', arrDate: '2027-09-03', min: 0 },
+  ] });
+  const run = async (opts) => {
+    const trip = { order: [[0, 'out']], tickets: [{ kind: 'ow', cabin: 'J', from: 'YVR', to: 'BKK', date: '2027-09-01', price: 5000 }] };
+    const cache = new Map(flightsOf(trip).map((f) => [JSON.stringify(f.query), Promise.resolve(opts)]));
+    await addDetails([trip], cache);
+    return trip.tickets[0].price;
+  };
+  assert.strictEqual(await run([opt(5000, 22 * 60), opt(5060, 3 * 60)]), 5060); // 1.2% more, 19 h less
+  assert.strictEqual(await run([opt(5000, 22 * 60), opt(5200, 3 * 60)]), 5000); // 4% more: price wins
+});
+
+test('stay ranges: the long flight home can move too, the trip kept 14–21 days', () => {
+  const fares = world({
+    ow: { [`YVR-ICN-Y|${D0}`]: 500, [`ICN-YVR-Y|${day(14)}`]: 500, [`ICN-YVR-Y|${day(15)}`]: 510, [`ICN-YVR-Y|${day(16)}`]: 530, [`ICN-YVR-Y|${day(17)}`]: 600 },
+    hops: { [`ICN-DAD|${day(3)}`]: 200, [`DAD-ICN|${day(8)}`]: 180 },
+  });
+  const t = buildTrips(fares).find((x) => !x.via && x.cls === 'economy');
+  const { flexOf } = require('../frontend/app/flex.js');
+  // The last stay (Seoul, before flying home): 2 more nights within 5% of $1,380; never shorter
+  // than a 14-day trip.
+  assert.deepStrictEqual(flexOf(t, fares).find(([k]) => k === 2), [2, 0, 2]);
 });

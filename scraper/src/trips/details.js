@@ -13,6 +13,7 @@
 const { search, parseResults } = require('../gflights/flights');
 const { airportsOf } = require('../../../frontend/app/cities.js');
 const { fareKey } = require('./fares');
+const { samePrice } = require('../../../frontend/app/price.js');
 
 const MIN_CONNECT_MIN = 4 * 60;
 const CONCURRENCY = 6; // searches in flight; a browser fallback (~10 s) holds one of these
@@ -23,6 +24,15 @@ const arrival = (o) => at(o.legs.at(-1).arrDate, o.legs.at(-1).arr);
 const cheapest = (opts) => opts.slice().sort((a, b) => a.price - b.price || a.min - b.min)[0];
 
 const priceOf = (f, o) => (f.dir === 'out' ? o.price : 0); // a return's price is on its outbound
+// A long connection on one ticket (not a stop between tickets, where you see the city): beyond
+// SHORT_CONNECT, a penalty growing to the "same price" tolerance (price.js) of the ticket at LONG_CONNECT
+// hours more, so a 3 h connection beats a 22 h one at about the same price.
+const SHORT_CONNECT = 3 * 60;
+const LONG_CONNECT = 21 * 60;
+const connPen = (f, o) => {
+  const over = (o.stops ?? []).reduce((sum, s) => sum + Math.max(0, s.min - SHORT_CONNECT), 0);
+  return over && samePrice(f.ticket.cabin) * (f.dir === 'out' ? o.price : f.ticket.price) * Math.min(1, over / LONG_CONNECT);
+};
 const misses = (picks) => picks.filter((p) => p?.miss === 'connection').length;
 /** Flight b (flight i of the trip) can follow a: leaves ≥ MIN_CONNECT after a lands, and keeps the Hoi An stay. */
 function fits(stay, i, a, b) {
@@ -30,7 +40,8 @@ function fits(stay, i, a, b) {
   return !stay || i !== stay.after + 1 || (Date.parse(b.legs[0].depDate) - Date.parse(a.legs.at(-1).arrDate)) / 864e5 >= stay.need;
 }
 /**
- * Each flight's pick: the cheapest flights that connect, chosen together (a cheaper flight that
+ * Each flight's pick: the cheapest flights that connect (long connections on a ticket count against
+ * them: connPen), chosen together (a cheaper flight that
  * lands later can beat an earlier one if the next flight still connects). A shortest path over the
  * options, flight by flight. A failed search (null pick) breaks the chain; a flight with no listed
  * option is { miss: 'none' }, one where nothing connects { miss: 'connection' }.
@@ -51,7 +62,7 @@ function plan(flights, lists, stay = null) {
       let best = null;
       if (layer) for (const p of layer) if (fits(stay, i, p.o, o) && (!best || p.cost < best.cost)) best = p;
       if (layer && !best) continue;
-      next.push({ o, cost: (best?.cost ?? 0) + priceOf(f, o), prev: best });
+      next.push({ o, cost: (best?.cost ?? 0) + priceOf(f, o) + connPen(f, o), prev: best });
     }
     if (!next.length) { close(i); picks[i] = { miss: 'connection' }; continue; }
     layer = next;
@@ -131,6 +142,7 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
       if (!all.error && all.length) lists[i] = all;
     }
     trip.connects = true;
+    trip.conn = 0;
     for (const [i, f] of flights.entries()) {
       f.ticket.flights ??= {};
       if (listed && f.dir === 'out' && !lists[i].error && lists[i].length && (f.ticket.kind === 'ow' || f.ticket.kind === 'rt')) listed.set(fareKey(f.ticket), cheapest(lists[i]).price);
@@ -150,9 +162,10 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
         const [prev, next] = [picks[i - 1], picks[i + 1]].map((p) => (p?.legs ? p : null));
         const ok = lists[i].filter((o) => (!prev || fits(trip.stay, i, prev, o)) && (!next || fits(trip.stay, i + 1, o, next)));
         const same = ok.filter((o) => o.airlines.some((a) => airlines.includes(a)));
-        pick = { ...cheapest(same.length ? same : ok), likely: true };
+        pick = { ...(same.length ? same : ok).slice().sort((a, b) => connPen(f, a) - connPen(f, b) || a.price - b.price)[0], likely: true };
       }
       f.ticket.flights[f.dir] = pick;
+      trip.conn += connPen(f, pick);
       // The listed price is what booking costs; the graph's can be stale (seen: $4,262 graph,
       // $5,012 cheapest listed).
       if (f.dir === 'out') { f.ticket.graph = f.ticket.price; f.ticket.price = pick.price; }

@@ -203,10 +203,10 @@ const lowMark = (trip) => {
  */
 function lowLines(x) {
   const line = {
-    best: () => '★ Lowest seen',
-    dates: () => '☆ Lowest seen',
-    same: () => `● Lowest seen: ${money(x.low.same.total)}`, // filled, bold: these very dates were cheaper
-    any: () => `○ Lowest seen: ${money(x.low.any.total)}`,
+    best: () => '★ Lowest seen (any dates)',
+    dates: () => '☆ Lowest seen (exact dates)',
+    same: () => `● Lowest seen (exact dates): ${money(x.low.same.total)}`,
+    any: () => `○ Lowest seen (any dates): ${money(x.low.any.total)}`,
   };
   const marks = lowMarks(x);
   return marks.length ? `<p class="lows">${marks.map((k) => `<span class="low ${k}">${line[k]()}</span>`).join('')}</p>` : '';

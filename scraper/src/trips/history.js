@@ -32,6 +32,21 @@ function valuesAt(dataDir, at) {
   return values;
 }
 
+/** Each cell's lowest total in all its history. Map key → total. */
+function lowestEver(dataDir) {
+  const lows = new Map();
+  const dir = path.join(dataDir, 'derived', 'history');
+  if (!fs.existsSync(dir)) return lows;
+  for (const f of fs.readdirSync(dir).filter((n) => n.endsWith('.csv'))) {
+    for (const line of fs.readFileSync(path.join(dir, f), 'utf8').trim().split('\n').slice(1)) {
+      const [, home, cls, inn, out, total] = line.split(',');
+      const key = `${home},${cls},${inn},${out}`;
+      if (total !== '' && !(lows.get(key) <= Number(total))) lows.set(key, Number(total));
+    }
+  }
+  return lows;
+}
+
 /**
  * Append the cells that changed since the last run. `cells`: [{ home, cls, in, out, total }], the
  * complete current set: a cell missing from it that had a value is recorded as gone.
@@ -52,4 +67,4 @@ function recordHistory(dataDir, generatedAt, cells) {
   return rows.length;
 }
 
-module.exports = { recordHistory, valuesAt, keyOf };
+module.exports = { recordHistory, valuesAt, lowestEver, keyOf };

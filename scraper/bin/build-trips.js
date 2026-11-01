@@ -40,7 +40,7 @@ const path = require('node:path');
 const zlib = require('node:zlib');
 const config = require('../config/sweep.json');
 const { loadFares, bundleOf, fareOf } = require('../src/trips/fares');
-const { buildTrips, similarCount } = require('../../frontend/app/build.js');
+const { buildTrips, similarCount, scoreOf } = require('../../frontend/app/build.js');
 const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
 const { addDetails } = require('../src/trips/details');
 const { openBrowser, shoppingResults } = require('../src/gflights/browser');
@@ -103,7 +103,7 @@ function rowsFor(home, trips, via = '') {
   }
   for (const row of rows.values()) {
     for (const cls of CLASSES) {
-      row.cands[cls].sort((a, b) => a.total - b.total);
+      row.cands[cls].sort((a, b) => scoreOf(a) - scoreOf(b));
       row[cls] = overall(row.cands[cls][0], trips);
     }
   }
@@ -121,9 +121,10 @@ const sortRows = (rows) => rows.sort((a, b) => price(a.hybrid) - price(b.hybrid)
 
 /**
  * Check every row's cells, overall and per month, against real flights (byHome: any map of row
- * lists). Each cell walks its candidates cheapest first (graph prices; a month cell only that
- * month's), keeping the cheapest that connects at listed prices, until the next candidate's graph
- * total can't beat it, or after TRIES. None connects: the cell is dropped (a row with no overall
+ * lists). Each cell walks its candidates best first (scoreOf: price plus trip-shape penalties,
+ * graph prices; a month cell only that month's), keeping the best that connects at listed prices
+ * (long connections on a ticket now counted too), until the next candidate's builder score can't
+ * beat it, or after TRIES. None connects: the cell is dropped (a row with no overall
  * cell goes too); a trip that can't be flown is not a price. Searches are shared, so a month cell
  * walking the same trips as its overall cell costs nothing more. session: { cache, browser,
  * listed, deadline } shared across rounds (main). Searched in order of what's seen first: the
@@ -140,31 +141,37 @@ async function verify(byHome, trips, { cache, browser, listed, deadline }) {
       return { rank: rank + 1, cls, month, cands, cand: overall(cands[0], trips, month), put: (t) => { m[cls] = t; } };
     }),
   ]);
-  let pending = [...byHome].flatMap(([view, rows]) => rows.flatMap((r) => cellsOf(r, view.endsWith('|') ? 0 : 2)))
-    .sort((a, b) => a.rank - b.rank).map((p) => ({ ...p, i: 0, best: null, first: null }));
-  st.cells = pending.length;
-  while (pending.length) {
-    const s = await addDetails(pending.map((p) => p.cand), cache, browser, listed, deadline);
-    st.searches += s.searches;
-    st.failed += s.failed;
-    st.late += s.late;
-    st.error ??= s.error;
-    st.none += s.none;
-    st.stay += s.stay;
-    pending = pending.filter((p) => {
-      p.first ??= p.cand;
-      if (p.cand.connects && !(p.best?.total <= p.cand.total)) p.best = p.cand;
-      const next = p.cands[++p.i];
-      if (next && p.i < TRIES && !(p.best && next.total >= p.best.total)) {
-        p.cand = overall(next, trips, p.month);
-        return true;
-      }
-      if (p.best) p.best.tier = tierOf(alertConfig, p.cls, p.best.total);
-      p.put(p.best);
-      if (!p.best) st.unresolved++;
-      else if (p.best !== p.first) st.replaced++;
-      return false;
-    });
+  const cells = [...byHome].flatMap(([view, rows]) => rows.flatMap((r) => cellsOf(r, view.endsWith('|') ? 0 : 2)))
+    .map((p) => ({ ...p, i: 0, best: null, first: null }));
+  st.cells = cells.length;
+  // Rank by rank, each walked to the end before the next starts: a dashboard cell's later
+  // candidates come before any via cell's first.
+  for (let rank = 0; rank <= 3; rank++) {
+    let pending = cells.filter((p) => p.rank === rank);
+    while (pending.length) {
+      const s = await addDetails(pending.map((p) => p.cand), cache, browser, listed, deadline);
+      st.searches += s.searches;
+      st.failed += s.failed;
+      st.late += s.late;
+      st.error ??= s.error;
+      st.none += s.none;
+      st.stay += s.stay;
+      pending = pending.filter((p) => {
+        p.first ??= p.cand;
+        if (p.cand.connects && !(scoreOf(p.best) <= scoreOf(p.cand))) p.best = p.cand;
+        const next = p.cands[++p.i];
+        // conn is only known once checked: a candidate's score can only rise from its builder score.
+        if (next && p.i < TRIES && !(p.best && scoreOf(next) >= scoreOf(p.best))) {
+          p.cand = overall(next, trips, p.month);
+          return true;
+        }
+        if (p.best) p.best.tier = tierOf(alertConfig, p.cls, p.best.total);
+        p.put(p.best);
+        if (!p.best) st.unresolved++;
+        else if (p.best !== p.first) st.replaced++;
+        return false;
+      });
+    }
   }
   for (const [view, rows] of byHome) {
     for (const r of rows) delete r.cands;
