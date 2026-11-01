@@ -41,13 +41,23 @@ function hopPlans(x, d0, fares, need = []) {
   // best[t] maps "city|done|open|seen" → { city, done, open, seen, cost, prev: { t, key }, hop }
   // open: '' or "B>A@day" (fly B → A on that day, already paid); seen: bits of `need` stayed in.
   const best = Array.from({ length: MAX_DAYS + 1 }, () => new Map());
-  const dueOf = (open) => (open ? Number(open.slice(open.indexOf('@') + 1)) : Infinity);
+  const dues = new Map();
+  const dueOf = (open) => {
+    if (!open) return Infinity;
+    let d = dues.get(open);
+    if (d === undefined) dues.set(open, (d = Number(open.slice(open.indexOf('@') + 1))));
+    return d;
+  };
   const keyOf = (city, done, open, seen) => `${city}|${done}|${open}|${seen}`;
+  let today = 0, fresh = null; // states improved on the day being flown, to fly on from again
   const put = (t, city, done, open, seen, cost, prev, hop) => {
     if (t > MAX_DAYS || t > dueOf(open)) return false;
+    const key = keyOf(city, done, open, seen);
     // Not if a state that has seen as much or more is as cheap.
-    for (let m = seen; m <= all; m = (m + 1) | seen) if (best[t].get(keyOf(city, done, open, m))?.cost <= cost) return false;
-    best[t].set(keyOf(city, done, open, seen), { city, done, open, seen, cost, prev, hop });
+    if (best[t].get(key)?.cost <= cost) return false;
+    for (let m = (seen + 1) | seen; m <= all; m = (m + 1) | seen) if (best[t].get(keyOf(city, done, open, m))?.cost <= cost) return false;
+    best[t].set(key, { city, done, open, seen, cost, prev, hop });
+    if (t === today) fresh.add(key);
     return true;
   };
   // Landing at a Vietnam anchor also offers the Hoi An stay: overland there, the nights, overland
@@ -69,32 +79,34 @@ function hopPlans(x, d0, fares, need = []) {
       for (const [key, s] of best[t - 1]) put(t, s.city, s.done, s.open, s.seen | bit(s.city), s.cost, { t: t - 1, key }, null);
     }
     const date = addDays(d0, t);
-    // Flights on this day, chained same-day as long as it gets cheaper (prices > 0 but a nested
-    // return's second flight, which only closes an open return, so this ends).
-    for (let changed = true; changed;) {
-      changed = false;
-      for (const [key, s] of [...best[t]]) {
-        if (best[t].get(key) !== s) continue;
+    // Flights on this day, chained same-day from each state that got cheaper (prices > 0 but a
+    // nested return's second flight, which only closes an open return, so this ends).
+    today = t;
+    for (let todo = [...best[t].keys()]; todo.length;) {
+      fresh = new Set();
+      for (const key of todo) {
+        const s = best[t].get(key);
         const prev = { t, key };
         if (s.open) {
           const [b, rest] = s.open.split('>');
           const a = rest.slice(0, rest.indexOf('@'));
           if (s.city === b && dueOf(s.open) === t) {
-            if (land(t, a, s.done, '', s.seen, s.cost, prev, { kind: 'back', from: b, to: a, date, price: 0 })) changed = true;
+            land(t, a, s.done, '', s.seen, s.cost, prev, { kind: 'back', from: b, to: a, date, price: 0 });
           }
           if (dueOf(s.open) === t) continue; // the return day: only the return flight
         }
         for (const [to, price] of hopsFrom(s.city, date)) {
-          if (land(t, to, s.done, s.open, s.seen, s.cost + price, prev, { kind: 'ow', from: s.city, to, date, price })) changed = true;
+          land(t, to, s.done, s.open, s.seen, s.cost + price, prev, { kind: 'ow', from: s.city, to, date, price });
         }
         if (s.open) continue;
         for (const [to, ret, price] of returnsFrom(s.city, date)) {
           const due = t + (Date.parse(ret) - Date.parse(date)) / 864e5;
           if (due > MAX_DAYS) continue;
           const hopRt = { kind: 'rt', from: s.city, to, date, ret, price };
-          if (land(t, to, s.done, `${to}>${s.city}@${due}`, s.seen, s.cost + price, prev, hopRt)) changed = true;
+          land(t, to, s.done, `${to}>${s.city}@${due}`, s.seen, s.cost + price, prev, hopRt);
         }
       }
+      todo = [...fresh];
     }
   }
 

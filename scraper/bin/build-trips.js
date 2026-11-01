@@ -27,7 +27,10 @@
  *   derived/status.json   for the Health tab: this build's detail-check stats, each route's
  *                         freshness (cells, oldest and newest sighting), the alert thresholds
  *
- *   node scraper/bin/build-trips.js --data <dataDir> [--no-details]
+ *   node scraper/bin/build-trips.js --data <dataDir> [--no-details] [--deadline <epoch seconds>]
+ *
+ * --deadline: when the build must be done (CI's job limit). Flight checks start no search after
+ * DETAILS_RESERVE before it, the multi-city pass searches only with MULTI_RESERVE left.
  */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -48,6 +51,8 @@ const TRIES = 10;
 const MULTI_BUDGET = 80; // multi-city searches per build (trips/multi.js)
 const ROUNDS = 3;
 const CHECKED_HOURS = 24;
+const DETAILS_RESERVE = 8 * 60e3; // multi-city ~4 min, a page still loading ≤ 4 min
+const MULTI_RESERVE = 5 * 60e3;
 
 function arg(name, def) {
   const i = process.argv.indexOf(`--${name}`);
@@ -91,24 +96,28 @@ const sortRows = (rows) => rows.sort((a, b) => price(a.hybrid) - price(b.hybrid)
  * total can't beat it, or after TRIES. None connects: the cell is dropped (a row with no overall
  * cell goes too); a trip that can't be flown is not a price. Searches are shared, so a month cell
  * walking the same trips as its overall cell costs nothing more. session: { cache, browser,
- * listed } shared across rounds (main).
+ * listed, deadline } shared across rounds (main). Searched in order of what's seen first: the
+ * dashboard's overall cells, its month cells, then the via filter's; past the deadline the rest
+ * keep their graph prices (st.late: searches not made).
  */
-async function verify(byHome, trips, { cache, browser, listed }) {
+async function verify(byHome, trips, { cache, browser, listed, deadline }) {
   const t0 = Date.now();
-  const st = { cells: 0, replaced: 0, unresolved: 0, searches: 0, failed: 0, none: 0, stay: 0 };
-  const cellsOf = (r) => CLASSES.filter((c) => r[c]).flatMap((cls) => [
-    { cls, cands: r.cands[cls], cand: r[cls], put: (t) => { r[cls] = t; } },
+  const st = { cells: 0, replaced: 0, unresolved: 0, searches: 0, failed: 0, late: 0, none: 0, stay: 0 };
+  const cellsOf = (r, rank) => CLASSES.filter((c) => r[c]).flatMap((cls) => [
+    { rank, cls, cands: r.cands[cls], cand: r[cls], put: (t) => { r[cls] = t; } },
     ...Object.entries(r.months).filter(([, m]) => m[cls]).map(([month, m]) => {
       const cands = r.cands[cls].filter((t) => t.depart.startsWith(month));
-      return { cls, month, cands, cand: overall(cands[0], trips, month), put: (t) => { m[cls] = t; } };
+      return { rank: rank + 1, cls, month, cands, cand: overall(cands[0], trips, month), put: (t) => { m[cls] = t; } };
     }),
   ]);
-  let pending = [...byHome.values()].flatMap((rows) => rows.flatMap(cellsOf)).map((p) => ({ ...p, i: 0, best: null, first: null }));
+  let pending = [...byHome].flatMap(([view, rows]) => rows.flatMap((r) => cellsOf(r, view.endsWith('|') ? 0 : 2)))
+    .sort((a, b) => a.rank - b.rank).map((p) => ({ ...p, i: 0, best: null, first: null }));
   st.cells = pending.length;
   while (pending.length) {
-    const s = await addDetails(pending.map((p) => p.cand), cache, browser, listed);
+    const s = await addDetails(pending.map((p) => p.cand), cache, browser, listed, deadline);
     st.searches += s.searches;
     st.failed += s.failed;
+    st.late += s.late;
     st.error ??= s.error;
     st.none += s.none;
     st.stay += s.stay;
@@ -198,6 +207,7 @@ async function main() {
   const dataDir = arg('data');
   if (!dataDir) throw new Error('--data <dir> is required');
   const t0 = Date.now();
+  const deadline = arg('deadline') ? Number(arg('deadline')) * 1000 : Infinity;
   const generatedAt = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   const checkedFile = path.join(dataDir, 'state', 'checked.json');
   const checkedLog = Object.fromEntries(Object.entries(fs.existsSync(checkedFile) ? JSON.parse(fs.readFileSync(checkedFile, 'utf8')) : {})
@@ -210,18 +220,18 @@ async function main() {
   if (!process.argv.includes('--no-details')) {
     // Searches whose page inlines no results are asked again in a real page (gflights/flights.js).
     const { browser: chrome, ctx } = await openBrowser();
-    const session = { cache: new Map(), browser: (q, opts) => { details.browser++; return shoppingResults(ctx, q, opts); }, listed: new Map() };
-    details = { browser: 0, rounds: 0, searches: 0, failed: 0, ms: 0 };
+    const session = { cache: new Map(), browser: (q, opts) => { details.browser++; return shoppingResults(ctx, q, opts); }, listed: new Map(), deadline: deadline - DETAILS_RESERVE };
+    details = { browser: 0, rounds: 0, searches: 0, failed: 0, late: 0, ms: 0 };
     try {
       for (;;) {
         const s = await verify(byHome, trips, session);
-        details = { ...s, rounds: details.rounds + 1, browser: details.browser, searches: details.searches + s.searches, failed: details.failed + s.failed, ms: details.ms + s.ms };
+        details = { ...s, rounds: details.rounds + 1, browser: details.browser, searches: details.searches + s.searches, failed: details.failed + s.failed, late: details.late + s.late, ms: details.ms + s.ms };
         // Fares listed at another price than they were planned at: plan again with what's listed.
         const moved = [...session.listed].filter(([k, p]) => { const was = fareOf(fares, k); return was != null && Math.abs(p - was) > Math.max(2, was * 0.01); });
         for (const [k, price] of session.listed) checkedLog[k] = { price, at: generatedAt };
         session.listed.clear();
-        console.log(`details round ${details.rounds}: ${s.cells} cells, ${s.replaced} moved to another trip (connects, or cheaper as listed), ${s.unresolved} with none that connects; ${s.searches} searches, ${s.none} flights not listed yet, ${s.stay} trips with a short Hoi An stay; ${moved.length} fares listed at a new price; ${s.ms}ms`);
-        if (!moved.length || details.rounds >= ROUNDS) break;
+        console.log(`details round ${details.rounds}: ${s.cells} cells, ${s.replaced} moved to another trip (connects, or cheaper as listed), ${s.unresolved} with none that connects; ${s.searches} searches${s.late ? ` (${s.late} skipped, out of time)` : ''}, ${s.none} flights not listed yet, ${s.stay} trips with a short Hoi An stay; ${moved.length} fares listed at a new price; ${s.ms}ms`);
+        if (!moved.length || details.rounds >= ROUNDS || Date.now() > session.deadline) break;
         fares = loadFares(dataDir, config, { checked: checked() });
         trips = buildTrips(fares);
         ({ vias, byHome } = viewsOf(trips));
@@ -231,13 +241,13 @@ async function main() {
     }
     fs.mkdirSync(path.dirname(checkedFile), { recursive: true });
     fs.writeFileSync(checkedFile, JSON.stringify(checkedLog));
-    console.log(`details: ${details.searches} searches (${details.browser} in a browser, ${details.failed} failed${details.error ? `, e.g. ${details.error}` : ''}) over ${details.rounds} rounds`);
+    console.log(`details: ${details.searches} searches (${details.browser} in a browser, ${details.failed} failed, ${details.late} skipped out of time${details.error ? `, e.g. ${details.error}` : ''}) over ${details.rounds} rounds`);
   } else {
     for (const rows of byHome.values()) for (const r of rows) delete r.cands;
   }
   const dayAgo = valuesAt(dataDir, new Date(Date.parse(generatedAt) - 864e5).toISOString().replace(/\.\d+Z$/, 'Z'));
   const cells = [];
-  const m = await multiPass(dataDir, byHome, fares, !process.argv.includes('--no-details'));
+  const m = await multiPass(dataDir, byHome, fares, !process.argv.includes('--no-details') && Date.now() < deadline - MULTI_RESERVE);
   console.log(`multi-city: ${m.searched} searched (${m.failed} failed), ${m.merged} trips cheaper as one ticket; ${m.ms}ms`);
   if (details) details.multi = m;
   // Stay ranges on every shown trip; lowest-ever marks.

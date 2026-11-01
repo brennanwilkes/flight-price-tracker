@@ -26,7 +26,7 @@ defaults:
 jobs:
   sweep:
     runs-on: ubuntu-24.04
-    timeout-minutes: 58  # scrape budget 15 + flight checks ~20 + multi-city ~4, plus setup; the next hourly run queues
+    timeout-minutes: 58  # scrape budget 15, then the build until BUILD_DEADLINE; the next hourly run queues
     steps:
       - uses: actions/checkout@v4
 
@@ -56,6 +56,7 @@ jobs:
           EGRESS: ${{ steps.vpn.outputs.vpn_ok == 'true' && 'vpn' || 'direct' }}
           NOTIFY_SECRET: ${{ secrets.NOTIFY_SECRET }}
         run: |
+          export BUILD_DEADLINE=$(( $(date +%s) + 49 * 60 ))  # this step starts ~1 min in: leaves ~8 min to commit, push, alert
           args=()
           [[ -n "${{ inputs.routes }}" ]] && args+=(--routes "${{ inputs.routes }}")
           scripts/run_sweep.sh "${args[@]}" 2>&1 | tee sweep.log

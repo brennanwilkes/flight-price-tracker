@@ -73,14 +73,19 @@ function flightsOf(trip) {
  * connection has no flight, or the real flights leave the Hoi An stay short). A ticket with a
  * listed flight takes its price (the graph's kept as `graph`) and the trip's total is re-summed. Pass the same `cache` across calls to reuse searches;
  * `browser` (query → GetShoppingResults payload) answers searches whose page inlined no results.
- * Returns { searches, failed, full, connection, none, stay } (full: full-list page loads; connection,
+ * Returns { searches, failed, late, full, connection, none, stay } (full: full-list page loads; connection,
  * none: misses; stay: trips whose real flights leave the Hoi An stay short).
  * `listed` (optional Map): each searched fare's cheapest listed price, by fareKey (fares.js).
+ * After `deadline` (ms) no new search starts: those flights stay unknown (stats.late).
  */
-async function addDetails(trips, cache = new Map(), browser = null, listed = null) {
+async function addDetails(trips, cache = new Map(), browser = null, listed = null, deadline = Infinity) {
+  const LATE = { error: 'out of time', late: true }; // not cached
   const searchOnce = (q) => {
     const key = JSON.stringify(q);
-    if (!cache.has(key)) cache.set(key, search(q, { browser }).catch((e) => ({ error: e.message })));
+    if (!cache.has(key)) {
+      if (Date.now() > deadline) return Promise.resolve(LATE);
+      cache.set(key, search(q, { browser }).catch((e) => ({ error: e.message })));
+    }
     return cache.get(key);
   };
   // A plain search lists only Google's top flights (the cheapest among them); when none of those
@@ -88,12 +93,13 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
   const fullOnce = (q) => {
     const key = `full ${JSON.stringify(q)}`;
     if (!cache.has(key)) {
+      if (Date.now() > deadline) return Promise.resolve(LATE);
       cache.set(key, browser(q, { timeout: SLOW_PAGE_MS }).then((ps) => ps.flatMap(parseResults)).catch((e) => ({ error: e.message })));
       stats.full++;
     }
     return cache.get(key);
   };
-  const stats = { searches: 0, failed: 0, full: 0, connection: 0, none: 0, stay: 0 };
+  const stats = { searches: 0, failed: 0, late: 0, full: 0, connection: 0, none: 0, stay: 0 };
 
   // Warm the cache with bounded concurrency, then pick sequentially per trip.
   const queries = [...new Map(trips.flatMap(flightsOf).map((f) => [JSON.stringify(f.query), f.query])).values()]
@@ -102,10 +108,11 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
   await Promise.all(Array.from({ length: CONCURRENCY }, async () => {
     while (next < queries.length) await searchOnce(queries[next++]);
   }));
-  stats.searches = queries.length;
   for (const q of queries) {
     const r = await searchOnce(q);
-    if (r.error && browser) cache.set(JSON.stringify(q), await fullOnce(q)); // retried in a page
+    if (r.late) { stats.late++; continue; }
+    stats.searches++;
+    if (r.error && browser) { const all = await fullOnce(q); if (!all.late) cache.set(JSON.stringify(q), all); } // retried in a page
     if ((await searchOnce(q)).error) { stats.failed++; stats.error ??= `${q.from}-${q.to} ${q.out}: ${r.error}`; }
   }
 

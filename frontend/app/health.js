@@ -91,7 +91,7 @@ export async function renderHealth(el, base) {
     ${d ? `<h3>Flight checks</h3>
     <div class="grid">
       ${box('Cells', num(d.cells))}
-      ${box('Searches', `${num(d.searches)}${d.failed ? ` · ${d.failed} failed` : ''}`, d.failed ? 'bad' : '')}
+      ${box('Searches', `${num(d.searches)}${d.failed ? ` · ${d.failed} failed` : ''}${d.late ? ` · ${num(d.late)} out of time` : ''}`, d.failed || d.late ? 'bad' : '')}
       ${box('Rerouted', num(d.replaced))}
       ${box('No connection', num(d.unresolved))}
     </div>` : ''}
