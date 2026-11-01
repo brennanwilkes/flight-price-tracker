@@ -46,6 +46,10 @@ export const CITIES = {
   PPS: { name: 'Puerto Princesa', lon: 118.76, lat: 9.74, role: 'hop' },
   MPH: { name: 'Boracay', lon: 121.95, lat: 11.92, role: 'hop', airports: ['MPH', 'KLO'] },
   IAO: { name: 'Siargao', lon: 126.01, lat: 9.86, role: 'hop' },
+  MFM: { name: 'Macau', lon: 113.59, lat: 22.15, role: 'hop' },
+  BWN: { name: 'Brunei', lon: 114.93, lat: 4.94, role: 'hop' },
+  DLI: { name: 'Da Lat', lon: 108.38, lat: 11.75, role: 'hop', vn: true },
+  SYX: { name: 'Hainan', lon: 109.41, lat: 18.3, role: 'hop', airports: ['SYX', 'HAK'] },
 };
 
 /** Whether a city is in Vietnam (rows don't name it, inVietnam's users: build.js setOf). */

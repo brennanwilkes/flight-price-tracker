@@ -27,6 +27,8 @@ const FALLBACKS = 4;
 // Throw-in plans per (end city, day) besides the cheapest (hopPlans): the board's rows by cities
 // slept in each get a trip, not only the ones the cheapest plans happen to pass.
 const THROUGH = 4;
+const PER_CITY = 3; // throughs: each city's cheapest ways kept besides (hopPlans)
+const HOLD = 3; // and for this many days after they land
 
 /**
  * How a trip ranks, lower first: its price plus its shape penalties (pen: nights before Hoi An and
@@ -199,7 +201,20 @@ function hopPlans(x, d0, fares, need = [], prefs = false) {
         }
       }
     }
-    for (const list of through.values()) for (const l of list) l.sort((a, b) => a.cost - b.cost).splice(THROUGH);
+    // Each (y, t): the THROUGH cheapest, and each c's PER_CITY cheapest ways into y, held on
+    // HOLD days after landing, wherever they rank: a city never among the cheapest still gets a row.
+    for (const list of through.values()) {
+      const ways = new Map(); // c → Map(way → the day it lands)
+      list.forEach((l, t) => l.forEach((p) => {
+        const w = ways.get(p.c) ?? ways.set(p.c, new Map()).get(p.c);
+        if (!w.has(p)) w.set(p, t);
+      }));
+      const extra = new Map([...ways.values()].flatMap((w) => [...w].sort(([a], [b]) => a.cost - b.cost).slice(0, PER_CITY)));
+      list.forEach((l, t) => {
+        l.sort((a, b) => a.cost - b.cost);
+        l.splice(THROUGH, Infinity, ...l.slice(THROUGH).filter((p) => t - extra.get(p) <= HOLD));
+      });
+    }
   };
   return (y, t) => {
     const plans = [endOf(y, t, 0), [1, 2, 3].map((xs) => endOf(y, t, xs)).reduce(better, null)].filter(Boolean)

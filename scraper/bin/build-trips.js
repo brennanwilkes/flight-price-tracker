@@ -9,8 +9,8 @@
  * leaves) and throw-ins (set: other cities with 2+ nights, build.js setOf); each cell is the row's
  * cheapest trip (null when none), overall and per departure month. Each crossing's cheapest trip
  * is in its row (checked first); its other rows are the cheapest found for their cities, at most
- * THROW_INS per crossing and class (the cheapest). Rows sorted by cheapest hybrid, then cheapest
- * economy. Overall cells carry `was`: the cell's total 24 h earlier, when known.
+ * THROW_INS per crossing and class (the cheapest), and each city's cheapest row that sleeps there.
+ * Rows sorted by cheapest hybrid, then cheapest economy. Overall cells carry `was`: the cell's total 24 h earlier, when known.
  *
  *   derived/via/trips-<HOME>-<CITY>.json   the same rows (no `was`), each cell the cheapest trip
  *                                           staying in CITY: the dashboard's via filter
@@ -116,14 +116,25 @@ function rowsFor(home, trips, via = '') {
       row[cls] = overall(row.cands[cls][0], trips);
     }
   }
-  // Per crossing and class: the row with the cheapest (top: checked first) and THROW_INS more.
+  // Per crossing and class: the row with the cheapest (top: checked first) and THROW_INS more,
+  // and every city's cheapest row that sleeps there, so no city is crowded off the board.
+  const rank = (r, cls) => rankOf(r.cands[cls][0]);
+  const kept = new Map(CLASSES.map((cls) => [cls, new Set()]));
+  if (!via) for (const cls of CLASSES) { // a via view is one city's already
+    const byCity = new Map();
+    for (const r of rows.values()) {
+      if (!r[cls] || !r.set) continue;
+      for (const c of r.set.split('+')) if (!byCity.has(c) || rank(r, cls) < rank(byCity.get(c), cls)) byCity.set(c, r);
+    }
+    for (const r of byCity.values()) { kept.get(cls).add(r); (r.city ??= {})[cls] = true; }
+  }
   const crossings = Map.groupBy([...rows.values()], (r) => `${r.in}-${r.out}`);
   for (const list of crossings.values()) {
     for (const cls of CLASSES) {
-      const has = list.filter((r) => r[cls]).sort((a, b) => rankOf(a.cands[cls][0]) - rankOf(b.cands[cls][0]));
+      const has = list.filter((r) => r[cls]).sort((a, b) => rank(a, cls) - rank(b, cls));
       has.forEach((r, i) => {
         if (i === 0) (r.top ??= {})[cls] = true;
-        if (i <= THROW_INS) return;
+        if (i <= THROW_INS || kept.get(cls).has(r)) return;
         r[cls] = null;
         for (const m of Object.values(r.months)) m[cls] = null;
       });
@@ -151,26 +162,26 @@ const sortRows = (rows) => rows.sort((a, b) => price(a.hybrid) - price(b.hybrid)
  * cell goes too); a trip that can't be flown is not a price. Searches are shared, so a month cell
  * walking the same trips as its overall cell costs nothing more. session: { cache, browser,
  * listed, deadline } shared across rounds (main). Searched in order of what matters most: the
- * dashboard's overall cells with each crossing's cheapest, its other overall cells, the month cells
- * alike, then the via filter's the same way; past the deadline the rest keep their graph prices
- * (st.late: searches not made).
+ * dashboard's overall cells with each crossing's cheapest, each city's cheapest row, its other
+ * overall cells, the month cells alike, then the via filter's the same way; past the deadline the
+ * rest are dropped unless a checked candidate stands in (st.late: searches not made).
  */
 async function verify(byHome, trips, { cache, browser, listed, deadline }) {
   const t0 = Date.now();
   const st = { cells: 0, replaced: 0, unresolved: 0, unknown: 0, searches: 0, failed: 0, late: 0, none: 0, stay: 0 };
   const cellsOf = (r, base) => CLASSES.filter((c) => r[c]).flatMap((cls) => [
-    { rank: base + (r.top?.[cls] ? 0 : 1), cls, cands: r.cands[cls], cand: r[cls], put: (t) => { r[cls] = t; } },
+    { rank: base + (r.top?.[cls] ? 0 : r.city?.[cls] ? 1 : 2), cls, cands: r.cands[cls], cand: r[cls], put: (t) => { r[cls] = t; } },
     ...Object.entries(r.months).filter(([, m]) => m[cls]).map(([month, m]) => {
       const cands = r.cands[cls].filter((t) => t.depart.startsWith(month));
-      return { rank: base + (r.top?.[cls] ? 2 : 3), cls, month, cands, cand: overall(cands[0], trips, month), put: (t) => { m[cls] = t; } };
+      return { rank: base + (r.top?.[cls] ? 3 : 4), cls, month, cands, cand: overall(cands[0], trips, month), put: (t) => { m[cls] = t; } };
     }),
   ]);
-  const cells = [...byHome].flatMap(([view, rows]) => rows.flatMap((r) => cellsOf(r, view.endsWith('|') ? 0 : 4)))
+  const cells = [...byHome].flatMap(([view, rows]) => rows.flatMap((r) => cellsOf(r, view.endsWith('|') ? 0 : 5)))
     .map((p) => ({ ...p, i: 0, best: null, first: null }));
   st.cells = cells.length;
   // Rank by rank, each walked to the end before the next starts: a dashboard cell's later
   // candidates come before any via cell's first.
-  for (let rank = 0; rank <= 7; rank++) {
+  for (let rank = 0; rank <= 9; rank++) {
     let pending = cells.filter((p) => p.rank === rank);
     while (pending.length) {
       const s = await addDetails(pending.map((p) => p.cand), cache, browser, listed, deadline);
@@ -199,7 +210,7 @@ async function verify(byHome, trips, { cache, browser, listed, deadline }) {
     }
   }
   for (const [view, rows] of byHome) {
-    for (const r of rows) { delete r.cands; delete r.top; }
+    for (const r of rows) { delete r.cands; delete r.top; delete r.city; }
     byHome.set(view, sortRows(rows.filter((r) => r.hybrid || r.economy)));
   }
   return { ...st, ms: Date.now() - t0 };
@@ -310,7 +321,7 @@ async function main() {
     fs.writeFileSync(checkedFile, JSON.stringify(checkedLog));
     console.log(`details: ${details.searches} searches (${details.browser} in a browser, ${details.failed} failed, ${details.late} skipped out of time${details.error ? `, e.g. ${details.error}` : ''}) over ${details.rounds} rounds`);
   } else {
-    for (const rows of byHome.values()) for (const r of rows) { delete r.cands; delete r.top; }
+    for (const rows of byHome.values()) for (const r of rows) { delete r.cands; delete r.top; delete r.city; }
   }
   const dayAgo = valuesAt(dataDir, new Date(Date.parse(generatedAt) - 864e5).toISOString().replace(/\.\d+Z$/, 'Z'));
   const cells = [];

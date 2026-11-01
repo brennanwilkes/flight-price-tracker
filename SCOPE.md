@@ -150,7 +150,11 @@ the builder searches every combination and the dashboard shows the best N.
   board, in the row of whatever it sleeps in, and is flight-checked first. Best effort: its other
   rows, the cheapest found per set of cities (the planner adds the cheapest way through each city
   after Hoi An, `build.js` throughs), at most 4 more per crossing and class, checked after every
-  crossing's cheapest. The board draws the cheapest 100 rows, the rest on a tap. History keys the
+  crossing's cheapest. Every tracked city is a throw-in somewhere (2026-11-01): the planner keeps
+  each city's 3 cheapest ways through besides the 4 cheapest overall, and the board keeps each
+  city's cheapest row (checked right after the crossings' cheapest), so every city is on the board
+  and in the via filter, whether or not it's ever among the cheapest. A cell whose flights were
+  never checked (out of time) isn't shown: a checked candidate stands in, or it waits. The board draws the cheapest 100 rows, the rest on a tap. History keys the
   same rows (`out` holds the throw-ins, "DPS+SIN"); rows whose crossing differs from their old
   first/last-slept name start a new line. A city only changed planes in doesn't count for the via
   filter.

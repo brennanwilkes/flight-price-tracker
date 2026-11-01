@@ -360,3 +360,16 @@ test('rows: a crossing gets a row through another city even when that costs more
   assert.strictEqual(t.total, 4450);
   assert.deepStrictEqual(t.tickets.slice(1).map((k) => `${k.from}-${k.to}`), ['ICN-DAD', 'DAD-MNL', 'MNL-ICN']);
 });
+
+test('rows: a city never among the cheapest ways through still gets a row', () => {
+  const via = (c, price) => ({ [`DAD-${c}|${day(8)}`]: price, [`${c}-ICN|${day(11)}`]: price });
+  const trips = buildTrips({ ...world({
+    rt: { [`YVR-ICN-J|${D0}`]: [{ ret: day(14), price: 4000 }] },
+    hops: {
+      [`ICN-DAD|${day(3)}`]: 200,
+      ...via('MNL', 100), ...via('CEB', 100), ...via('SIN', 100), ...via('HKG', 100), ...via('TPE', 100),
+      ...via('PEN', 300), // dearer than all five
+    },
+  }), cities: ['DAD', 'HAN', 'ICN', 'MNL', 'CEB', 'SIN', 'HKG', 'TPE', 'PEN'] });
+  assert.strictEqual(find(trips, 'hybrid', 'ICN', 'ICN', 'PEN').total, 4800);
+});
