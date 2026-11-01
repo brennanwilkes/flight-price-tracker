@@ -82,13 +82,17 @@ select, .toggle button {
   border-radius: 6px;
   padding: 7px 8px;
 }
-/* Via cities chosen: chips on their own line under the selects, tap to remove. Pulsing while the
-   exact rows build (main.js multiVia). */
+/* Via cities: one field like a select, the chosen cities as chips inside it (tap to remove), then
+   the select to add one ("+" once there are chips). Pulsing while the exact rows build
+   (main.js multiVia). */
 header { flex-wrap: wrap; }
-#vias { order: 9; flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 6px; }
-#vias:empty { display: none; }
-#vias button { font: 500 13px var(--mono); color: var(--bg); background: var(--text); border: 0; border-radius: 6px; padding: 6px 8px; cursor: pointer; }
-#vias button span { margin-left: 8px; opacity: 0.6; }
+.cityfield { flex: 1.3; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 3px; }
+.cityfield select { flex: 1; min-width: 0; border: 0; background: transparent; padding: 4px 5px; }
+#vias { display: contents; }
+#vias button { font: 500 12px var(--mono); color: var(--bg); background: var(--text); border: 0; border-radius: 4px; padding: 4px 6px; cursor: pointer; white-space: nowrap; }
+#vias button span { margin-left: 6px; opacity: 0.6; }
+.cityfield:has(#vias button) select { flex: 0 0 auto; width: 3.2em; }
 #vias.pending button { animation: pending 1.2s ease-in-out infinite alternate; }
 @keyframes pending { to { opacity: 0.45; } }
 @media (prefers-reduced-motion: reduce) { #vias.pending button { animation: none; opacity: 0.6; } }

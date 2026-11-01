@@ -244,7 +244,7 @@ function fillFilters(data) {
   const vias = state.data[state.home]?.vias ?? [];
   const more = vias.filter((c) => !state.vias.includes(c));
   $('#via').hidden = !more.length || state.vias.length >= MAX_VIAS;
-  $('#via').innerHTML = `<option value="">${state.vias.length ? '+ City' : 'Any city'}</option>${more.map((c) => `<option value="${c}">Via ${esc(cityName(c))}</option>`).join('')}`;
+  $('#via').innerHTML = `<option value="">${state.vias.length ? '+' : 'Any city'}</option>${more.map((c) => `<option value="${c}">Via ${esc(cityName(c))}</option>`).join('')}`;
   $('#vias').innerHTML = state.vias.map((c) => `<button type="button" data-city="${c}" aria-label="Remove ${esc(cityName(c))}">${esc(cityName(c))}<span aria-hidden="true">×</span></button>`).join('');
   $('#vias').classList.toggle('pending', !!state.data[viewKey()]?.approx); // exact rows still building
 }
