@@ -9,7 +9,8 @@
  * The flights in Asia don't depend on the long legs, so for each arrival city X and departure day a
  * forward DP over (day, city, Hoi An done?, open return?) finds the cheapest plan to every (Y, day);
  * each long-leg fare then just adds its price on top. An Asia return A⇄B opens an obligation: be in
- * B on its return day and fly B → A (already paid). One open at a time, closed before flying home.
+ * B on its return day and fly B → A (already paid), staying in B (or Hoi An) until then; closed
+ * before flying home.
  *
  * Day 0 is the departure from home; the Pacific crossing lands on day 1 (date line). Hops land the
  * day they leave. A flight on the day the previous ticket lands is a same-day connection: allowed
@@ -141,7 +142,9 @@ function hopPlans(x, d0, fares, need = [], prefs = false) {
           if (s.city === b && due === t) {
             land(t, fly(a, 0, NONE), prev, { kind: 'back', from: b, to: a, date, price: 0 });
           }
-          if (due === t) continue; // the return day: only the return flight
+          // Until it flies back, stay at its far end (or the Hoi An stay, land): flying on from an
+          // open return made every one its own search (75x slower) and never found a cheaper plan.
+          continue;
         }
         for (const [to, price] of hopsFrom(s.city, date)) {
           land(t, fly(to, price), prev, { kind: 'ow', from: s.city, to, date, price });
