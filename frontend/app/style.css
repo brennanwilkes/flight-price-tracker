@@ -99,6 +99,10 @@ option { background: var(--panel); color: var(--text); }
 /* Phones: the city field always has a row of its own, under the month and home, so choosing a
    city doesn't move anything and its chips sit side by side. */
 @media (max-width: 520px) {
+  /* Phones: the filters scroll away with the page; a strip under the status bar stays, so the
+     page never runs under the clock (iOS). */
+  header { position: static; }
+  body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top); background: var(--bg); z-index: 5; }
   .cityfield { order: 9; flex-basis: 100%; padding: 2px; }
   .ranges { flex-direction: column; } /* each slider the full width */
 }
@@ -391,7 +395,8 @@ main h3:first-child { margin-top: 8px; }
 .legend button { width: 100%; display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 8px;
   border-radius: 7px; background: var(--cell); border: 1px solid var(--line); color: var(--text); font: 500 11px var(--mono); cursor: pointer; text-align: left; }
 .legend i { width: 10px; height: 10px; border-radius: 3px; }
-.legend span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.legend span { overflow-wrap: anywhere; } /* whole route names, wrapping */
+@media (max-width: 520px) { .legend { grid-template-columns: 1fr; } }
 .legend b { font-weight: 700; }
 .legend button[aria-pressed="false"] { opacity: 0.4; }
 /* Sweep rows: the same four columns in every row; a row with errors opens to show them. */
