@@ -71,17 +71,28 @@ function plan(flights, lists, stay = null) {
   close(flights.length);
   return picks;
 }
-/** browser limited to PAGES at once, across every addDetails call sharing `cache`. */
-function paged(browser, cache) {
+/** A browser search still waiting for a page when the deadline passed: dropped, not a failure. */
+class Late extends Error {}
+
+/**
+ * browser limited to PAGES at once, across every addDetails call sharing `cache`. A search that
+ * gets its page after `deadline` hands it on and throws Late: pages run 10-60 s, and a queue
+ * drained past the deadline ran the build minutes over.
+ */
+function paged(browser, cache, deadline) {
   const slots = (cache.pages ??= { free: PAGES, waiting: [] });
+  const release = () => {
+    const go = slots.waiting.shift();
+    if (go) go(); else slots.free++;
+  };
   return async (...args) => {
     if (slots.free) slots.free--;
     else await new Promise((go) => slots.waiting.push(go));
+    if (Date.now() > deadline) { release(); throw new Late(); }
     try {
       return await browser(...args);
     } finally {
-      const go = slots.waiting.shift();
-      if (go) go(); else slots.free++;
+      release();
     }
   };
 }
@@ -109,12 +120,11 @@ function flightsOf(trip) {
  */
 async function addDetails(trips, cache = new Map(), browser = null, listed = null, deadline = Infinity) {
   const LATE = { error: 'out of time', late: true }; // not cached
-  browser &&= paged(browser, cache);
-  const searchOnce = (q) => {
-    const key = JSON.stringify(q);
+  browser &&= paged(browser, cache, deadline);
+  const searchOnce = (q, key = JSON.stringify(q)) => {
     if (!cache.has(key)) {
       if (Date.now() > deadline) return Promise.resolve(LATE);
-      cache.set(key, search(q, { browser }).catch((e) => ({ error: e.message })));
+      cache.set(key, search(q, { browser }).catch((e) => (e instanceof Late ? (cache.delete(key), LATE) : { error: e.message })));
     }
     return cache.get(key);
   };
@@ -124,15 +134,17 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
     const key = `full ${JSON.stringify(q)}`;
     if (!cache.has(key)) {
       if (Date.now() > deadline) return Promise.resolve(LATE);
-      cache.set(key, browser(q, { timeout: SLOW_PAGE_MS }).then((ps) => ps.flatMap(parseResults)).catch((e) => ({ error: e.message })));
+      cache.set(key, browser(q, { timeout: SLOW_PAGE_MS }).then((ps) => ps.flatMap(parseResults)).catch((e) => (e instanceof Late ? (cache.delete(key), LATE) : { error: e.message })));
       stats.full++;
     }
     return cache.get(key);
   };
   const stats = { searches: 0, failed: 0, late: 0, full: 0, connection: 0, none: 0, stay: 0 };
 
-  // Warm the cache with bounded concurrency, then pick sequentially per trip.
-  const queries = [...new Map(trips.flatMap(flightsOf).map((f) => [JSON.stringify(f.query), f.query])).values()]
+  // Warm the cache with bounded concurrency, then pick sequentially per trip. Each trip's flights
+  // and their search keys worked out once.
+  const flown = trips.map((t) => flightsOf(t).map((f) => Object.assign(f, { key: JSON.stringify(f.query) })));
+  const queries = [...new Map(flown.flat().map((f) => [f.key, f.query])).values()]
     .filter((q) => !cache.has(JSON.stringify(q)));
   let next = 0;
   await Promise.all(Array.from({ length: CONCURRENCY }, async () => {
@@ -150,13 +162,12 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
   // Trips picked CONCURRENCY at a time: a trip waiting on a full list (a page, 10-60 s) holds one.
   let nextTrip = 0;
   await Promise.all(Array.from({ length: CONCURRENCY }, async () => {
-    while (nextTrip < trips.length) await pickFlights(trips[nextTrip++]);
+    while (nextTrip < trips.length) { const i = nextTrip++; await pickFlights(trips[i], flown[i]); }
   }));
   return stats;
 
-  async function pickFlights(trip) {
-    const flights = flightsOf(trip);
-    const lists = await Promise.all(flights.map((f) => searchOnce(f.query)));
+  async function pickFlights(trip, flights) {
+    const lists = await Promise.all(flights.map((f) => searchOnce(f.query, f.key)));
     // A plain search lists only Google's top flights; where none of those connects, the full list.
     let picks;
     for (const full = new Set(); ;) {
@@ -267,4 +278,4 @@ async function capped(trip, cache, maxMin, homes) {
   return { ...trip, tickets, conn: s.conn, connects: true, total: tickets.reduce((sum, t) => sum + t.price, 0) };
 }
 
-module.exports = { addDetails, flightsOf, capped, longestOf };
+module.exports = { addDetails, flightsOf, capped, longestOf, paged, Late };

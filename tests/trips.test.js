@@ -505,3 +505,13 @@ test('Pacific stop: a round trip home ⇄ Honolulu holds the trip; one ticket th
   const g = groupsOf(t, ['YVR']).find((x) => x.legs.length === 4);
   assert.deepStrictEqual(g.legs.map((l) => `${l.from}-${l.to}`), ['YVR-HNL', 'HNL-ICN', 'ICN-HNL', 'HNL-YVR']);
 });
+
+test('browser pages: a search still queued when the deadline passes is dropped (Late), not run', async () => {
+  const { paged, Late } = require('../scraper/src/trips/details');
+  let ran = 0;
+  const slow = () => new Promise((done) => setTimeout(() => { ran++; done([]); }, 60));
+  const page = paged(slow, new Map(), Date.now() + 20);
+  const results = await Promise.allSettled(Array.from({ length: 6 }, () => page({})));
+  assert.equal(ran, 4, 'the four with a page run');
+  assert.deepEqual(results.slice(4).map((r) => r.reason instanceof Late), [true, true]);
+});
