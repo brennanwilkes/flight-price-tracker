@@ -26,6 +26,17 @@ async function waitRpc(page, seen, ms = 45_000) {
 
 async function main() {
   const [from, to, date, n = '4'] = process.argv.slice(2);
+  if (n === 'thread') { // the checks' browser thread: several searches at once
+    const { openBrowserThread } = require('../src/gflights/browser-thread');
+    const b = await openBrowserThread({ lean: true });
+    const t0 = Date.now();
+    const r = await Promise.all([0, 1, 2, 3].map((i) => b.shoppingResults({ from, to, out: addDays(date, i), cabin: 'Y' })
+      .then((p) => `${addDays(date, i)} ${p.flatMap(parseResults).length} rows ${Date.now() - t0} ms`, (e) => `error ${e.message}`)));
+    console.log('thread:', r.join(' | '));
+    await b.close();
+    console.log('thread closed');
+    return;
+  }
   const { browser, ctx } = await openBrowser({ lean: true });
   try {
     const page = await ctx.newPage();

@@ -60,7 +60,8 @@ const { similarCount, scoreOf, rowId, bandOf } = require('../../frontend/app/bui
 const { CITIES, airportsOf, isPacific } = require('../../frontend/app/cities.js');
 const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
 const { addDetails, capped, longestOf } = require('../src/trips/details');
-const { openBrowser, shoppingResults } = require('../src/gflights/browser');
+const { openBrowserThread } = require('../src/gflights/browser-thread');
+const lag = require('node:perf_hooks').monitorEventLoopDelay({ resolution: 20 });
 const alertConfig = require('../config/alerts.json');
 const { tierOf } = require('../src/alerts/rules');
 const { flexOf } = require('../../frontend/app/flex.js');
@@ -344,9 +345,8 @@ async function multiPass(dataDir, byHome, fares, search) {
   let chrome = null;
   let browser = null;
   if (search) {
-    const b = await openBrowser({ lean: true });
-    chrome = b.browser;
-    browser = (q, opts) => shoppingResults(b.ctx, q, opts);
+    chrome = await openBrowserThread({ lean: true });
+    browser = chrome.shoppingResults;
   }
   try {
     const t0 = Date.now();
@@ -416,8 +416,9 @@ async function main() {
   let details = null;
   if (details0) {
     // Searches whose page inlines no results are asked again in a real page (gflights/flights.js).
-    const { browser: chrome, ctx } = await openBrowser({ lean: true });
-    const session = { cache: searches.cache, browser: (q, opts) => { details.browser++; return shoppingResults(ctx, q, opts); }, listed: new Map(), deadline: warm ?? deadline - DETAILS_RESERVE, pages: warm ? PAGES.warm : PAGES.build, warm: !!warm };
+    const chrome = await openBrowserThread({ lean: true });
+    lag.enable();
+    const session = { cache: searches.cache, browser: (q, opts) => { details.browser++; return chrome.shoppingResults(q, opts); }, listed: new Map(), deadline: warm ?? deadline - DETAILS_RESERVE, pages: warm ? PAGES.warm : PAGES.build, warm: !!warm };
     details = { browser: 0, rounds: 0, searches: 0, failed: 0, late: 0, ms: 0 };
     try {
       for (;;) {
@@ -445,6 +446,7 @@ async function main() {
     const why = `${t.far ?? 0} past the inline horizon (straight to a browser), ${t.empty ?? 0} pages with none inlined, ${t.window ?? 0} searched again after the connection (connected ${t.windowHit ?? 0} of ${t.windowTry ?? 0} trips' misses), ${t.full ?? 0} full lists, ${t.pages ?? 0} browser pages, ${t.refreshed ?? 0} stale searches refreshed, ${t.blocked ?? 0} refused by Google`;
     const pct = (a, q) => (a.length ? `${(a.toSorted((x, y) => x - y)[Math.floor(q * (a.length - 1))] / 1000).toFixed(1)} s` : '-');
     console.log(`search mix: ${why}`);
+    console.log(`event loop delay during the checks: median ${(lag.percentile(50) / 1e6).toFixed(0)} ms, 99% ${(lag.percentile(99) / 1e6).toFixed(0)} ms, max ${(lag.max / 1e6).toFixed(0)} ms`);
     console.log(`search timing: ${t.plain ?? 0} plain fetches (median ${pct(t.plainMs ?? [], 0.5)}, 90% ${pct(t.plainMs ?? [], 0.9)}; ${t.plainEmpty ?? 0} with no results inlined, ${t.timeouts ?? 0} timed out, ${t.errors ?? 0} other errors), browser pages median ${pct(t.pageMs ?? [], 0.5)}, 90% ${pct(t.pageMs ?? [], 0.9)}`);
     const emptyBy = Object.entries(t.emptyBy ?? {}).sort((a, b) => b[1] - a[1]);
     if (emptyBy.length) console.log(`search pages with none inlined, by route: ${emptyBy.slice(0, 12).map(([r, n]) => `${r} ${n}`).join(', ')} (${emptyBy.length} routes)`);
