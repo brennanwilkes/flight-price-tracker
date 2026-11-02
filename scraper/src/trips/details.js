@@ -14,6 +14,7 @@ const { searchPlain, parseResults, dedupe } = require('../gflights/flights');
 const { airportsOf, isLong } = require('../../../frontend/app/cities.js');
 const { fareKey } = require('./fares');
 const { samePrice } = require('../../../frontend/app/price.js');
+const { SELF_HOURS, SELF_PEN } = require('./multi');
 
 const MIN_CONNECT_MIN = 4 * 60;
 const CONCURRENCY = 12; // plain searches in flight (~2 s each)
@@ -285,6 +286,9 @@ function settle(trip, flights, lists, chosen) {
     }
     picks.push(pick);
     conn += connPen(f, pick);
+    // A self-transfer: the previous flight on another ticket, landing within SELF_HOURS of this one leaving.
+    const prev = picks[i - 1];
+    if (prev?.legs && flights[i - 1].ticket !== f.ticket && pick.legs && at(pick.legs[0].depDate, pick.legs[0].dep) - arrival(prev) < SELF_HOURS * 60) conn += SELF_PEN;
   }
   // The Hoi An stay, from the real landing to the real departure: a flight that lands the next
   // day (overnight connection, long haul) eats into it. Short: not a trip, like a missed connection.

@@ -132,6 +132,14 @@ the builder searches every combination and the dashboard shows the best N.
   long one-ways as one open-jaw ticket, and economy trips as one ticket for every flight. Cheaper
   wins and is shown as one ticket (one colour, a rail joining its flights, a link to that exact
   multi-city search). Seen: YVR→MNL + SGN→YVR business $4,953 as one ticket vs ~$7,000 as two.
+- **Self-transfers (2026-11-02):** two one-way tickets in one cabin whose real flights connect
+  within 12 h are searched as one ticket too (30 searches a build of their own, same cache). One
+  ticket wins at about the same price (2%/5%), not only cheaper. Until then a self-transfer costs
+  the trip $40 in the ranking, so a connection on one ticket wins at about the same price.
+- **Search freshness (2026-11-02):** a flight check's search is fresh 24 h and serves up to 7 days:
+  past 24 h its flights and times still check the cell (the fare keeps its own price) while it
+  waits to be searched again, after every search a check still needs. Hidden cells come only from
+  searches never made.
 - **Lowest-ever marks** (`state/lows.json`, verified cells only, all time): gold ★ route's cheapest
   yet; faint gold ☆ cheapest yet for these dates; red ○ other dates were cheaper (mild); bold red ●
   these exact dates were cheaper before (bad). Tile corner on the board; the ticket stub spells out

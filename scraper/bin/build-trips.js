@@ -343,7 +343,7 @@ async function multiPass(dataDir, byHome, fares, search) {
   let chrome = null;
   let browser = null;
   if (search) {
-    const b = await openBrowser();
+    const b = await openBrowser({ lean: true });
     chrome = b.browser;
     browser = (q, opts) => shoppingResults(b.ctx, q, opts);
   }
@@ -452,7 +452,7 @@ async function main() {
   const dayAgo = valuesAt(dataDir, new Date(Date.parse(generatedAt) - 864e5).toISOString().replace(/\.\d+Z$/, 'Z'));
   const cells = [];
   const m = await multiPass(dataDir, byHome, fares, !process.argv.includes('--no-details') && Date.now() < deadline - MULTI_RESERVE);
-  console.log(`multi-city: ${m.searched} searched (${m.failed} failed), ${m.merged} trips cheaper as one ticket; ${m.ms}ms`);
+  console.log(`multi-city: ${m.searched} searched (${m.failed} failed), ${m.merged} trips on one ticket (${m.self ?? 0} self-transfers joined); ${m.ms}ms`);
   if (details) details.multi = m;
   // Stay ranges on every shown trip; lowest-ever marks.
   for (const rows of byHome.values()) {

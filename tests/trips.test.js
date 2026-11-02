@@ -542,3 +542,42 @@ test('a stale search serves its flights at once, the fare keeping its own price,
   assert.strictEqual(listed.size, 0);
   assert.deepStrictEqual([s.searches, s.late], [0, 0]);
 });
+
+test('self-transfer: two one-ways connecting within 12 h become one ticket at about the same price, and count against the trip until then', async () => {
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const path = require('node:path');
+  const { applyMulti, groupsOf, multiSaving, SELF_PEN } = require('../scraper/src/trips/multi');
+  const flight = (from, to, depDate, dep, arr) => ({ price: 0, min: 60, airlines: ['KE'], stops: [], legs: [{ code: 'KE1', airline: 'KE', from, to, dep, arr, depDate, arrDate: depDate, min: 60 }] });
+  const trip = () => ({
+    cls: 'economy',
+    order: [[0, 'out'], [1, 'out']],
+    tickets: [
+      { kind: 'ow', cabin: 'Y', from: 'YVR', to: 'ICN', date: '2027-09-01', price: 700, flights: { out: flight('YVR', 'ICN', '2027-09-01', '01:00', '06:00') } },
+      { kind: 'ow', cabin: 'Y', from: 'ICN', to: 'SGN', date: '2027-09-01', price: 300, flights: { out: flight('ICN', 'SGN', '2027-09-01', '12:00', '16:00') } },
+    ],
+  });
+  const self = groupsOf(trip(), ['YVR']).filter((g) => g.self);
+  assert.deepStrictEqual(self.map((g) => g.replace), [[0, 1]]);
+  // Over 12 h between them: not a self-transfer.
+  const apart = trip();
+  apart.tickets[1].flights.out.legs[0].dep = '19:00';
+  assert.strictEqual(groupsOf(apart, ['YVR']).filter((g) => g.self).length, 0);
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'self-'));
+  const run = async (listed) => {
+    const t = trip();
+    fs.rmSync(path.join(dir, 'state'), { recursive: true, force: true });
+    // One GetShoppingResults row listed at `listed` (flights.js parseResults' layout).
+    await applyMulti(dir, [t], ['YVR'], async () => [{ 2: [[[[null, ['KE'], [[]]], [[listed]]]]] }], { budget: 0 });
+    return { t };
+  };
+  // $1,040 is within economy's 5% of $1,000: one ticket wins; $1,060 isn't.
+  const same = await run(1040);
+  assert.strictEqual(same.t.tickets.length, 1);
+  assert.strictEqual(same.t.total, 1040);
+  const dearer = await run(1060);
+  assert.strictEqual(dearer.t.tickets.length, 2);
+  // The ranking credits the one ticket with the self-transfer's penalty.
+  assert.strictEqual(multiSaving({ [`Y YVR-ICN 2027-09-01, ICN-SGN 2027-09-01`]: { price: 1040 } }, trip(), ['YVR']), 1000 - 1040 + SELF_PEN);
+});
