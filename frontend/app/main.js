@@ -219,12 +219,12 @@ function lowLines(x) {
 const range = (t) => (t.depart.slice(0, 7) === t.ret.slice(0, 7) ? `${boardDate(t.depart)}–${t.ret.slice(8)}` : `${boardDate(t.depart)}–${boardDate(t.ret)}`);
 const alts = (t) => (t.alts ? `<i class="alts" title="${t.alts} other date${t.alts > 1 ? 's' : ''} within ${samePrice(t) * 100}% of this price">+${t.alts}</i>` : '');
 
-/** A fare tile: price, its dates, then a footer: the change vs yesterday | +N similar dates. */
+/** A fare tile: price, its dates, then a footer: lows marks and the change vs yesterday | +N similar dates. */
 function fare(cls, trip) {
   if (!trip) return '<span class="fare none">—</span>';
   return `<button type="button" class="fare ${tierOfTrip(cls, trip)}" data-cls="${cls}">
-    ${lowMark(trip)}<b>${money(trip.total)}</b><span class="tdates">${range(trip)}</span>
-    <span class="tfoot${trend(trip) || alts(trip) ? '' : ' blank'}">${trend(trip) || '<span></span>'}${alts(trip) || '<span></span>'}</span>
+    <b>${money(trip.total)}</b><span class="tdates">${range(trip)}</span>
+    <span class="tfoot${lowMark(trip) || trend(trip) || alts(trip) ? '' : ' blank'}"><span>${lowMark(trip)}${trend(trip)}</span>${alts(trip) || '<span></span>'}</span>
   </button>`;
 }
 

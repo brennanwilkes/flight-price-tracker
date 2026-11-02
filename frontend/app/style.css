@@ -148,7 +148,8 @@ option { background: var(--panel); color: var(--text); }
 .low.dates { color: var(--amber); opacity: 0.6; }
 .low.any { color: var(--up); }
 .low.same { color: var(--up); font-weight: 800; }
-.fare .lowmarks { position: absolute; top: 3px; right: 5px; display: flex; gap: 2px; font-style: normal; font-size: 11px; line-height: 1; }
+.fare .tfoot > :first-child { gap: 5px; }
+.fare .lowmarks { display: flex; gap: 2px; font-style: normal; font-size: 11px; line-height: 1; }
 .fare .low.same { font-size: 13px; }
 .ticket .stub .lows { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 4px; margin: 0; padding-top: 10px; border-top: 1px solid color-mix(in srgb, currentColor 14%, transparent); font: 600 11px var(--mono); }
 /* A ticket's marks, spelled out under the route line. */
