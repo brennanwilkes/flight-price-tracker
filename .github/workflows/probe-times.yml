@@ -1,0 +1,41 @@
+# Probe: does the search page take a departure-time window in its tfs? Manual dispatch only.
+name: Probe time windows
+
+on:
+  workflow_dispatch:
+    inputs:
+      search:
+        description: From, to, date
+        default: YVR ICN 2026-12-10
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: scraper/package-lock.json
+      - name: Install
+        working-directory: scraper
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: VPN up
+        env:
+          WG_CONF: ${{ secrets.PROTONVPN_WG_CONF }}
+        run: |
+          scripts/vpn_up.sh
+          grep -q '^vpn_ok=true' "$GITHUB_OUTPUT" || { echo "::error::VPN did not come up"; exit 1; }
+      - name: Probe
+        run: node scraper/bin/probe-times.js ${{ inputs.search }} --browser
