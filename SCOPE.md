@@ -140,6 +140,10 @@ the builder searches every combination and the dashboard shows the best N.
   past 24 h its flights and times still check the cell (the fare keeps its own price) while it
   waits to be searched again, after every search a check still needs. Hidden cells come only from
   searches never made.
+- **Search horizon (2026-11-02, probed in CI):** search pages inline results only ~300 days out;
+  past that (the newest ~30 days of fares, up to the 330-day fare horizon) every check is a browser
+  page, which loads the full list at once. Inside it, a missed connection is searched again plain
+  for the flights leaving after it (tfs segment field 8, departure hour) before any browser page.
 - **Lowest-ever marks** (`state/lows.json`, verified cells only, all time): gold ★ route's cheapest
   yet; faint gold ☆ cheapest yet for these dates; red ○ other dates were cheaper (mild); bold red ●
   these exact dates were cheaper before (bad). Tile corner on the board; the ticket stub spells out

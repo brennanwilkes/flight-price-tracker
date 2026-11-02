@@ -588,19 +588,51 @@ test('no top flight connects: the flights leaving after the connection are searc
   const trip = {
     order: [[0, 'out'], [1, 'out']],
     tickets: [
-      { kind: 'ow', cabin: 'J', from: 'YVR', to: 'BKK', date: '2027-09-01', price: 5100 },
-      { kind: 'ow', cabin: 'Y', from: 'BKK', to: 'HAN', date: '2027-09-03', price: 232 },
+      { kind: 'ow', cabin: 'J', from: 'YVR', to: 'BKK', date: '2026-09-01', price: 5100 },
+      { kind: 'ow', cabin: 'Y', from: 'BKK', to: 'HAN', date: '2026-09-03', price: 232 },
     ],
   };
-  const [a, b] = flightsOf(trip);
+  const [a, b] = flightsOf(trip); // dates in the past: inside the inline horizon
   const cache = new Map([
-    [JSON.stringify(a.query), Promise.resolve([leg('YVR', 'BKK', '2027-09-01', '23:55', '2027-09-03', '12:05', 5066, 'PR')])],
-    [JSON.stringify(b.query), Promise.resolve([leg('BKK', 'HAN', '2027-09-03', '06:40', '2027-09-03', '08:30', 232, 'FD')])],
+    [JSON.stringify(a.query), Promise.resolve([leg('YVR', 'BKK', '2026-09-01', '23:55', '2026-09-03', '12:05', 5066, 'PR')])],
+    [JSON.stringify(b.query), Promise.resolve([leg('BKK', 'HAN', '2026-09-03', '06:40', '2026-09-03', '08:30', 232, 'FD')])],
     // 12:05 + 4 h: from 16:00
-    [JSON.stringify({ ...b.query, after: 16 }), Promise.resolve([leg('BKK', 'HAN', '2027-09-03', '17:00', '2027-09-03', '19:00', 260, 'VN')])],
+    [JSON.stringify({ ...b.query, after: 16 }), Promise.resolve([leg('BKK', 'HAN', '2026-09-03', '17:00', '2026-09-03', '19:00', 260, 'VN')])],
   ]);
   await addDetails([trip], cache);
   assert.strictEqual(trip.connects, true);
   assert.deepStrictEqual(trip.tickets.map((t) => t.flights.out.airlines[0]), ['PR', 'VN']);
   assert.deepStrictEqual([cache.tally.windowTry, cache.tally.windowHit, cache.tally.full], [1, 1, 0]);
+});
+
+test('past the inline horizon: one browser page per search, its full list reused when nothing connects', async () => {
+  const { addDetails, flightsOf } = require('../scraper/src/trips/details');
+  const far = new Date(Date.now() + 320 * 864e5).toISOString().slice(0, 10);
+  const next = new Date(Date.parse(far) + 2 * 864e5).toISOString().slice(0, 10);
+  const ymd = (s) => s.split('-').map(Number);
+  // One GetShoppingResults payload row, laid out like the page's (flights.js parseResults).
+  const row = (from, to, date, dep, arr, price, airline) => {
+    const l = [];
+    Object.assign(l, { 3: from, 6: to, 8: [dep, 0], 10: [arr, 0], 11: 120, 20: ymd(date), 21: ymd(date), 22: [airline, '1', null, airline] });
+    return [[null, [airline], [l], null, null, null, null, null, null, 120, null, null, null, []], [[null, price]]];
+  };
+  const trip = {
+    order: [[0, 'out'], [1, 'out']],
+    tickets: [
+      { kind: 'ow', cabin: 'Y', from: 'BKK', to: 'HAN', date: far, price: 200 },
+      { kind: 'ow', cabin: 'Y', from: 'HAN', to: 'DAD', date: next, price: 50 },
+    ],
+  };
+  let pages = 0;
+  const browser = async (q) => {
+    pages++;
+    const r = q.to.includes('HAN') ? [row('BKK', 'HAN', far, 8, 10, 200, 'VN')] : [row('HAN', 'DAD', next, 9, 10, 50, 'VJ')];
+    return [[null, null, [r]]];
+  };
+  const cache = new Map();
+  await addDetails([trip], cache, browser);
+  assert.strictEqual(trip.connects, true);
+  assert.strictEqual(pages, 2); // one per search, no plain fetch, no second page for a full list
+  assert.strictEqual(cache.tally.far, 2);
+  assert.ok(cache.has(`full ${JSON.stringify(flightsOf(trip)[0].query)}`));
 });

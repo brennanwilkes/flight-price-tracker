@@ -43,6 +43,10 @@ const connPen = (f, o) => {
   const over = (o.stops ?? []).reduce((sum, s) => sum + Math.max(0, s.min - SHORT_CONNECT), 0);
   return over && samePrice(f.ticket.cabin) * (f.dir === 'out' ? o.price : f.ticket.price) * Math.min(1, over / LONG_CONNECT);
 };
+// Search pages inline their results only this many days out; past it the page loads them in the
+// browser (probed 2026-11-02: HAN-DAD rows to 300 days out, none at 302).
+const INLINE_DAYS = 300;
+const far = (q) => (Date.parse(q.out) - Date.now()) / 864e5 > INLINE_DAYS;
 /**
  * The hour on `date` from which a flight can follow the earliest of `before` (the previous
  * flight's options), for a search of only those flights; null when every flight that day would
@@ -149,7 +153,7 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
   const LATE = { error: 'out of time', late: true }; // not cached
   const plain = slots(cache, 'plain', CONCURRENCY);
   const page = browser && slots(cache, 'pages', pages);
-  const tally = (cache.tally ??= { empty: 0, pages: 0, full: 0, window: 0, windowTry: 0, windowHit: 0, refreshed: 0, blocked: 0, plain: 0, plainEmpty: 0, timeouts: 0, errors: 0, plainMs: [], pageMs: [] });
+  const tally = (cache.tally ??= { empty: 0, pages: 0, full: 0, far: 0, window: 0, windowTry: 0, windowHit: 0, refreshed: 0, blocked: 0, plain: 0, plainEmpty: 0, timeouts: 0, errors: 0, plainMs: [], pageMs: [] });
   const stale = cache.stale ?? new Map(); // key → result, from earlier builds past their fresh hours
   const stats = { searches: 0, failed: 0, late: 0, full: 0, connection: 0, none: 0, stay: 0 };
   // A result into the cache as it comes; out of time: out again, not a result.
@@ -191,11 +195,17 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
   };
   // Plain first; a page with none inlined, in a browser. (Asked again plain 20 s on, 0 of 291 had
   // them: 06:05 sweep, 2026-11-02.)
-  const plainThenPage = async (q, p) => {
-    const opts = await fetchPlain(p, q);
-    if (opts.length || !page || q.after) return opts; // a window empty: the full list decides
-    tally.empty++;
-    return inPage(p, q);
+  // Past INLINE_DAYS no page inlines anything: straight to a browser. A browser page loads the full
+  // list ("View more flights" included), kept as the search's full list too.
+  const plainThenPage = async (q, p, key) => {
+    if (!(page && far(q))) {
+      const opts = await fetchPlain(p, q);
+      if (opts.length || !page || q.after) return opts; // a window empty: the full list decides
+      tally.empty++;
+    } else tally.far++;
+    const all = await inPage(p, q, { timeout: SLOW_PAGE_MS });
+    if (key) cache.set(`full ${key}`, Promise.resolve(all));
+    return all;
   };
   // A stale result serves now; a fresh one replaces it once searched, after every check's search.
   const refresh = (key, run) => {
@@ -217,7 +227,8 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
     if (Date.now() > deadline) return Promise.resolve(LATE);
     return settle0(key, run(p));
   };
-  const searchOnce = (q, key = JSON.stringify(q), p = prio) => once(key, (pp) => plainThenPage(q, pp), p);
+  const searchOnce = (q, key = JSON.stringify(q), p = prio) => once(key, (pp) => plainThenPage(q, pp, key), p);
+  const hasFull = (key) => cache.has(`full ${key}`) || stale.has(`full ${key}`);
   // A plain search lists only Google's top flights (the cheapest among them); when none of those
   // connects, or the search failed, the page's full list ("View more flights").
   const fullOnce = (q) => {
@@ -255,7 +266,7 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
       tried = -1;
       const i = picks.findIndex((p, j) => p?.miss === 'connection' && !(windowed.has(j) && full.has(j)));
       if (i < 0) break;
-      const after = !windowed.has(i) && afterHour(flights[i].query.out, lists[i - 1]);
+      const after = !windowed.has(i) && !hasFull(flights[i].key) && !far(flights[i].query) && afterHour(flights[i].query.out, lists[i - 1]);
       windowed.add(i);
       if (after) {
         const wq = { ...flights[i].query, after };
