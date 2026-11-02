@@ -128,7 +128,7 @@ option { background: var(--panel); color: var(--text); }
 /* Reset: at the end of the first row, beside the home toggle. */
 #reset { flex: none; align-self: stretch; font: 600 12px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--text);
   background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 0 12px; cursor: pointer; }
-#reset[hidden] { display: none; }
+#reset:disabled { color: var(--muted); cursor: default; }
 .toggle { display: flex; }
 .toggle button { border-radius: 0; cursor: pointer; letter-spacing: 0.06em; }
 .toggle button:first-child { border-radius: 6px 0 0 6px; }

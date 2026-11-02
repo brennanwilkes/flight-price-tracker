@@ -661,14 +661,14 @@ function readSliders() {
   $('#capval').textContent = state.cap == null ? 'any' : `≤ ${state.cap} h`;
   shade();
 }
-/** Each track shaded over what it lets through; Reset shown while anything is filtered. */
+/** Each track shaded over what it lets through; Reset live while anything is filtered. */
 function shade() {
   const pct = (el) => `${(100 * Number(el.value)) / Number(el.max)}%`;
   const [cap, lo, hi] = ['#cap', '#lenlo', '#lenhi'].map((id) => $(id));
   cap.parentElement.style.setProperty('--hi', pct(cap));
   lo.closest('.range').style.setProperty('--lo', pct(lo));
   lo.closest('.range').style.setProperty('--hi', pct(hi));
-  $('#reset').hidden = !(filtering() || state.month || state.vias.length);
+  $('#reset').disabled = !(filtering() || state.month || state.vias.length);
 }
 $('#reset').addEventListener('click', () => {
   $('#cap').value = $('#cap').max;
