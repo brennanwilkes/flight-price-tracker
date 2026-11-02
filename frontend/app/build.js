@@ -124,7 +124,7 @@ function hopPlans(x, d0, fares, need = [], prefs = false) {
   // to any anchor (open jaw); done on the day that leaves.
   const land = (t, s, prev, hop) => {
     const changed = put(t, s, prev, hop);
-    if (!s.done && s.city in anchors && best[t].get(keyOf(s))?.score === s.score) {
+    if (!s.done && s.city in anchors && best[t]?.get(keyOf(s))?.score === s.score) { // t past MAX_DAYS: put refused it
       for (const [w, g] of Object.entries(anchors)) {
         const days = anchors[s.city] + HOI_AN_NIGHTS + g; // from landing at `city` to flying out of `w`
         put(t + days, { ...s, city: w, done: 1, seen: s.seen | bit(s.city) | bit(w), run: 2 }, { t, key: keyOf(s) }, { kind: 'stay', from: s.city, to: w, need: days });

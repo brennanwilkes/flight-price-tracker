@@ -85,6 +85,8 @@ const MULTI_RESERVE = 5 * 60e3;
 // and the fares behind them are 2-48 h old already. Every shown cell needs ~6,200 searches, a build
 // makes ~800: under SEARCH_HOURS = 3 they could never all be fresh at once.
 const SEARCH_HOURS = 24;
+// Any listed flight lands within this many days of leaving; a longer offset is a misread row.
+const MAX_LAND_DAYS = 3;
 // The board's long-haul filter (hours, loosest first): each dashboard cell's cheapest trip with
 // no single flight (connections apart) on its long-haul tickets longer, re-picked from its checked
 // candidates' searches.
@@ -122,7 +124,7 @@ function landings(rows) {
     const [from, to] = [q.from, q.to].map((a) => cityOf.get(JSON.stringify(a)) ?? a);
     const days = Math.min(...opts.map((o) => (Date.parse(o.legs.at(-1).arrDate) - Date.parse(q.out)) / 864e5));
     const key = `${from}|${to}|${q.out}`;
-    if (Number.isFinite(days) && !(out.get(key) <= days)) out.set(key, days);
+    if (Number.isFinite(days) && days <= MAX_LAND_DAYS && !(out.get(key) <= days)) out.set(key, days);
   }
   return out;
 }
