@@ -9,9 +9,9 @@
  */
 const { Worker, isMainThread, parentPort, workerData } = require('node:worker_threads');
 
-if (isMainThread) {
+if (isMainThread || !workerData?.browserThread) { // required anywhere but the browser thread itself
   module.exports.openBrowserThread = (opts = {}) => new Promise((resolve, reject) => {
-    const worker = new Worker(__filename, { workerData: opts });
+    const worker = new Worker(__filename, { workerData: { ...opts, browserThread: true } });
     const waiting = new Map();
     let next = 0;
     worker.on('message', (m) => {
@@ -33,7 +33,8 @@ if (isMainThread) {
   });
 } else {
   const { openBrowser, shoppingResults } = require('./browser');
-  openBrowser(workerData).then(({ browser, ctx }) => {
+  const { browserThread, ...opts } = workerData;
+  openBrowser(opts).then(({ browser, ctx }) => {
     parentPort.on('message', async (m) => {
       if (m.close) { await browser.close().catch(() => {}); parentPort.close(); return; }
       try {

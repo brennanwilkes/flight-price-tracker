@@ -61,7 +61,7 @@ const { CITIES, airportsOf, isPacific } = require('../../frontend/app/cities.js'
 const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
 const { addDetails, capped, longestOf } = require('../src/trips/details');
 const { openBrowserThread } = require('../src/gflights/browser-thread');
-const lag = require('node:perf_hooks').monitorEventLoopDelay({ resolution: 20 });
+const { monitorEventLoopDelay } = require('node:perf_hooks');
 const alertConfig = require('../config/alerts.json');
 const { tierOf } = require('../src/alerts/rules');
 const { flexOf } = require('../../frontend/app/flex.js');
@@ -245,11 +245,14 @@ const sortRows = (rows) => rows.sort((a, b) => price(a.hybrid) - price(b.hybrid)
 // loop in: 215k cells held it 215 s (11:05 sweep, 2026-11-02), searches and page replies waiting.
 // Every BREATHE_MS of it, a turn for everything else.
 const BREATHE_MS = 50;
+const WALKS = 400; // cells checked at once: searches pending for 400 keep every search slot busy
+// One turn shared by every walk that runs out of time: the window restarts when the turn comes,
+// not as each walk resumes (each resuming walk restarting it ran them all in one go again).
 let breath = Date.now();
-async function breathe() {
-  if (Date.now() - breath < BREATHE_MS) return;
-  await new Promise((r) => setImmediate(r));
-  breath = Date.now();
+let turn = null;
+function breathe() {
+  if (Date.now() - breath < BREATHE_MS) return null;
+  return (turn ??= new Promise((r) => setImmediate(() => { turn = null; breath = Date.now(); r(); })));
 }
 
 async function verify(byHome, trips, { cache, browser, listed, deadline, pages, warm = false }) {
@@ -289,7 +292,13 @@ async function verify(byHome, trips, { cache, browser, listed, deadline, pages, 
     return false;
   };
   const td = Date.now();
-  await Promise.all(cells.map(async (p) => {
+  const lag = monitorEventLoopDelay({ resolution: 20 });
+  lag.enable();
+  // WALKS cells at a time, dashboard first: 215k walks at once each resumed through a whole cached
+  // check in one go, holding the event loop seconds at a time.
+  const queue = cells.slice().sort((a, b) => a.rank - b.rank);
+  let next = 0;
+  await Promise.all(Array.from({ length: WALKS }, async () => { for (let p; (p = queue[next++]);) {
     do {
       await breathe();
       const s = await addDetails([p.cand], cache, browser, listed, deadline, { prio: p.rank * TRIES + p.i, pages });
@@ -300,8 +309,10 @@ async function verify(byHome, trips, { cache, browser, listed, deadline, pages, 
       st.none += s.none;
       st.stay += s.stay;
     } while (step(p));
-  }));
+  } }));
   st.detailsMs = Date.now() - td;
+  lag.disable();
+  st.lag = `${(lag.percentile(99) / 1e6).toFixed(0)} ms 99%, ${(lag.max / 1e6).toFixed(0)} ms max`;
   // The long-haul filter's cells, on the dashboard's (no searches: what the checks found).
   const t1 = Date.now();
   if (!warm) for (const p of cells) if (p.rank < 5 && p.best) { await breathe(); await fastOf(p, cache); }
@@ -429,7 +440,6 @@ async function main() {
   if (details0) {
     // Searches whose page inlines no results are asked again in a real page (gflights/flights.js).
     const chrome = await openBrowserThread({ lean: true });
-    lag.enable();
     const session = { cache: searches.cache, browser: (q, opts) => { details.browser++; return chrome.shoppingResults(q, opts); }, listed: new Map(), deadline: warm ?? deadline - DETAILS_RESERVE, pages: warm ? PAGES.warm : PAGES.build, warm: !!warm };
     details = { browser: 0, rounds: 0, searches: 0, failed: 0, late: 0, ms: 0 };
     try {
@@ -440,7 +450,7 @@ async function main() {
         const moved = [...session.listed].filter(([k, p]) => { const was = fareOf(fares, k); return was != null && Math.abs(p - was) > Math.max(2, was * 0.01); });
         for (const [k, price] of session.listed) checkedLog[k] = { price, at: generatedAt };
         session.listed.clear();
-        console.log(`details round ${details.rounds}: ${s.cells} cells, ${s.replaced} moved to another trip (connects, or cheaper as listed), ${s.unresolved} with none that connects, ${s.unknown} hidden with no flights checked; ${s.searches} searches${s.late ? ` (${s.late} skipped, out of time)` : ''}, ${s.none} flights not listed yet, ${s.stay} trips with a short Hoi An stay; ${moved.length} fares listed at a new price; ${s.ms}ms (checks ${Math.round(s.detailsMs / 1000)} s, long-haul caps ${Math.round(s.fastMs / 1000)} s, past the search deadline ${Math.round(Math.max(0, Date.now() - session.deadline) / 1000)} s)`);
+        console.log(`details round ${details.rounds}: ${s.cells} cells, ${s.replaced} moved to another trip (connects, or cheaper as listed), ${s.unresolved} with none that connects, ${s.unknown} hidden with no flights checked; ${s.searches} searches${s.late ? ` (${s.late} skipped, out of time)` : ''}, ${s.none} flights not listed yet, ${s.stay} trips with a short Hoi An stay; ${moved.length} fares listed at a new price; ${s.ms}ms (checks ${Math.round(s.detailsMs / 1000)} s, event loop delay ${s.lag}, long-haul caps ${Math.round(s.fastMs / 1000)} s, past the search deadline ${Math.round(Math.max(0, Date.now() - session.deadline) / 1000)} s)`);
         if (warm || !moved.length || details.rounds >= ROUNDS || Date.now() > session.deadline) break;
         const done = [];
         for (const [k, r] of session.cache) { const v = await r; if (Array.isArray(v) && v.length) done.push([k, v]); }
@@ -458,7 +468,6 @@ async function main() {
     const why = `${t.far ?? 0} past the inline horizon (straight to a browser), ${t.empty ?? 0} pages with none inlined, ${t.window ?? 0} searched again after the connection (connected ${t.windowHit ?? 0} of ${t.windowTry ?? 0} trips' misses), ${t.full ?? 0} full lists, ${t.pages ?? 0} browser pages, ${t.refreshed ?? 0} stale searches refreshed, ${t.blocked ?? 0} refused by Google`;
     const pct = (a, q) => (a.length ? `${(a.toSorted((x, y) => x - y)[Math.floor(q * (a.length - 1))] / 1000).toFixed(1)} s` : '-');
     console.log(`search mix: ${why}`);
-    console.log(`event loop delay during the checks: median ${(lag.percentile(50) / 1e6).toFixed(0)} ms, 99% ${(lag.percentile(99) / 1e6).toFixed(0)} ms, max ${(lag.max / 1e6).toFixed(0)} ms`);
     console.log(`search timing: ${t.plain ?? 0} plain fetches (median ${pct(t.plainMs ?? [], 0.5)}, 90% ${pct(t.plainMs ?? [], 0.9)}; ${t.plainEmpty ?? 0} with no results inlined, ${t.timeouts ?? 0} timed out, ${t.errors ?? 0} other errors), browser pages median ${pct(t.pageMs ?? [], 0.5)}, 90% ${pct(t.pageMs ?? [], 0.9)}`);
     const emptyBy = Object.entries(t.emptyBy ?? {}).sort((a, b) => b[1] - a[1]);
     if (emptyBy.length) console.log(`search pages with none inlined, by route: ${emptyBy.slice(0, 12).map(([r, n]) => `${r} ${n}`).join(', ')} (${emptyBy.length} routes)`);
