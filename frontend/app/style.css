@@ -119,11 +119,12 @@ option { background: var(--panel); color: var(--text); }
 .range input::-moz-range-track { height: 4px; border-radius: 2px;
   background: linear-gradient(to right, var(--line) var(--lo), var(--text) var(--lo), var(--text) var(--hi), var(--line) var(--hi)); }
 .range input::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--text); border: 2px solid var(--panel); }
-/* Two thumbs on one track: two ranges stacked, only their thumbs taking taps. */
+/* The whole box takes taps and drags (main.js), not just the track: the inputs keep the keyboard. */
+.range { cursor: pointer; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.range input { pointer-events: none; }
+/* Two thumbs on one track: two ranges stacked. */
 .dual { position: relative; height: 22px; }
-.dual input { position: absolute; inset: 0; pointer-events: none; }
-.dual input::-webkit-slider-thumb { pointer-events: auto; }
-.dual input::-moz-range-thumb { pointer-events: auto; }
+.dual input { position: absolute; inset: 0; }
 .dual input + input::-webkit-slider-runnable-track { background: transparent; }
 .dual input + input::-moz-range-track { background: transparent; }
 /* Reset: at the end of the first row, beside the home toggle. */

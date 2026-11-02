@@ -3,8 +3,10 @@
  *
  * Google prices a multi-city ticket only for exact flights and dates (no price graph), so this is
  * a layer on top: the most promising shown trips, at most `budget` searches a build, results cached
- * for a day in state/multi.json. Two groupings per trip:
+ * for a day in state/multi.json. Groupings per trip:
  *   - open jaw: the two long one-ways (home → X, Y → home) as one ticket, the trip's long cabin
+ *   - through a Pacific stop: every long-haul flight (home → stop → X … Y → stop → home) as one
+ *     ticket, the long cabin: a stopover fare can beat the separate tickets
  *   - whole trip: every flight on one ticket, economy trips only (Google's search has one cabin)
  * A grouping that's cheaper than the tickets it replaces becomes one ticket:
  *   { kind: 'multi', from, to, date, legs: [{ from, to, date }], cabin, price, url, flights: { leg0, … } }
@@ -14,7 +16,7 @@ const path = require('node:path');
 const { readJson, writeJson } = require('../store/routes');
 const { parseResults } = require('../gflights/flights');
 const { pageUrl } = require('../gflights/page');
-const { airportsOf } = require('../../../frontend/app/cities.js');
+const { airportsOf, isLong, isPacific } = require('../../../frontend/app/cities.js');
 
 const MAX_AGE_MS = 24 * 3600e3;
 const CONCURRENCY = 6;
@@ -33,6 +35,11 @@ function groupsOf(trip, homes) {
   const long = trip.tickets.map((t, i) => [t, i]).filter(([t]) => homes.includes(t.from) || homes.includes(t.to));
   if (long.length === 2 && long.every(([t]) => t.kind === 'ow')) {
     out.push({ replace: long.map(([, i]) => i), legs: long.map(([t]) => ({ from: t.from, to: t.to, date: t.date })), cabin: long[0][0].cabin });
+  }
+  const longs = trip.tickets.map((t, i) => [t, i]).filter(([t]) => t.kind !== 'multi' && isLong(t.from, t.to, homes));
+  if (longs.length > 2 && longs.some(([t]) => isPacific(t.from) || isPacific(t.to))) {
+    const replace = longs.map(([, i]) => i);
+    out.push({ replace, legs: trip.order.filter(([i]) => replace.includes(i)).map((e) => flightAt(trip, e)), cabin: longs[0][0].cabin });
   }
   if (trip.cls === 'economy' && trip.tickets.length > 1 && !(out.length && trip.tickets.length === 2)) {
     out.push({ replace: trip.tickets.map((_, i) => i), legs: trip.order.map((e) => flightAt(trip, e)), cabin: 'Y' });

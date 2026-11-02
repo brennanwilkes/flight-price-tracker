@@ -652,9 +652,9 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 setInterval(() => { if (document.visibilityState === 'visible') refresh(false); }, POLL_MS);
 $('#month').addEventListener('change', (e) => { state.month = e.target.value; render(); });
 // Sliders: the label follows the thumb; letting go applies it (loading the filter cells once).
-function readSliders() {
+function readSliders(moved = document.activeElement) {
   let [lo, hi] = [Number($('#lenlo').value), Number($('#lenhi').value)];
-  if (lo > hi) { if (document.activeElement === $('#lenlo')) $('#lenhi').value = hi = lo; else $('#lenlo').value = lo = hi; }
+  if (lo > hi) { if (moved === $('#lenlo')) $('#lenhi').value = hi = lo; else $('#lenlo').value = lo = hi; }
   state.len = [BANDS[lo], BANDS[hi] + 1];
   state.cap = CAPS[Number($('#cap').value)];
   $('#lenval').textContent = `${state.len[0]}–${state.len[1]} days`;
@@ -680,8 +680,32 @@ $('#reset').addEventListener('click', () => {
   show();
 });
 for (const id of ['cap', 'lenlo', 'lenhi']) {
-  $(`#${id}`).addEventListener('input', readSliders);
+  $(`#${id}`).addEventListener('input', () => readSliders());
   $(`#${id}`).addEventListener('change', () => { readSliders(); show(); });
+}
+// Anywhere in a slider's box: the nearest thumb jumps there and follows the finger; letting go applies.
+for (const box of document.querySelectorAll('.range')) {
+  const inputs = [...box.querySelectorAll('input')];
+  let held = null;
+  const valueAt = (x) => {
+    const r = inputs[0].getBoundingClientRect(), pad = 8; // thumb half-width: the ends of its travel
+    return Math.round(Math.min(1, Math.max(0, (x - r.left - pad) / (r.width - 2 * pad))) * Number(inputs[0].max));
+  };
+  const move = (x) => {
+    const v = valueAt(x);
+    if (Number(held.value) !== v) { held.value = v; readSliders(held); }
+  };
+  box.addEventListener('pointerdown', (e) => {
+    const v = valueAt(e.clientX);
+    // Two thumbs: the nearer one (together: the one on the side tapped).
+    held = inputs.reduce((a, b) => (Math.abs(b.value - v) < Math.abs(a.value - v) || (b.value === a.value && v > a.value) ? b : a));
+    box.setPointerCapture(e.pointerId);
+    move(e.clientX);
+  });
+  box.addEventListener('pointermove', (e) => { if (held) move(e.clientX); });
+  const done = () => { if (held) { held = null; show(); } };
+  box.addEventListener('pointerup', done);
+  box.addEventListener('pointercancel', done);
 }
 $('#via').addEventListener('change', (e) => { if (e.target.value) state.vias = [...state.vias, e.target.value]; show(); });
 $('#vias').addEventListener('click', (e) => {

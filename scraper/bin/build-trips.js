@@ -51,7 +51,7 @@ const zlib = require('node:zlib');
 const config = require('../config/sweep.json');
 const { loadFares, bundleOf, fareOf } = require('../src/trips/fares');
 const { buildTrips, similarCount, scoreOf, rowId, bandOf } = require('../../frontend/app/build.js');
-const { CITIES, airportsOf } = require('../../frontend/app/cities.js');
+const { CITIES, airportsOf, isPacific } = require('../../frontend/app/cities.js');
 const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
 const { addDetails, capped, longestOf } = require('../src/trips/details');
 const { openBrowser, shoppingResults } = require('../src/gflights/browser');
@@ -65,6 +65,7 @@ const CLASSES = ['hybrid', 'economy'];
 const TRIES = 10;
 const THROW_INS = 4; // rows per crossing and class besides the one with its cheapest
 const MULTI_BUDGET = 80; // multi-city searches per build (trips/multi.js)
+const PACIFIC_MULTI = 30; // of them, at most this many for trips through a Pacific stop first
 const ROUNDS = 3;
 const CHECKED_HOURS = 24;
 const DETAILS_RESERVE = 8 * 60e3; // multi-city ~4 min, a page still loading ≤ 4 min
@@ -320,7 +321,11 @@ async function multiPass(dataDir, byHome, fares, search) {
     const t0 = Date.now();
     // Each class most promising first, taking turns: economy totals would otherwise always win.
     const byClass = CLASSES.map((c) => cellsOf(true).filter((t) => t.cls === c).sort((a, b) => estimate(a) - estimate(b)));
-    const main = byClass[0].flatMap((t, i) => [t, byClass[1][i]]).concat(byClass[1].slice(byClass[0].length)).filter(Boolean);
+    const turns = byClass[0].flatMap((t, i) => [t, byClass[1][i]]).concat(byClass[1].slice(byClass[0].length)).filter(Boolean);
+    // Trips through a Pacific stop first, up to PACIFIC_MULTI: their one-ticket fare (a stopover
+    // fare) is the point of them, and they're rarely the cheapest by estimate.
+    const pacific = turns.filter((t) => t.tickets.some((x) => isPacific(x.to))).slice(0, PACIFIC_MULTI);
+    const main = [...pacific, ...turns.filter((t) => !pacific.includes(t))];
     const st = await applyMulti(dataDir, main, homes, browser, { budget: MULTI_BUDGET });
     await applyMulti(dataDir, [...cellsOf(false, true), ...cellsOf(true, true).filter((t) => !main.includes(t))], homes, null);
     for (const [view, rows] of byHome) {

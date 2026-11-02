@@ -10,7 +10,8 @@
  *            (either end as origin), per trip length: a return nested inside the long-haul trip;
  *            lengths by direction (fromVietnam / toVietnam, see below)
  *   pacific — one-ways per long cabin, home ⇄ each Pacific stop (cities.js) and the stop ⇄ each
- *            gateway it has flights with (the network): the long haul broken up (build.js)
+ *            gateway it has flights with (the network): the long haul broken up (build.js); with
+ *            lengthRange, round trips home ⇄ stop per trip length instead (the trip inside them)
  * state/graphs.json: { '<routeId>|<tripLen>': last successful scrape (ISO) }.
  */
 const { citiesWith, CITIES } = require('../../../frontend/app/cities.js');
@@ -47,6 +48,10 @@ function allGraphs(config, network) {
         const touchesVietnam = vietnam.includes(a) || vietnam.includes(b);
         if ((t.vietnam ?? touchesVietnam) !== touchesVietnam) continue;
         add({ routeId: `${a}-${b}-Y-OW`, from: a, to: b, cabin: 'Y', tripLen: null });
+      }
+    } else if (t.kind === 'pacific' && t.lengthRange) { // round trips home ⇄ stop, the whole trip long
+      for (const cabin of config.longCabins) for (const p of citiesWith('pacific')) for (const home of config.origins) {
+        for (const tripLen of lengthsOf(t)) add({ routeId: `${home}-${p}-${cabin}`, from: home, to: p, cabin, tripLen });
       }
     } else if (t.kind === 'pacific') {
       const ow = (from, to, cabin) => add({ routeId: `${from}-${to}-${cabin}-OW`, from, to, cabin, tripLen: null });

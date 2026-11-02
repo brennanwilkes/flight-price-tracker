@@ -479,3 +479,19 @@ test('long-haul cap: the same trip re-picked from its searches with every long f
   assert.strictEqual((await capped(trip, cache, 14 * 60, ['YVR'])).tickets[0].flights.out.airlines[0], 'BR');
   assert.strictEqual(await capped(trip, cache, 12 * 60, ['YVR']), null);
 });
+
+test('Pacific stop: a round trip home ⇄ Honolulu holds the trip; one ticket through the stop is a grouping', () => {
+  const w = world({
+    rt: { [`YVR-HNL-J|${day(-1)}`]: [{ ret: day(17), price: 900 }] },
+    ow: { [`HNL-ICN-J|${D0}`]: 1500, [`ICN-HNL-J|${day(16)}`]: 1400 },
+    hops: { [`ICN-DAD|${day(3)}`]: 200, [`DAD-ICN|${day(9)}`]: 180 },
+  });
+  w.pacific = ['HNL'];
+  const t = find(buildTrips(w), 'hybrid', 'ICN', 'ICN', 'HNL');
+  assert.strictEqual(t.total, 4180);
+  assert.deepStrictEqual(t.order.map(([i, dir]) => `${t.tickets[i].kind} ${dir}`), ['rt out', 'ow out', 'ow out', 'ow out', 'ow out', 'rt back']);
+  assert.strictEqual(t.days, 18);
+  const { groupsOf } = require('../scraper/src/trips/multi');
+  const g = groupsOf(t, ['YVR']).find((x) => x.legs.length === 4);
+  assert.deepStrictEqual(g.legs.map((l) => `${l.from}-${l.to}`), ['YVR-HNL', 'HNL-ICN', 'ICN-HNL', 'HNL-YVR']);
+});

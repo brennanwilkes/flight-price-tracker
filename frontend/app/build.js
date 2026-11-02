@@ -357,7 +357,7 @@ function isSafe(d0, hops, backDate) {
  * landing to the next flight } (details.js checks it against real times): `first` (a long round trip
  * or one-way), the plan's hops (a nested return's 'back' is the second flight of its 'rt'), and
  * `last` (the one-way home, or null when `first` is a round trip); either can be a list (the long
- * leg broken up at a Pacific stop).
+ * leg broken up at a Pacific stop; a round trip to the stop flies its way back last).
  */
 function ticketsOf(first, hops, last) {
   const tickets = [first].flat();
@@ -372,7 +372,8 @@ function ticketsOf(first, hops, last) {
     order.push([tickets.length - 1, 'out']);
     if (kind === 'rt') open.push(tickets.length - 1);
   }
-  if (last) for (const t of [last].flat()) { tickets.push(t); order.push([tickets.length - 1, 'out']); } else order.push([0, 'back']);
+  for (const t of [last ?? []].flat()) { tickets.push(t); order.push([tickets.length - 1, 'out']); }
+  if (tickets[0].kind === 'rt') order.push([0, 'back']);
   return { tickets, order, stay };
 }
 
@@ -562,6 +563,39 @@ function buildTrips(fares, { need = [], homes = fares.homes } = {}) {
               const depart = addDays(d0, -n);
               const to = fares.oneWay(home, p, cabin, depart);
               if (to != null) outs.push({ n, stop: p, price: to + on.price, depart, tickets: [{ kind: 'ow', from: home, to: p, date: depart, cabin, price: to }, { kind: 'ow', from: p, to: x, date: on.date, cabin, price: on.price }] });
+            }
+          }
+          // A round trip home ⇄ Pacific stop holding the whole trip: out through the stop to x, back
+          // through the same stop (m nights there) on its return.
+          for (const p of pacific) {
+            const on = onFrom(p, x, cabin, d0);
+            if (!on) continue;
+            for (let n = 0; n <= STOP_NIGHTS; n++) {
+              const depart = addDays(d0, -n);
+              for (const { ret, price } of fares.roundTrip(home, p, cabin, depart)) {
+                const days = (Date.parse(ret) - Date.parse(depart)) / 864e5;
+                if (days < MIN_DAYS || days > MAX_DAYS || !stopNeed.every((c) => c === p)) continue;
+                const rt = { kind: 'rt', from: home, to: p, date: depart, ret, cabin, price };
+                for (const y of fares.cities) {
+                  for (let m = 0; m <= STOP_NIGHTS; m++) {
+                    const date = addDays(ret, -m);
+                    const back = fares.oneWay(y, p, cabin, date);
+                    if (back == null) continue;
+                    const tight = n === 0 || m === 0;
+                    for (const pl of plan(y, days - n - m).slice(0, 2)) {
+                      const total = price + on.price + pl.cost + back;
+                      const cell = `${home}|${cls}|${x}|${y}|${p}|${depart.slice(0, 7)}`;
+                      if (total > (cheapest.get(cell) ?? Infinity) * (1 + STOP_SLACK)) continue;
+                      if (!(cheapest.get(cell) <= total)) cheapest.set(cell, total);
+                      offer({
+                        ...base, month: depart.slice(0, 7), depart, out: y, total, pen: pl.pen, reentry: pl.reentry, ret, days,
+                        sameDay: tight || hasSameDay(d0, pl.hops, date), safe: !tight && isSafe(d0, pl.hops, date),
+                        ...ticketsOf([rt, { kind: 'ow', from: p, to: x, date: on.date, cabin, price: on.price }], pl.hops, { kind: 'ow', from: y, to: p, date, cabin, price: back }),
+                      });
+                    }
+                  }
+                }
+              }
             }
           }
           for (const o of outs) {
