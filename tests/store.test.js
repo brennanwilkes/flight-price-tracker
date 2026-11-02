@@ -30,3 +30,14 @@ test('recordCells: rows only on change (incl. to/from empty); first-priced time 
   assert.deepStrictEqual(cur['2027-09-01|14'], { ret: '2027-09-15', price: 3999, seen: at(3), first: at(3) });
   assert.deepStrictEqual(cur['2027-09-02|14'], { ret: '2027-09-15', price: null, seen: at(3), first: at(1) });
 });
+
+test('packJson/unpack: a ticket shared by several trips is stored once and comes back in place', async () => {
+  const { packJson, unpack } = await import('../frontend/app/pack.js');
+  const tk = { kind: 'rt', from: 'YVR', to: 'HAN', price: 4309, flights: { out: { legs: [{ code: 'PR117' }] } } };
+  const hop = { kind: 'ow', from: 'HAN', to: 'DAD', price: 49 };
+  const data = { home: 'YVR', rows: [{ hybrid: { total: 4358, tickets: [tk, hop] }, months: { '2027-09': { hybrid: { total: 4358, tickets: [tk, hop] } } } }] };
+  const text = packJson(data);
+  assert.strictEqual(text.split('PR117').length, 2);
+  assert.deepStrictEqual(unpack(JSON.parse(text)), data);
+  assert.deepStrictEqual(unpack({ rows: [] }), { rows: [] }, 'older files pass through');
+});

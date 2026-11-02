@@ -15,6 +15,7 @@ const config = require('../config/alerts.json');
 const sweepConfig = require('../config/sweep.json');
 const { cityName, rowName } = require('../../frontend/app/cities.js');
 const { rowId } = require('../../frontend/app/build.js');
+const { unpack } = require('../../frontend/app/pack.js');
 const { lows, findDeals, isNews } = require('../src/alerts/rules');
 
 const arg = (name) => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1] : null; };
@@ -66,7 +67,7 @@ async function main() {
   for (const home of sweepConfig.origins) {
     const f = path.join(dataDir, 'derived', `trips-${home}.json`);
     if (!fs.existsSync(f)) continue;
-    const d = readJson(f);
+    const d = unpack(readJson(f));
     rows[home] = d.rows;
     generatedAt = d.generatedAt;
   }

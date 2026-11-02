@@ -9,6 +9,7 @@
 // - The current commit is checked on resume and every 5 min while visible. Newer data applies at
 //   once on resume; mid-use it's a tap-to-show bar, so prices don't change under a tap. Data
 //   whose generatedAt isn't newer than what's shown (a stale API answer) is ignored.
+import { unpack } from './pack.js';
 import { CITIES, HOI_AN, place, cityName, rowName, landsAfter, countryOf, isLong } from './cities.js';
 import { samePrice } from './price.js';
 import { tripMap } from './map.js';
@@ -93,7 +94,7 @@ async function fetchTrips(sha, key) {
   const res = await fetch(`${base}/derived/${key.includes('-') ? 'via/' : ''}trips-${key}.json`, { cache: 'no-cache' });
   if (res.status === 404 && key.includes('-')) return { rows: [] }; // a city with no trips this build (older builds wrote no file)
   if (!res.ok) throw new Error(`trips-${key}.json: HTTP ${res.status}`);
-  return res.json();
+  return unpack(await res.json());
 }
 
 // A filter is on: the length range is narrowed, or long hauls capped.
@@ -107,7 +108,7 @@ async function load() {
   state.data[state.home] ??= await fetchTrips(state.sha, state.home);
   if (filtering() && !state.data[`filters-${state.home}`]) {
     const res = await fetch(`${dataBase(state.sha)}/derived/filters-${state.home}.json`, { cache: 'no-cache' }).catch(() => null);
-    state.data[`filters-${state.home}`] = res?.ok ? await res.json() : { rows: {} }; // older builds: the trips' own cells, filtered
+    state.data[`filters-${state.home}`] = res?.ok ? unpack(await res.json()) : { rows: {} }; // older builds: the trips' own cells, filtered
   }
   const known = state.data[state.home].vias ?? [];
   state.vias = state.vias.filter((c) => known.includes(c));

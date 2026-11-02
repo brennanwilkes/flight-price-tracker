@@ -22,6 +22,8 @@
  *     trip's own fast): { "<cap hours>": trip | null } for the caps where the cell's trip changes
  *     (CAPS): the cell under a cap is the one at the tightest listed cap at or above it.
  *
+ * Each file stores a distinct ticket once (frontend/app/pack.js).
+ *
  * Every cell, overall and per month, gets the actual flights on each ticket
  * (src/trips/details.js; skipped with --no-details), and the listed prices: the price graph has
  * no times and can be stale, so a cell's cheapest trip may not connect or may cost more as listed.
@@ -62,11 +64,13 @@ const { openBrowser, shoppingResults } = require('../src/gflights/browser');
 const alertConfig = require('../config/alerts.json');
 const { tierOf } = require('../src/alerts/rules');
 const { flexOf } = require('../../frontend/app/flex.js');
+const { packJson } = require('../../frontend/app/pack.js');
 const { markLows, cellTrips } = require('../src/trips/lows');
 const { applyMulti, multiCache, multiSaving } = require('../src/trips/multi');
 
 const CLASSES = ['hybrid', 'economy'];
 const TRIES = 10;
+const MAX_FILE_BYTES = 95e6; // GitHub refuses a pushed file over 100 MB
 const THROW_INS = 4; // rows per crossing and class besides the one with its cheapest
 const MULTI_BUDGET = 80; // multi-city searches per build (trips/multi.js)
 const PACIFIC_MULTI = 30; // of them, at most this many for trips through a Pacific stop first
@@ -446,7 +450,7 @@ async function main() {
   for (const [view, rows] of byHome) {
     const [home, via] = view.split('|');
     if (via) {
-      fs.writeFileSync(path.join(dataDir, 'derived', 'via', `trips-${home}-${via}.json`), JSON.stringify({ generatedAt, home, via, rows })); // listed in vias, so even when empty
+      fs.writeFileSync(path.join(dataDir, 'derived', 'via', `trips-${home}-${via}.json`), packJson({ generatedAt, home, via, rows })); // listed in vias, so even when empty
       continue;
     }
     for (const r of rows) {
@@ -467,8 +471,13 @@ async function main() {
       filters[rowId(r)] = { bands: r.bands ?? {}, fast };
       delete r.bands;
     }
-    fs.writeFileSync(path.join(dataDir, 'derived', `filters-${home}.json`), JSON.stringify({ generatedAt, home, caps: CAPS, rows: filters }));
-    fs.writeFileSync(path.join(dataDir, 'derived', `trips-${home}.json`), JSON.stringify({ generatedAt, home, vias, rows })); // compact: the phone loads it
+    // Over GitHub's file limit the whole push fails: the filters go without (the page filters the
+    // trips' own cells) rather than the build.
+    const filtersJson = packJson({ generatedAt, home, caps: CAPS, rows: filters });
+    const filtersFile = path.join(dataDir, 'derived', `filters-${home}.json`);
+    if (filtersJson.length < MAX_FILE_BYTES) fs.writeFileSync(filtersFile, filtersJson);
+    else { fs.rmSync(filtersFile, { force: true }); console.log(`filters-${home}.json: ${Math.round(filtersJson.length / 1e6)} MB, not written`); }
+    fs.writeFileSync(path.join(dataDir, 'derived', `trips-${home}.json`), packJson({ generatedAt, home, vias, rows })); // compact: the phone loads it
     const top = rows[0]?.hybrid;
     console.log(`${home}: ${rows.length} rows${top ? `, best hybrid ${rowId(rows[0])} ${top.total} (${top.depart}…${top.ret})` : ''}`);
   }
