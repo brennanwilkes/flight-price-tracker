@@ -10,6 +10,9 @@ on:
       empty:
         description: Searches that inlined nothing (FROM-TO-CABIN-date[-ret]); empty skips the time probe
         default: ''
+      spa:
+        description: One page, several searches (FROM TO DATE N); empty skips
+        default: ''
       quick:
         description: Only the plain search for each (1 = yes)
         default: ''
@@ -43,8 +46,11 @@ jobs:
         run: |
           scripts/vpn_up.sh
           grep -q '^vpn_ok=true' "$GITHUB_OUTPUT" || { echo "::error::VPN did not come up"; exit 1; }
+      - name: Probe one page
+        if: inputs.spa != ''
+        run: node scraper/bin/probe-spa.js ${{ inputs.spa }}
       - name: Probe
-        if: inputs.empty == ''
+        if: inputs.empty == '' && inputs.spa == ''
         run: node scraper/bin/probe-times.js ${{ inputs.search }} --browser
       - name: Probe empty pages
         if: inputs.empty != ''
