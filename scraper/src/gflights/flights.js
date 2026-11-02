@@ -42,19 +42,27 @@ function parseResults(ds1) {
 const dedupe = (opts) => [...new Map(opts.map((o) => [`${o.price} ${o.legs.map((l) => `${l.code} ${l.depDate}`)}`, o])).values()];
 
 /**
- * One search's result rows. Google now and then serves a page without them: one retry. Some
- * searches come back with none inlined although flights exist (seen: YVR⇄DAD, HAN→DAD); the
- * page then loads them through GetShoppingResults, so with `browser` (browser.shoppingResults
- * bound to a context: its payloads) an empty answer is asked again in a real page.
+ * One search's result rows from the plain page: [] when the page inlined none. Google now and
+ * then serves a page without its results blob: one retry.
  */
-async function search(query, { browser = null, tries = 2 } = {}) {
+async function searchPlain(query, tries = 2) {
   const r = await fetchPage(query);
   const opts = r.status === 200 ? parseOptions(r.html) : null;
-  if (opts?.length) return opts;
-  if (opts && browser) return dedupe((await browser(query)).flatMap(parseResults));
   if (opts) return opts;
-  if (tries > 1) return search(query, { browser, tries: tries - 1 });
+  if (tries > 1) return searchPlain(query, tries - 1);
   throw new Error(r.status === 200 ? 'no results blob' : `HTTP ${r.status}`);
 }
 
-module.exports = { parseOptions, parseResults, search };
+/**
+ * One search's result rows. Some searches come back with none inlined although flights exist
+ * (seen: YVR⇄DAD, HAN→DAD); the page then loads them through GetShoppingResults, so with
+ * `browser` (browser.shoppingResults bound to a context: its payloads) an empty answer is asked
+ * again in a real page.
+ */
+async function search(query, { browser = null, tries = 2 } = {}) {
+  const opts = await searchPlain(query, tries);
+  if (opts.length || !browser) return opts;
+  return dedupe((await browser(query)).flatMap(parseResults));
+}
+
+module.exports = { parseOptions, parseResults, search, searchPlain, dedupe };

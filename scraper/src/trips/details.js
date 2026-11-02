@@ -10,14 +10,25 @@
  * option: { price, min, airlines, legs: [{ code, airline, from, to, dep, arr, depDate, arrDate,
  * min, plane }], stops: [{ at, min }], likely? }.
  */
-const { search, parseResults } = require('../gflights/flights');
+const { searchPlain, parseResults, dedupe } = require('../gflights/flights');
 const { airportsOf, isLong } = require('../../../frontend/app/cities.js');
 const { fareKey } = require('./fares');
 const { samePrice } = require('../../../frontend/app/price.js');
 
 const MIN_CONNECT_MIN = 4 * 60;
 const CONCURRENCY = 12; // plain searches in flight (~2 s each)
-const PAGES = 4; // browser pages at once (10-60 s each): a search waiting on one doesn't hold up the plain ones
+const PAGES = 4; // browser pages at once (10-60 s each), by default: a search waiting on one doesn't hold up the plain ones
+// A page that inlines no results is asked again plain this long after, before a browser page:
+// Google may have the search done by then.
+const REFETCH_MS = 20_000;
+// Google refusing plain searches (HTTP 429, or a redirect to its "unusual traffic" page): none
+// start for this long, so the price graphs on the same connection aren't refused too.
+const BLOCKED_PAUSE_MS = 60_000;
+// Refreshing a stale search (cache.stale) waits behind every search a check still needs.
+const REFRESH_PRIO = 1e6;
+// Lists served from cache.stale: their flights and times hold, their prices are only a hint.
+const STALE = new WeakSet();
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const SLOW_PAGE_MS = 60_000; // retries and full lists: some searches (YYJ business returns) take Google > 30 s
 
 const at = (date, hm) => Date.parse(`${date}T${hm}:00Z`) / 60000; // minutes, local clock (comparisons only within one city)
@@ -71,26 +82,29 @@ function plan(flights, lists, stay = null) {
   close(flights.length);
   return picks;
 }
-/** A browser search still waiting for a page when the deadline passed: dropped, not a failure. */
+/** A search that got its slot after the deadline: dropped, not a failure. */
 class Late extends Error {}
 
 /**
- * browser limited to PAGES at once, across every addDetails call sharing `cache`. A search that
- * gets its page after `deadline` hands it on and throws Late: pages run 10-60 s, and a queue
- * drained past the deadline ran the build minutes over.
+ * `n` slots shared by every addDetails call on `cache`: run(prio, deadline, job). The waiting job
+ * with the lowest prio goes next (a dashboard cell's searches before a via cell's, any check
+ * before a refresh). A job that gets its slot after `deadline` hands it on and throws Late: a
+ * queue drained past the deadline ran builds minutes over.
  */
-function paged(browser, cache, deadline) {
-  const slots = (cache.pages ??= { free: PAGES, waiting: [] });
+function slots(cache, name, n) {
+  const s = ((cache.slots ??= {})[name] ??= { free: n, waiting: [] });
   const release = () => {
-    const go = slots.waiting.shift();
-    if (go) go(); else slots.free++;
+    if (!s.waiting.length) { s.free++; return; }
+    let i = 0;
+    for (let j = 1; j < s.waiting.length; j++) if (s.waiting[j].prio < s.waiting[i].prio) i = j;
+    s.waiting.splice(i, 1)[0].go();
   };
-  return async (...args) => {
-    if (slots.free) slots.free--;
-    else await new Promise((go) => slots.waiting.push(go));
+  return async (prio, deadline, job) => {
+    if (s.free) s.free--;
+    else await new Promise((go) => s.waiting.push({ prio, go }));
     if (Date.now() > deadline) { release(); throw new Late(); }
     try {
-      return await browser(...args);
+      return await job();
     } finally {
       release();
     }
@@ -117,53 +131,95 @@ function flightsOf(trip) {
  * `listed` (optional Map): each searched fare's cheapest listed price, by fareKey (fares.js).
  * After `deadline` (ms) no new search starts: those flights stay unknown (stats.late: each
  * search counted once per cache, however many calls ask for it).
+ * Searches share CONCURRENCY plain slots and `pages` browser pages across every call on `cache`,
+ * by `prio` (lowest first). `cache.stale` (optional Map, key → result): searches from earlier
+ * builds, past their fresh hours, used at once (their flights; the fare's price stands, nothing
+ * goes into `listed`) and searched again after everything else (cache.at loses the key: made now).
+ * cache.tally counts across calls: empty pages, refetched (listed when asked again plain), pages,
+ * full lists, refreshed, blocked (Google refusing plain searches).
  */
-async function addDetails(trips, cache = new Map(), browser = null, listed = null, deadline = Infinity) {
+async function addDetails(trips, cache = new Map(), browser = null, listed = null, deadline = Infinity, { prio = 0, pages = PAGES } = {}) {
   const LATE = { error: 'out of time', late: true }; // not cached
-  browser &&= paged(browser, cache, deadline);
-  const searchOnce = (q, key = JSON.stringify(q)) => {
-    if (!cache.has(key)) {
-      if (Date.now() > deadline) return Promise.resolve(LATE);
-      cache.set(key, search(q, { browser }).catch((e) => (e instanceof Late ? (cache.delete(key), LATE) : { error: e.message })));
-    }
-    return cache.get(key);
+  const plain = slots(cache, 'plain', CONCURRENCY);
+  const page = browser && slots(cache, 'pages', pages);
+  const tally = (cache.tally ??= { empty: 0, refetched: 0, pages: 0, full: 0, refreshed: 0, blocked: 0 });
+  const stale = cache.stale ?? new Map(); // key → result, from earlier builds past their fresh hours
+  const stats = { searches: 0, failed: 0, late: 0, full: 0, connection: 0, none: 0, stay: 0 };
+  // A result into the cache as it comes; out of time: out again, not a result.
+  const settle0 = (key, p) => {
+    const r = p.catch((e) => (e instanceof Late ? LATE : { error: e.message }))
+      .then((v) => { if (v === LATE && cache.get(key) === r) cache.delete(key); return v; });
+    cache.set(key, r);
+    return r;
   };
+  const fetchPlain = (p, q, tries) => plain(p, deadline, async () => {
+    for (let w; (w = (cache.blockedUntil ?? 0) - Date.now()) > 0;) await sleep(w);
+    try {
+      return await searchPlain(q, tries);
+    } catch (e) {
+      if (/HTTP (429|30\d)/.test(e.message)) { tally.blocked++; cache.blockedUntil = Date.now() + BLOCKED_PAUSE_MS; }
+      throw e;
+    }
+  });
+  const inPage = async (p, q, opts) => {
+    const r = await page(p, deadline, () => { tally.pages++; return browser(q, opts); });
+    return dedupe(r.flatMap(parseResults));
+  };
+  // Plain first; a page with none inlined asked again plain (no slot held while waiting), then in a browser.
+  const plainThenPage = async (q, p) => {
+    const opts = await fetchPlain(p, q);
+    if (opts.length || !page) return opts;
+    tally.empty++;
+    await sleep(REFETCH_MS);
+    const again = await fetchPlain(p, q, 1);
+    if (again.length) { tally.refetched++; return again; }
+    return inPage(p, q);
+  };
+  // A stale result serves now; a fresh one replaces it once searched, after every check's search.
+  const refresh = (key, run) => {
+    (cache.refreshing ??= new Set());
+    if (cache.refreshing.has(key)) return;
+    cache.refreshing.add(key);
+    run(REFRESH_PRIO + prio).then((v) => {
+      if (!Array.isArray(v) || !v.length || cache.has(key)) return;
+      cache.set(key, Promise.resolve(v));
+      cache.at?.delete(key); // made now
+      stale.delete(key);
+      tally.refreshed++;
+    }, () => {});
+  };
+  const once = (key, run, p) => {
+    if (cache.has(key)) return cache.get(key);
+    const old = stale.get(key);
+    if (old) { STALE.add(old); refresh(key, run); return Promise.resolve(old); }
+    if (Date.now() > deadline) return Promise.resolve(LATE);
+    return settle0(key, run(p));
+  };
+  const searchOnce = (q, key = JSON.stringify(q), p = prio) => once(key, (pp) => plainThenPage(q, pp), p);
   // A plain search lists only Google's top flights (the cheapest among them); when none of those
   // connects, or the search failed, the page's full list ("View more flights").
   const fullOnce = (q) => {
     const key = `full ${JSON.stringify(q)}`;
-    if (!cache.has(key)) {
-      if (Date.now() > deadline) return Promise.resolve(LATE);
-      cache.set(key, browser(q, { timeout: SLOW_PAGE_MS }).then((ps) => ps.flatMap(parseResults)).catch((e) => (e instanceof Late ? (cache.delete(key), LATE) : { error: e.message })));
-      stats.full++;
-    }
-    return cache.get(key);
+    if (!cache.has(key) && !stale.has(key)) { stats.full++; tally.full++; }
+    return once(key, (pp) => inPage(pp, q, { timeout: SLOW_PAGE_MS }), prio);
   };
-  const stats = { searches: 0, failed: 0, late: 0, full: 0, connection: 0, none: 0, stay: 0 };
 
-  // Warm the cache with bounded concurrency, then pick sequentially per trip. Each trip's flights
-  // and their search keys worked out once.
+  // Each trip's flights and their search keys worked out once; every search not made yet started
+  // (the slots order them), then each trip picked as its searches come in.
   const flown = trips.map((t) => flightsOf(t).map((f) => Object.assign(f, { key: JSON.stringify(f.query) })));
   const queries = [...new Map(flown.flat().map((f) => [f.key, f.query])).values()]
-    .filter((q) => !cache.has(JSON.stringify(q)));
-  let next = 0;
-  await Promise.all(Array.from({ length: CONCURRENCY }, async () => {
-    while (next < queries.length) await searchOnce(queries[next++]);
-  }));
+    .filter((q) => !cache.has(JSON.stringify(q)) && !stale.has(JSON.stringify(q)));
   cache.late ??= new Set();
   await Promise.all(queries.map(async (q) => {
-    const r = await searchOnce(q);
-    if (r.late) { if (!cache.late.has(JSON.stringify(q))) { cache.late.add(JSON.stringify(q)); stats.late++; } return; }
+    const key = JSON.stringify(q);
+    const r = await searchOnce(q, key);
+    if (r.late) { if (!cache.late.has(key)) { cache.late.add(key); stats.late++; } return; }
     stats.searches++;
-    if (r.error && browser) { const all = await fullOnce(q); if (!all.late) cache.set(JSON.stringify(q), all); } // retried in a page
-    if ((await searchOnce(q)).error) { stats.failed++; stats.error ??= `${q.from}-${q.to} ${q.out}: ${r.error}`; }
+    if (r.error && browser) { const all = await fullOnce(q); if (!all.late && !all.error) cache.set(key, Promise.resolve(all)); } // retried in a page
+    const now = await searchOnce(q, key);
+    if (now.error) { stats.failed++; stats.error ??= `${q.from}-${q.to} ${q.out}: ${now.error}`; }
   }));
-
-  // Trips picked CONCURRENCY at a time: a trip waiting on a full list (a page, 10-60 s) holds one.
-  let nextTrip = 0;
-  await Promise.all(Array.from({ length: CONCURRENCY }, async () => {
-    while (nextTrip < trips.length) { const i = nextTrip++; await pickFlights(trips[i], flown[i]); }
-  }));
+  await Promise.all(trips.map((t, i) => pickFlights(t, flown[i])));
   return stats;
 
   async function pickFlights(trip, flights) {
@@ -181,14 +237,15 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
     const s = settle(trip, flights, lists, picks);
     for (const [i, f] of flights.entries()) {
       f.ticket.flights ??= {};
-      if (listed && f.dir === 'out' && !lists[i].error && lists[i].length && (f.ticket.kind === 'ow' || f.ticket.kind === 'rt')) listed.set(fareKey(f.ticket), cheapest(lists[i]).price);
+      const old = STALE.has(lists[i]); // its listed prices from an earlier day: the fare's own price stands
+      if (listed && !old && f.dir === 'out' && !lists[i].error && lists[i].length && (f.ticket.kind === 'ow' || f.ticket.kind === 'rt')) listed.set(fareKey(f.ticket), cheapest(lists[i]).price);
       const pick = s.picks[i];
       if (!pick) continue; // search failed, or a return whose outbound is unknown
       f.ticket.flights[f.dir] = pick;
       if (pick.miss) { stats[pick.miss]++; continue; }
       // The listed price is what booking costs; the graph's can be stale (seen: $4,262 graph,
       // $5,012 cheapest listed).
-      if (f.dir === 'out') { f.ticket.graph = f.ticket.price; f.ticket.price = pick.price; }
+      if (f.dir === 'out' && !old) { f.ticket.graph = f.ticket.price; f.ticket.price = pick.price; }
     }
     if (s.short) stats.stay++;
     trip.connects = s.connects;
@@ -259,8 +316,9 @@ async function capped(trip, cache, maxMin, homes) {
   const lists = [];
   for (const f of flights) {
     const key = JSON.stringify(f.query);
-    let l = cache.has(`full ${key}`) ? await cache.get(`full ${key}`) : null;
-    if (!Array.isArray(l) || !l.length) l = cache.has(key) ? await cache.get(key) : null;
+    const got = async (k) => (cache.has(k) ? cache.get(k) : cache.stale?.get(k) ?? null);
+    let l = await got(`full ${key}`);
+    if (!Array.isArray(l) || !l.length) l = await got(key);
     if (!Array.isArray(l) || !l.length) return null;
     if (isLong(f.ticket.from, f.ticket.to, homes)) l = l.filter((o) => longestLeg(o) <= maxMin);
     if (!l.length) return null;
@@ -278,4 +336,4 @@ async function capped(trip, cache, maxMin, homes) {
   return { ...trip, tickets, conn: s.conn, connects: true, total: tickets.reduce((sum, t) => sum + t.price, 0) };
 }
 
-module.exports = { addDetails, flightsOf, capped, longestOf, paged, Late };
+module.exports = { addDetails, flightsOf, capped, longestOf, slots, Late, STALE };

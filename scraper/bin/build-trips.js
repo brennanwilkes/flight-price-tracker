@@ -85,6 +85,13 @@ const MULTI_RESERVE = 5 * 60e3;
 // and the fares behind them are 2-48 h old already. Every shown cell needs ~6,200 searches, a build
 // makes ~800: under SEARCH_HOURS = 3 they could never all be fresh at once.
 const SEARCH_HOURS = 24;
+// Past SEARCH_HOURS a search still serves, up to STALE_DAYS (details.js cache.stale): a day's
+// flights and times rarely change, so its cell stays checked while it waits to be searched again,
+// after every search a check still needs. Cells with no flights checked come only from searches
+// never made, not from the ones a day of checks couldn't all redo.
+const STALE_DAYS = 7;
+// Browser pages at once: 4 beside the scrape (its price graphs run too), more in the build.
+const PAGES = { warm: 4, build: 8 };
 // Any listed flight lands within this many days of leaving; a longer offset is a misread row.
 const MAX_LAND_DAYS = 3;
 // The board's long-haul filter (hours, loosest first): each dashboard cell's cheapest trip with
@@ -97,17 +104,24 @@ const CAPS = [18, 16, 15, 14, 13, 12, 11, 10];
  * time, lands: landings of them }.
  */
 function loadSearches(file, now) {
-  const cache = new Map(), at = new Map(), rows = [];
+  const cache = new Map(), at = new Map(), stale = new Map(), rows = [];
   if (file && fs.existsSync(file)) {
     try {
       for (const [k, when, v] of JSON.parse(zlib.gunzipSync(fs.readFileSync(file)))) {
-        if (now - Date.parse(when) < SEARCH_HOURS * 3600e3) { cache.set(k, Promise.resolve(v)); at.set(k, when); rows.push([k, v]); }
+        const age = now - Date.parse(when);
+        if (age >= STALE_DAYS * 864e5) continue;
+        at.set(k, when);
+        rows.push([k, v]);
+        if (age < SEARCH_HOURS * 3600e3) cache.set(k, Promise.resolve(v));
+        else stale.set(k, v);
       }
     } catch (e) {
       console.log(`search cache unreadable, starting empty: ${e.message}`);
     }
   }
-  return { cache, at, lands: landings(rows) };
+  cache.at = at;
+  cache.stale = stale;
+  return { cache, at, stale, lands: landings(rows) };
 }
 
 /**
@@ -128,7 +142,7 @@ function landings(rows) {
   }
   return out;
 }
-/** This build's successful searches, with the time each was made. */
+/** This build's successful searches, with the time each was made, and the stale ones not searched again. */
 async function saveSearches(file, { cache, at }, now) {
   if (!file) return;
   const rows = [];
@@ -136,8 +150,10 @@ async function saveSearches(file, { cache, at }, now) {
     const v = await p;
     if (Array.isArray(v) && v.length) rows.push([k, at.get(k) ?? now, v]);
   }
+  const fresh = rows.length;
+  for (const [k, v] of cache.stale ?? []) if (!cache.has(k)) rows.push([k, at.get(k), v]);
   fs.writeFileSync(file, zlib.gzipSync(JSON.stringify(rows)));
-  console.log(`search cache: ${rows.length} kept`);
+  console.log(`search cache: ${rows.length} kept (${fresh} under ${SEARCH_HOURS} h old)`);
 }
 
 function arg(name, def) {
@@ -223,7 +239,7 @@ const sortRows = (rows) => rows.sort((a, b) => price(a.hybrid) - price(b.hybrid)
  * overall cells, the month cells alike, then the via filter's the same way; past the deadline the
  * rest are dropped unless a checked candidate stands in (st.late: searches not made).
  */
-async function verify(byHome, trips, { cache, browser, listed, deadline, warm = false }) {
+async function verify(byHome, trips, { cache, browser, listed, deadline, pages, warm = false }) {
   const t0 = Date.now();
   const st = { cells: 0, replaced: 0, unresolved: 0, unknown: 0, searches: 0, failed: 0, late: 0, none: 0, stay: 0, detailsMs: 0 };
   const cellsOf = (r, base) => CLASSES.filter((c) => r[c]).flatMap((cls) => [
@@ -240,39 +256,38 @@ async function verify(byHome, trips, { cache, browser, listed, deadline, warm = 
   const cells = [...byHome].flatMap(([view, rows]) => rows.flatMap((r) => cellsOf(r, view.endsWith('|') ? 0 : 5)))
     .map((p) => ({ ...p, i: 0, best: null, first: null }));
   st.cells = cells.length;
-  // Rank by rank, each walked to the end before the next starts: a dashboard cell's later
-  // candidates come before any via cell's first.
-  for (let rank = 0; rank <= 9; rank++) {
-    let pending = cells.filter((p) => p.rank === rank);
-    while (pending.length) {
-      const td = Date.now();
-      const s = await addDetails(pending.map((p) => p.cand), cache, browser, listed, deadline);
-      st.detailsMs += Date.now() - td;
+  // Every cell walks its candidates at once; the searches go by rank then try (details.js slots):
+  // a dashboard cell's later candidates before any via cell's first.
+  const step = (p) => {
+    p.first ??= p.cand;
+    if (p.cand.connects) (p.checked ??= []).push(p.cand);
+    if (p.cand.connects === null) p.unknown = true;
+    if (p.cand.connects && !(p.best && rankOf(p.best) <= rankOf(p.cand))) p.best = p.cand;
+    const next = p.cands[++p.i];
+    // conn is only known once checked: a candidate's rank can only rise from its builder rank.
+    if (next && p.i < TRIES && !(p.best && rankOf(next) >= rankOf(p.best))) {
+      p.cand = overall(next, trips, p.month);
+      return true;
+    }
+    if (p.best) p.best.tier = tierOf(alertConfig, p.cls, p.best.total);
+    p.put(p.best);
+    if (!p.best) st[p.unknown ? 'unknown' : 'unresolved']++;
+    else if (p.best !== p.first) st.replaced++;
+    return false;
+  };
+  const td = Date.now();
+  await Promise.all(cells.map(async (p) => {
+    do {
+      const s = await addDetails([p.cand], cache, browser, listed, deadline, { prio: p.rank * TRIES + p.i, pages });
       st.searches += s.searches;
       st.failed += s.failed;
       st.late += s.late;
       st.error ??= s.error;
       st.none += s.none;
       st.stay += s.stay;
-      pending = pending.filter((p) => {
-        p.first ??= p.cand;
-        if (p.cand.connects) (p.checked ??= []).push(p.cand);
-        if (p.cand.connects === null) p.unknown = true;
-        if (p.cand.connects && !(p.best && rankOf(p.best) <= rankOf(p.cand))) p.best = p.cand;
-        const next = p.cands[++p.i];
-        // conn is only known once checked: a candidate's rank can only rise from its builder rank.
-        if (next && p.i < TRIES && !(p.best && rankOf(next) >= rankOf(p.best))) {
-          p.cand = overall(next, trips, p.month);
-          return true;
-        }
-        if (p.best) p.best.tier = tierOf(alertConfig, p.cls, p.best.total);
-        p.put(p.best);
-        if (!p.best) st[p.unknown ? 'unknown' : 'unresolved']++;
-        else if (p.best !== p.first) st.replaced++;
-        return false;
-      });
-    }
-  }
+    } while (step(p));
+  }));
+  st.detailsMs = Date.now() - td;
   // The long-haul filter's cells, on the dashboard's (no searches: what the checks found).
   const t1 = Date.now();
   if (!warm) for (const p of cells) if (p.rank < 5 && p.best) await fastOf(p, cache);
@@ -388,7 +403,7 @@ async function main() {
   const lap = (what) => console.log(`${what}: ${Math.round((Date.now() - t0) / 1000)} s in, heap ${Math.round(process.memoryUsage().heapUsed / 2 ** 20)} MB`);
   const details0 = !process.argv.includes('--no-details');
   const searches = loadSearches(arg('search-cache'), Date.parse(generatedAt));
-  console.log(`search cache: ${searches.cache.size} under ${SEARCH_HOURS} h old, ${[...searches.lands.values()].filter((d) => d > 0).length} flights landing a day or more on`);
+  console.log(`search cache: ${searches.cache.size} under ${SEARCH_HOURS} h old, ${searches.stale.size} up to ${STALE_DAYS} days, ${[...searches.lands.values()].filter((d) => d > 0).length} flights landing a day or more on`);
   let fares = loadFares(dataDir, config, { checked: checked(), lands: searches.lands });
   lap('fares loaded');
   let trips = buildTrips(fares);
@@ -398,8 +413,8 @@ async function main() {
   let details = null;
   if (details0) {
     // Searches whose page inlines no results are asked again in a real page (gflights/flights.js).
-    const { browser: chrome, ctx } = await openBrowser();
-    const session = { cache: searches.cache, browser: (q, opts) => { details.browser++; return shoppingResults(ctx, q, opts); }, listed: new Map(), deadline: warm ?? deadline - DETAILS_RESERVE, warm: !!warm };
+    const { browser: chrome, ctx } = await openBrowser({ lean: true });
+    const session = { cache: searches.cache, browser: (q, opts) => { details.browser++; return shoppingResults(ctx, q, opts); }, listed: new Map(), deadline: warm ?? deadline - DETAILS_RESERVE, pages: warm ? PAGES.warm : PAGES.build, warm: !!warm };
     details = { browser: 0, rounds: 0, searches: 0, failed: 0, late: 0, ms: 0 };
     try {
       for (;;) {
@@ -413,6 +428,7 @@ async function main() {
         if (warm || !moved.length || details.rounds >= ROUNDS || Date.now() > session.deadline) break;
         const done = [];
         for (const [k, r] of session.cache) { const v = await r; if (Array.isArray(v) && v.length) done.push([k, v]); }
+        for (const [k, v] of searches.stale) if (!session.cache.has(k)) done.push([k, v]);
         searches.lands = landings(done); // this round's searches too
         fares = loadFares(dataDir, config, { checked: checked(), lands: searches.lands });
         trips = buildTrips(fares);
@@ -422,6 +438,9 @@ async function main() {
     } finally {
       await chrome.close();
     }
+    const t = searches.cache.tally ?? {};
+    const why = `${t.empty ?? 0} pages with none inlined (${t.refetched ?? 0} listed when asked again plain), ${t.full ?? 0} full lists, ${t.pages ?? 0} browser pages, ${t.refreshed ?? 0} stale searches refreshed, ${t.blocked ?? 0} refused by Google`;
+    console.log(`search mix: ${why}`);
     await saveSearches(arg('search-cache'), searches, generatedAt);
     if (warm) { console.log(`checks beside the scrape: ${details.searches} searches (${details.browser} in a browser, ${details.failed} failed, ${details.late} left)`); return; }
     fs.mkdirSync(path.dirname(checkedFile), { recursive: true });

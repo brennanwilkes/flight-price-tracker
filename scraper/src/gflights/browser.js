@@ -64,9 +64,11 @@ async function newPage(ctx, ms = PAGE_DEADLINE_MS) {
   return page;
 }
 
-async function openBrowser({ channel = process.env.PW_CHANNEL || undefined } = {}) {
+// lean: images, fonts and media not loaded (the flight checks read the RPC replies, not the page's looks).
+async function openBrowser({ channel = process.env.PW_CHANNEL || undefined, lean = false } = {}) {
   const browser = await chromium.launch({ channel, headless: true });
   const ctx = await browser.newContext({ locale: 'en-CA', timezoneId: 'America/Vancouver', viewport: { width: 1280, height: 900 } });
+  if (lean) await ctx.route('**/*', (r) => (['image', 'font', 'media'].includes(r.request().resourceType()) ? r.abort() : r.continue()));
   const socs = /SOCS=([^;]+)/.exec(HEADERS.cookie)[1];
   await ctx.addCookies([{ name: 'SOCS', value: socs, domain: '.google.com', path: '/' }]);
   await ctx.addInitScript(RECORDER);

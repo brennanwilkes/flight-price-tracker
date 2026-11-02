@@ -506,12 +506,39 @@ test('Pacific stop: a round trip home ⇄ Honolulu holds the trip; one ticket th
   assert.deepStrictEqual(g.legs.map((l) => `${l.from}-${l.to}`), ['YVR-HNL', 'HNL-ICN', 'ICN-HNL', 'HNL-YVR']);
 });
 
-test('browser pages: a search still queued when the deadline passes is dropped (Late), not run', async () => {
-  const { paged, Late } = require('../scraper/src/trips/details');
+test('search slots: a job still queued when the deadline passes is dropped (Late), not run', async () => {
+  const { slots, Late } = require('../scraper/src/trips/details');
   let ran = 0;
   const slow = () => new Promise((done) => setTimeout(() => { ran++; done([]); }, 60));
-  const page = paged(slow, new Map(), Date.now() + 20);
-  const results = await Promise.allSettled(Array.from({ length: 6 }, () => page({})));
-  assert.equal(ran, 4, 'the four with a page run');
+  const run = slots(new Map(), 'pages', 4);
+  const deadline = Date.now() + 20;
+  const results = await Promise.allSettled(Array.from({ length: 6 }, () => run(0, deadline, slow)));
+  assert.equal(ran, 4, 'the four with a slot run');
   assert.deepEqual(results.slice(4).map((r) => r.reason instanceof Late), [true, true]);
+});
+
+test('search slots: the waiting job with the lowest priority goes next', async () => {
+  const { slots } = require('../scraper/src/trips/details');
+  const run = slots(new Map(), 'plain', 1);
+  const order = [];
+  const job = (n) => () => new Promise((done) => setTimeout(() => { order.push(n); done(); }, 5));
+  await Promise.all([run(0, Infinity, job('first')), run(30, Infinity, job('via')), run(9, Infinity, job('dashboard, 10th try')), run(1e6, Infinity, job('refresh'))]);
+  assert.deepEqual(order, ['first', 'dashboard, 10th try', 'via', 'refresh']);
+});
+
+test('a stale search serves its flights at once, the fare keeping its own price, and nothing is listed from it', async () => {
+  const { addDetails, flightsOf } = require('../scraper/src/trips/details');
+  const leg = (from, to, depDate, price) => ({ price, min: 60, airlines: ['VN'], stops: [], legs: [{ code: 'VN1', airline: 'VN', from, to, dep: '08:00', arr: '09:00', depDate, arrDate: depDate, min: 60 }] });
+  const trip = { order: [[0, 'out']], tickets: [{ kind: 'ow', cabin: 'Y', from: 'HAN', to: 'DAD', date: '2027-09-03', price: 80 }] };
+  const [f] = flightsOf(trip);
+  const cache = new Map();
+  cache.stale = new Map([[JSON.stringify(f.query), [leg('HAN', 'DAD', '2027-09-03', 95)]]]);
+  const listed = new Map();
+  // Past the deadline: no search may start, the refresh among them.
+  const s = await addDetails([trip], cache, null, listed, Date.now() - 1);
+  assert.strictEqual(trip.connects, true);
+  assert.strictEqual(trip.tickets[0].flights.out.legs[0].code, 'VN1');
+  assert.strictEqual(trip.tickets[0].price, 80, 'the graph price stands');
+  assert.strictEqual(listed.size, 0);
+  assert.deepStrictEqual([s.searches, s.late], [0, 0]);
 });
