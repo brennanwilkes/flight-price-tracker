@@ -16,7 +16,10 @@ const COMPACT_CROP = { pad: 1.5, minSpan: 10, longShown: 3 };
 const HOME = { lon: -123.18, lat: 49.19 }; // YVR; YYJ is the same direction at this scale
 // Label metrics at the largest label sizes (phones, style.css: 26px names, 21px nights), in
 // viewBox units: mono ≈ 0.6em wide.
-const CHAR_W = 15.6, CHAR_W_SMALL = 12.6, LINE_H = 28;
+const CHAR_W = 15.6, CHAR_W_SMALL = 12.6, LINE_H = 28, NIGHTS_H = 24;
+const NEAR = 8; // degrees: a connection airport this close to where the trip stays is in frame
+const CROWDED_R = 55; // a label pushed further than this from its dot (and further than the closest crop needs): crowded
+const LEADER_MAX = 160; // furthest a label sits from its dot
 const LONG_SHOWN = 5; // of greatCircle's 64 steps (~7° of arc for these routes)
 
 // The North–South railway, Hanoi to Saigon, roughly (stations as [lon, lat]); DA_NANG is its index.
@@ -68,17 +71,41 @@ function greatCircle(a, b, n = 64) {
  * it toward where it is.
  */
 export function tripMap(legs, home, cities, stays = new Map()) {
-  const onMap = (c) => place(c).lon != null && !place(c).far;
+  // The map frames the whole trip, connection airports included, unless that crowds the cities it
+  // stays in (a label pushed out from its dot): then the farthest connection leaves the frame, one
+  // at a time, down to those within NEAR degrees of a stay. A flight to one out of frame leaves the
+  // map toward it, named there.
+  const known = (c) => place(c).lon != null && !place(c).far;
+  const overland = new Set(legs.filter((l) => l.ground).flatMap((l) => [l.from, l.to]));
+  const all = [...new Set(legs.flatMap((l) => [l.from, l.to]).filter(known))];
+  const kept = all.filter((c) => stays.has(c) || overland.has(c));
+  const core = kept.length ? kept : all;
+  const reach = (c) => Math.min(...core.map((o) => Math.hypot(place(c).lon - place(o).lon, place(c).lat - place(o).lat)));
+  const far = all.filter((c) => !core.includes(c) && reach(c) > NEAR).sort((a, b) => reach(a) - reach(b));
+  const framed = (n) => new Set(all.filter((c) => !far.includes(c) || far.indexOf(c) < n));
+  const tight = render(legs, home, cities, stays, framed(0)); // what the labels need at the closest crop
+  for (let n = far.length; n > 0; n--) {
+    const map = render(legs, home, cities, stays, framed(n));
+    if (map.reach <= Math.max(CROWDED_R, tight.reach) && map.clash <= tight.clash) return map.svg;
+  }
+  return tight.svg;
+}
+
+/** tripMap's SVG with the cities in `framed` on the map; reach: the furthest a label sits from its dot, clash: what labels cover that they mustn't. */
+function render(legs, home, cities, stays, framed) {
+  const overland = new Set(legs.filter((l) => l.ground).flatMap((l) => [l.from, l.to]));
+  const onMap = (c) => framed.has(c);
   legs = legs.filter((l) => onMap(l.from) || onMap(l.to));
   const stops = [...new Set(legs.flatMap((l) => [l.from, l.to]).filter(onMap))];
-  // Each long haul's route, from its city on the map toward home or the far end ("city>end"), and
-  // a point LONG_SHOWN along it that the crop must include, so the line has room before it leaves the map.
+  // Each flight leaving the frame, from its city on the map toward where it goes ("city>end": an
+  // Asian airport out of frame, the far stop, or home), and a point LONG_SHOWN along it that the
+  // crop must include, so the line has room before it leaves the map.
   const away = (l) => (onMap(l.from) ? l.to : l.from);
-  const toward = (end) => (place(end).far ? end : home); // named where the line leaves the map
+  const toward = (end) => (place(end).lon != null ? end : home); // named where the line leaves the map
   const routeOf = (l) => `${onMap(l.from) ? l.from : l.to}>${toward(away(l))}`;
   const routes = new Map(legs.filter((l) => !onMap(l.from) || !onMap(l.to)).map((l) => {
     const [city, end] = routeOf(l).split('>');
-    return [routeOf(l), greatCircle(place(city), place(end).far ? place(end) : HOME)];
+    return [routeOf(l), greatCircle(place(city), place(end).lon != null ? place(end) : HOME)];
   }));
   const cityLons = stops.map((c) => place(c).lon), cityLats = stops.map((c) => place(c).lat);
   const compact = matchMedia('(max-width: 600px)').matches && Math.max(Math.max(...cityLons) - Math.min(...cityLons), Math.max(...cityLats) - Math.min(...cityLats)) < COMPACT;
@@ -116,14 +143,24 @@ export function tripMap(legs, home, cities, stays = new Map()) {
   }).join('');
 
   const lines = [], arrows = [], exits = [], drawn = new Map(), once = new Set();
+  const trace = []; // points every few units along each line drawn, for the labels to keep off
+  const traceOf = (pts) => {
+    for (let i = 1; i < pts.length; i++) {
+      const [[x0, y0], [x1, y1]] = [pts[i - 1], pts[i]];
+      const n = Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 8);
+      for (let j = 0; j < n; j++) trace.push([x0 + ((x1 - x0) * j) / n, y0 + ((y1 - y0) * j) / n]);
+    }
+  };
   for (const { from: a, to: b, cabin, tk, ground } of legs) {
     if (ground) { // overland (to and from Hoi An): a grey line along the railway, no ticket
-      lines.push(`<path class="ground" d="M${railPath(a, b).map(([lon, lat]) => px(lon, lat).map(f).join(' ')).join('L')}"/>`);
+      const pts = railPath(a, b).map(([lon, lat]) => px(lon, lat));
+      traceOf(pts);
+      lines.push(`<path class="ground" d="M${pts.map((p) => p.map(f).join(' ')).join('L')}"/>`);
       continue;
     }
     const cls = `${cabin === 'J' ? 'biz' : 'eco'}" style="--c: var(--tk${tk})`;
     if (!onMap(a) || !onMap(b)) {
-      // Long haul: the great circle toward home or the far stop (from the city), until it leaves the crop.
+      // Leaving the frame: the great circle toward where it goes (from the city), until it leaves the crop.
       const route = routeOf({ from: a, to: b });
       // A second long haul on the same route (another ticket) runs alongside the first.
       const tks = drawn.get(route) ?? [];
@@ -142,8 +179,10 @@ export function tripMap(legs, home, cities, stays = new Map()) {
       if (!once.has(`${route}|${tk}`)) { // a return ticket's two flights share one line
         once.add(`${route}|${tk}`);
         lines.push(`<path class="leg ${cls}" d="M${seen.map(([x, y]) => `${f(x)} ${f(y)}`).join('L')}"/>`);
+        traceOf(seen);
         const [ex, ey] = seen[seen.length - 1];
-        if (!k) exits.push({ x: Math.min(Math.max(ex, 0), W), y: Math.min(Math.max(ey, 0), H), name: cityName(route.split('>')[1]) });
+        const [qx, qy] = seen[Math.max(0, seen.length - 2)];
+        if (!k) exits.push({ x: Math.min(Math.max(ex, 0), W), y: Math.min(Math.max(ey, 0), H), dx: ex - qx, dy: ey - qy, name: cityName(route.split('>')[1]) });
       }
       // Inbound arrow nearer the city, outbound one further along; each points the way flown.
       const j = Math.max(1, Math.min(seen.length - 2, onMap(b) ? 1 : 3));
@@ -155,84 +194,103 @@ export function tripMap(legs, home, cities, stays = new Map()) {
     const [p, q] = [pt(a), pt(b)];
     const mx = (p[0] + q[0]) / 2 - (q[1] - p[1]) * 0.18, my = (p[1] + q[1]) / 2 + (q[0] - p[0]) * 0.18;
     lines.push(`<path class="leg ${cls}" d="M${f(p[0])} ${f(p[1])}Q${f(mx)} ${f(my)} ${f(q[0])} ${f(q[1])}"/>`);
+    traceOf(Array.from({ length: 17 }, (_, i) => { const t = i / 16; return [(1 - t) ** 2 * p[0] + 2 * t * (1 - t) * mx + t * t * q[0], (1 - t) ** 2 * p[1] + 2 * t * (1 - t) * my + t * t * q[1]]; }));
     // Arc midpoint and its tangent (the chord direction there).
     arrows.push(arrow((p[0] + 2 * mx + q[0]) / 4, (p[1] + 2 * my + q[1]) / 4, q[0] - p[0], q[1] - p[1], cls));
   }
 
-  // City labels: right of the dot, or left when that would run off the map. Connection airports
-  // smaller and hollow.
-  // Named only where the trip spends a night (or an overland stretch starts or ends): a city
-  // only changed planes in keeps its dot, the route runs through it.
-  const overland = new Set(legs.filter((l) => l.ground).flatMap((l) => [l.from, l.to]));
-  // Each label goes where it covers least: right of the dot (nights under, or over near the
-  // bottom), left, under or over it; scored against every dot, the labels already placed (×3) and
-  // the usual places of those still to come (×1), and the map's edges.
+  // City labels, named only where the trip spends a night (or an overland stretch starts or
+  // ends): a city only changed planes in keeps its dot, the route runs through it. Connection
+  // airports smaller and hollow. Each label (name, nights under it) goes to the nearest spot
+  // around its dot, out to LEADER_MAX, that covers no other label, dot or the map's edge and as
+  // little of the flown lines as it can; moved out from the dot it gets a thin leader line.
+  // Crowded cities pick first, then each label is placed again around all the others.
   const labelled = stops.filter((c) => stays.has(c) || overland.has(c));
   const nightsOf = (c) => (stays.has(c) ? `${stays.get(c).join(' + ')} night${stays.get(c).join() === '1' ? '' : 's'}` : '');
-  /** The label's lines and their extent at a place: 'right' | 'left' | 'under' | 'over', nights up or down. */
-  const layout = (c, where, up) => {
-    const [x, y] = pt(c);
+  const sizeOf = (c) => {
     const nights = nightsOf(c);
-    const w = Math.max(cityName(c).length * CHAR_W, nights.length * CHAR_W_SMALL);
-    const side = where === 'right' || where === 'left';
-    const tx = where === 'right' ? x + 11 : where === 'left' ? x - 11 : x;
-    const ty = side ? y : y + (where === 'under' ? 1 : -1) * LINE_H * (nights && where === 'over' ? 1.9 : 0.9);
-    const down = side ? !up : true; // nights under the name, but over it beside a dot near the bottom
-    const x0 = where === 'right' ? tx : where === 'left' ? tx - w : tx - w / 2;
-    return { c, tx, ty, down, anchor: where === 'right' ? 'start' : where === 'left' ? 'end' : 'middle', nights,
-      x0, x1: x0 + w, y0: ty - LINE_H / 2 - (nights && !down ? LINE_H * 1.4 : 0), y1: ty + LINE_H / 2 + (nights && down ? LINE_H * 1.4 : 0) };
+    return { nights, w: Math.max(cityName(c).length * CHAR_W, nights.length * CHAR_W_SMALL), h: nights ? LINE_H + NIGHTS_H : LINE_H };
   };
-  const overlap = (a, b) => Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0)) * Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0));
-  const dotBoxes = stops.map((c) => { const [x, y] = pt(c); return { c, x0: x - 7, x1: x + 7, y0: y - 7, y1: y + 7 }; });
-  const usual = (c) => { const [x, y] = pt(c); return layout(c, x > W * 0.7 ? 'left' : 'right', y > H - 60); };
-  const boxes = []; // placed labels (home's label keeps clear of them too)
-  const placed = new Map();
-  for (const c of labelled) {
+  /** The label's box with its nearest side or corner `r` from the dot, toward angle `a`. */
+  const layout = (c, a, r) => {
     const [x, y] = pt(c);
-    const first = usual(c);
-    const tries = [first, ...['right', 'left', 'under', 'over'].flatMap((w) => [layout(c, w, false), layout(c, w, true)])];
-    const score = (b) => dotBoxes.reduce((s, d) => s + (d.c === c ? 0 : overlap(b, d)), 0)
-      + boxes.reduce((s, o) => s + 3 * overlap(b, o), 0)
-      + labelled.filter((o) => o !== c && !placed.has(o)).reduce((s, o) => s + overlap(b, usual(o)), 0)
-      + 4 * ((b.x1 - b.x0) * (b.y1 - b.y0) - overlap(b, { x0: 0, x1: W, y0: 0, y1: H }));
-    let best = first, bestScore = score(first);
-    for (const t of tries) { const sc = score(t); if (sc < bestScore - 1) { best = t; bestScore = sc; } }
-    placed.set(c, best);
-    boxes.push(best);
+    const { nights, w, h } = sizeOf(c);
+    const dx = Math.cos(a), dy = Math.sin(a);
+    const ax = x + dx * r, ay = y + dy * r;
+    const anchor = dx > 0.35 ? 'start' : dx < -0.35 ? 'end' : 'middle';
+    const x0 = anchor === 'start' ? ax : anchor === 'end' ? ax - w : ax - w / 2;
+    const y0 = dy > 0.35 ? ay : dy < -0.35 ? ay - h : ay - LINE_H / 2;
+    return { c, nights, anchor, r, x0, x1: x0 + w, y0, y1: y0 + h, tx: anchor === 'start' ? x0 : anchor === 'end' ? x0 + w : x0 + w / 2 };
+  };
+  const tries = (c) => [11, 30, 55, 85, 120, LEADER_MAX].flatMap((r) => Array.from({ length: 16 }, (_, i) => layout(c, (i * Math.PI) / 8, r)));
+  const overlap = (a, b) => Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0)) * Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0));
+  const dotBoxes = stops.map((c) => { const [x, y] = pt(c); return { c, x0: x - 8, x1: x + 8, y0: y - 8, y1: y + 8 }; });
+  const inBox = (b, [x, y]) => x > b.x0 && x < b.x1 && y > b.y0 && y < b.y1;
+  const placed = new Map();
+  // What a label covers that it mustn't: other labels and dots, and past the map's edge.
+  const clash = (b) => {
+    let s = 0;
+    for (const o of placed.values()) if (o.c !== b.c) s += overlap(b, o);
+    for (const d of dotBoxes) if (d.c !== b.c) s += overlap(b, d);
+    return s + (b.x1 - b.x0) * (b.y1 - b.y0) - overlap(b, { x0: 4, x1: W - 4, y0: 4, y1: H - 4 });
+  };
+  const score = (b) => 30 * clash(b) + 40 * trace.filter((p) => inBox(b, p)).length + 6 * b.r;
+  const crowd = (c) => stops.filter((o) => o !== c && Math.hypot(pt(o)[0] - pt(c)[0], pt(o)[1] - pt(c)[1]) < 150).length;
+  const order = [...labelled].sort((a, b) => crowd(b) - crowd(a));
+  for (let pass = 0; pass < 3; pass++) {
+    for (const c of order) {
+      let best = null, bestScore = Infinity;
+      for (const t of tries(c)) { const sc = score(t); if (sc < bestScore) { best = t; bestScore = sc; } }
+      placed.set(c, best);
+    }
   }
+  const furthest = Math.max(0, ...[...placed.values()].map((l) => l.r));
+  const clashes = [...placed.values()].reduce((n, l) => n + clash(l), 0);
+  const boxes = [...placed.values()]; // home's label keeps clear of them too
   const dots = stops.map((c) => {
     const [x, y] = pt(c);
     const via = !cities.includes(c);
-    const dot = `<circle class="city${via ? ' via' : ''}" cx="${f(x)}" cy="${f(y)}" r="${via ? 4.5 : 6}"/>`;
-    const l = placed.get(c);
-    if (!l) return dot;
-    return `${dot}
-      <text class="label${via ? ' via' : ''}" x="${f(l.tx)}" y="${f(l.ty)}" dominant-baseline="middle" text-anchor="${l.anchor}">${cityName(c)}</text>${l.nights ? `
-      <text class="label nights" x="${f(l.tx)}" y="${f(l.ty)}" dy="${l.down ? 1.45 : -1.45}em" dominant-baseline="middle" text-anchor="${l.anchor}">${l.nights}</text>` : ''}`;
+    return `<circle class="city${via ? ' via' : ''}" cx="${f(x)}" cy="${f(y)}" r="${via ? 4.5 : 6}"/>`;
+  }).join('');
+  const labels = [...placed.values()].map((l) => {
+    const [x, y] = pt(l.c);
+    const via = !cities.includes(l.c);
+    // Leader: from the dot to the box's nearest point.
+    const lx = Math.min(Math.max(x, l.x0), l.x1), ly = Math.min(Math.max(y, l.y0), l.y1);
+    const leader = l.r > 11 ? `<line class="leader" x1="${f(x)}" y1="${f(y)}" x2="${f(lx)}" y2="${f(ly)}"/>` : '';
+    return `${leader}
+      <text class="label${via ? ' via' : ''}" x="${f(l.tx)}" y="${f(l.y0 + LINE_H / 2)}" dominant-baseline="middle" text-anchor="${l.anchor}">${cityName(l.c)}</text>${l.nights ? `
+      <text class="label nights" x="${f(l.tx)}" y="${f(l.y0 + LINE_H + NIGHTS_H / 2)}" dominant-baseline="middle" text-anchor="${l.anchor}">${l.nights}</text>` : ''}`;
+  });
+
+  // Where each line leaving the frame goes (home, the far stop, an airport out of frame), named
+  // by the edge it leaves through, at the nearest spot there clear of the city labels, dots and
+  // lines. Each place is named once.
+  const named = exits.filter((e, i) => exits.findIndex((o) => o.name === e.name) === i); // one label per place
+  const ARROWS = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'];
+  const homeLabel = named.map(({ x, y, dx, dy, name }) => {
+    const text = `${name} ${ARROWS[(Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) + 8) % 8]}`;
+    const w = text.length * CHAR_W, M = 8;
+    const edge = y < 2 ? 'top' : y > H - 2 ? 'bottom' : x < 2 ? 'left' : 'right';
+    const clampX = (v) => Math.min(Math.max(v, M), W - M - w), clampY = (v) => Math.min(Math.max(v, M), H - M - LINE_H);
+    const tries = Array.from({ length: 17 }, (_, i) => (i - 8) * 30).flatMap((d) => [0, LINE_H + 4].map((inset) => {
+      const x0 = edge === 'top' || edge === 'bottom' ? clampX(x - w / 2 + d) : edge === 'left' ? M + inset : W - M - w - inset;
+      const y0 = edge === 'left' || edge === 'right' ? clampY(y - LINE_H / 2 + d) : edge === 'top' ? M + inset : H - M - LINE_H - inset;
+      return { x0, x1: x0 + w, y0, y1: y0 + LINE_H };
+    }));
+    const score = (b) => boxes.reduce((s, o) => s + 30 * overlap(b, o), 0) + dotBoxes.reduce((s, d) => s + 30 * overlap(b, d), 0)
+      + trace.filter((p) => inBox(b, p)).length * 15 + 3 * Math.hypot((b.x0 + b.x1) / 2 - x, (b.y0 + b.y1) / 2 - y);
+    const b = tries.reduce((a, t) => (score(t) < score(a) ? t : a));
+    boxes.push(b); // the next exit's label keeps clear
+    return `<text class="label home" x="${f(b.x0)}" y="${f(b.y0 + LINE_H / 2)}" dominant-baseline="middle">${text}</text>`;
   }).join('');
 
-  // Home (or the far stop), named where each long-haul line leaves the map: beside the line, on
-  // the inner side, so the text never sits on it. Exits close together toward one place share a label.
-  const near = exits.length === 2 && exits[0].name === exits[1].name && Math.hypot(exits[0].x - exits[1].x, exits[0].y - exits[1].y) < 120;
-  const homeLabel = (near ? [{ x: (exits[0].x + exits[1].x) / 2, y: (exits[0].y + exits[1].y) / 2, name: exits[0].name }] : exits).map(({ x, y, name }) => {
-    const top = y < 2, right = x > W - 2; // which edge it leaves by
-    const lx = right ? W - 10 : x - 12;
-    let ly = top ? 26 : y + 28;
-    const w = `${name} ↗`.length * CHAR_W;
-    for (let hit = true; hit && ly < H - 10;) { // below any city label it would sit on
-      const b = boxes.find((b) => b.x0 < lx && b.x1 > lx - w && b.y0 < ly + 6 && b.y1 > ly - LINE_H);
-      hit = !!b;
-      if (b) ly = b.y1 + LINE_H;
-    }
-    return `<text class="label home" x="${f(lx)}" y="${f(Math.min(ly, H - 10))}" text-anchor="end">${name} ${right && !top ? '→' : '↗'}</text>`;
-  }).join('');
-
-  return `<svg class="map" viewBox="0 0 ${W} ${H}" role="img" aria-label="Trip map">
+  return { reach: furthest, clash: clashes, svg: `<svg class="map" viewBox="0 0 ${W} ${H}" role="img" aria-label="Trip map">
     <rect class="sea" width="${W}" height="${H}"/>
     <path class="land" d="${land}"/>
     <path class="border" d="${borders}"/>
-    ${lines.join('')}${arrows.join('')}${dots}${homeLabel}
-  </svg>`;
+    ${lines.join('')}${arrows.join('')}${dots}${labels.join('')}${homeLabel}
+  </svg>` };
 }
 
 /** A filled arrowhead at (x, y) pointing along (dx, dy). */
