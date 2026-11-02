@@ -37,3 +37,9 @@ test('booking: airline-direct vs OTA, fare brands, and cabin match', () => {
   const ota = opts.filter((o) => !o.airlineDirect);
   assert.deepStrictEqual(ota.map((o) => o.price), [5175, 5181, 5337, 5337, 5396]);
 });
+
+test('tfs: a departure-hour window goes in the segment as field 8, as the Times filter writes it', () => {
+  const seg = Buffer.from(buildTfs({ from: 'YVR', to: 'ICN', out: '2026-12-10', after: 12 }), 'base64url');
+  assert.ok(seg.includes(Buffer.from([0x40, 12]))); // field 8, varint 12
+  assert.notStrictEqual(buildTfs({ from: 'YVR', to: 'ICN', out: '2026-12-10' }), buildTfs({ from: 'YVR', to: 'ICN', out: '2026-12-10', after: 12 }));
+});

@@ -43,6 +43,16 @@ const connPen = (f, o) => {
   const over = (o.stops ?? []).reduce((sum, s) => sum + Math.max(0, s.min - SHORT_CONNECT), 0);
   return over && samePrice(f.ticket.cabin) * (f.dir === 'out' ? o.price : f.ticket.price) * Math.min(1, over / LONG_CONNECT);
 };
+/**
+ * The hour on `date` from which a flight can follow the earliest of `before` (the previous
+ * flight's options), for a search of only those flights; null when every flight that day would
+ * do already, or none could.
+ */
+function afterHour(date, before) {
+  if (!before?.length || before.error) return null;
+  const need = Math.min(...before.map(arrival)) + MIN_CONNECT_MIN - at(date, '00:00');
+  return need > 0 && need < 24 * 60 ? Math.floor(need / 60) || null : null;
+}
 const misses = (picks) => picks.filter((p) => p?.miss === 'connection').length;
 /** Flight b (flight i of the trip) can follow a: leaves ≥ MIN_CONNECT after a lands, and keeps the Hoi An stay. */
 function fits(stay, i, a, b) {
@@ -139,7 +149,7 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
   const LATE = { error: 'out of time', late: true }; // not cached
   const plain = slots(cache, 'plain', CONCURRENCY);
   const page = browser && slots(cache, 'pages', pages);
-  const tally = (cache.tally ??= { empty: 0, pages: 0, full: 0, refreshed: 0, blocked: 0, plain: 0, plainEmpty: 0, timeouts: 0, errors: 0, plainMs: [], pageMs: [] });
+  const tally = (cache.tally ??= { empty: 0, pages: 0, full: 0, window: 0, refreshed: 0, blocked: 0, plain: 0, plainEmpty: 0, timeouts: 0, errors: 0, plainMs: [], pageMs: [] });
   const stale = cache.stale ?? new Map(); // key → result, from earlier builds past their fresh hours
   const stats = { searches: 0, failed: 0, late: 0, full: 0, connection: 0, none: 0, stay: 0 };
   // A result into the cache as it comes; out of time: out again, not a result.
@@ -231,12 +241,26 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
 
   async function pickFlights(trip, flights) {
     const lists = await Promise.all(flights.map((f) => searchOnce(f.query, f.key)));
-    // A plain search lists only Google's top flights; where none of those connects, the full list.
+    // A plain search lists only Google's top flights; where none of those connects, the top
+    // flights leaving after the connection (plain), then the full list (a browser page).
     let picks;
-    for (const full = new Set(); ;) {
+    for (const windowed = new Set(), full = new Set(); ;) {
       picks = choose(trip, flights, lists);
-      const i = browser ? picks.findIndex((p, j) => p?.miss === 'connection' && !full.has(j)) : -1;
+      const i = picks.findIndex((p, j) => p?.miss === 'connection' && !(windowed.has(j) && full.has(j)));
       if (i < 0) break;
+      const after = !windowed.has(i) && afterHour(flights[i].query.out, lists[i - 1]);
+      windowed.add(i);
+      if (after) {
+        tally.window++;
+        const more = await searchOnce({ ...flights[i].query, after });
+        if (!more.error && more.length) {
+          const merged = dedupe([...lists[i], ...more]);
+          if (STALE.has(lists[i]) || STALE.has(more)) STALE.add(merged);
+          lists[i] = merged;
+        }
+        continue;
+      }
+      if (!browser) break;
       full.add(i);
       const all = await fullOnce(flights[i].query);
       if (!all.error && all.length) lists[i] = all;

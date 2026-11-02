@@ -581,3 +581,27 @@ test('self-transfer: two one-ways connecting within 12 h become one ticket at ab
   // The ranking credits the one ticket with the self-transfer's penalty.
   assert.strictEqual(multiSaving({ [`Y YVR-ICN 2027-09-01, ICN-SGN 2027-09-01`]: { price: 1040 } }, trip(), ['YVR']), 1000 - 1040 + SELF_PEN);
 });
+
+test('no top flight connects: the flights leaving after the connection are searched plain, no browser', async () => {
+  const { addDetails, flightsOf } = require('../scraper/src/trips/details');
+  const leg = (from, to, depDate, dep, arrDate, arr, price, airline) => ({ price, min: 0, airlines: [airline], stops: [], legs: [{ code: `${airline}1`, airline, from, to, dep, arr, depDate, arrDate, min: 0 }] });
+  const trip = {
+    order: [[0, 'out'], [1, 'out']],
+    tickets: [
+      { kind: 'ow', cabin: 'J', from: 'YVR', to: 'BKK', date: '2027-09-01', price: 5100 },
+      { kind: 'ow', cabin: 'Y', from: 'BKK', to: 'HAN', date: '2027-09-03', price: 232 },
+    ],
+  };
+  const [a, b] = flightsOf(trip);
+  const cache = new Map([
+    [JSON.stringify(a.query), Promise.resolve([leg('YVR', 'BKK', '2027-09-01', '23:55', '2027-09-03', '12:05', 5066, 'PR')])],
+    [JSON.stringify(b.query), Promise.resolve([leg('BKK', 'HAN', '2027-09-03', '06:40', '2027-09-03', '08:30', 232, 'FD')])],
+    // 12:05 + 4 h: from 16:00
+    [JSON.stringify({ ...b.query, after: 16 }), Promise.resolve([leg('BKK', 'HAN', '2027-09-03', '17:00', '2027-09-03', '19:00', 260, 'VN')])],
+  ]);
+  await addDetails([trip], cache);
+  assert.strictEqual(trip.connects, true);
+  assert.deepStrictEqual(trip.tickets.map((t) => t.flights.out.airlines[0]), ['PR', 'VN']);
+  assert.strictEqual(cache.tally.window, 1);
+  assert.strictEqual(cache.tally.full, 0);
+});

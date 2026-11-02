@@ -442,7 +442,7 @@ async function main() {
       await chrome.close();
     }
     const t = searches.cache.tally ?? {};
-    const why = `${t.empty ?? 0} pages with none inlined, ${t.full ?? 0} full lists, ${t.pages ?? 0} browser pages, ${t.refreshed ?? 0} stale searches refreshed, ${t.blocked ?? 0} refused by Google`;
+    const why = `${t.empty ?? 0} pages with none inlined, ${t.window ?? 0} searched again after the connection, ${t.full ?? 0} full lists, ${t.pages ?? 0} browser pages, ${t.refreshed ?? 0} stale searches refreshed, ${t.blocked ?? 0} refused by Google`;
     const pct = (a, q) => (a.length ? `${(a.toSorted((x, y) => x - y)[Math.floor(q * (a.length - 1))] / 1000).toFixed(1)} s` : '-');
     console.log(`search mix: ${why}`);
     console.log(`search timing: ${t.plain ?? 0} plain fetches (median ${pct(t.plainMs ?? [], 0.5)}, 90% ${pct(t.plainMs ?? [], 0.9)}; ${t.plainEmpty ?? 0} with no results inlined, ${t.timeouts ?? 0} timed out, ${t.errors ?? 0} other errors), browser pages median ${pct(t.pageMs ?? [], 0.5)}, 90% ${pct(t.pageMs ?? [], 0.9)}`);
