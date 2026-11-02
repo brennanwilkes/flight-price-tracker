@@ -25,6 +25,9 @@ import { CITIES, inVietnam, isPacific, landsAfter } from './cities.js';
 const MIN_DAYS = 14;
 const MAX_DAYS = 21;
 const HOI_AN_NIGHTS = 5;
+// The board's trip-length filter: two-day bands, 14–15 … 20–21, named by their first day; each
+// gets its cheapest trips per cell (buildTrips keep), so a band's cell is its own trip.
+const bandOf = (days) => MIN_DAYS + 2 * Math.floor((days - MIN_DAYS) / 2);
 const STOP_NIGHTS = 3; // at a Pacific stop, each way (0: a connection on separate tickets)
 // A Pacific trip within this share of the cheapest so far for its cell (before shape penalties)
 // is built; dearer ones would only fill the cell's fallbacks, at many times the work.
@@ -419,7 +422,8 @@ function setOf({ nights, x, y, stays = [] }) {
 const rowId = (r) => `${r.in}-${r.out}${r.set ? `+${r.set}` : ''}`;
 
 /**
- * Every trip worth showing, as the cheapest per (home, class, crossing, throw-ins, departure month):
+ * Every trip worth showing, as the cheapest per (home, class, crossing, throw-ins, departure month,
+ * and for the dashboard (via '') trip-length band, bandOf):
  * in, out the crossing (staysOf x, y), set the throw-ins (setOf).
  *
  * fares: {
@@ -462,7 +466,8 @@ function buildTrips(fares, { need = [], homes = fares.homes } = {}) {
     if (!(sets.get(set) <= trip.total)) sets.set(set, trip.total);
   };
   const keep = (trip, via) => {
-    const key = `${trip.home}|${trip.cls}|${trip.in}|${trip.out}|${trip.set}|${trip.month}|${via}`;
+    // The dashboard's per band too (the length filter); a via list's is one per month.
+    const key = `${trip.home}|${trip.cls}|${trip.in}|${trip.out}|${trip.set}|${trip.month}|${via ? '' : bandOf(trip.days)}|${via}`;
     const list = top.get(key) ?? [];
     if (list.length <= FALLBACKS || scoreOf(list.at(-1), false) > scoreOf(trip, false)) {
       const at = list.findIndex((t) => scoreOf(t, false) > scoreOf(trip, false));
@@ -613,4 +618,4 @@ function similarCount(dateSets, trip, month = null) {
   return n;
 }
 
-export { buildTrips, similarCount, scoreOf, hopPlans, ticketsOf, staysOf, setOf, rowId, hasSameDay, isSafe, nearestStay, reentersVietnam, addDays, HOI_AN_NIGHTS };
+export { bandOf, buildTrips, similarCount, scoreOf, hopPlans, ticketsOf, staysOf, setOf, rowId, hasSameDay, isSafe, nearestStay, reentersVietnam, addDays, HOI_AN_NIGHTS };

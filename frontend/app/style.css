@@ -104,6 +104,23 @@ option { background: var(--panel); color: var(--text); }
 #vias.pending button { border-style: dashed; animation: pending 1.2s ease-in-out infinite alternate; }
 @keyframes pending { to { border-color: var(--muted); } }
 @media (prefers-reduced-motion: reduce) { #vias.pending button { animation: none; } }
+/* The length and long-haul filters: a row of their own under the selects (phones: under the city field). */
+.ranges { order: 10; flex-basis: 100%; display: flex; gap: 8px; }
+.range { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding: 5px 10px 2px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px; font: 500 11px var(--mono); color: var(--muted); letter-spacing: 0.04em; }
+.range b { color: var(--text); font-weight: 600; }
+.range input { width: 100%; margin: 0; height: 22px; background: transparent; -webkit-appearance: none; appearance: none; }
+.range input::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: var(--line); }
+.range input::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; margin-top: -6px; border-radius: 50%; background: var(--text); border: 2px solid var(--panel); }
+.range input::-moz-range-track { height: 4px; border-radius: 2px; background: var(--line); }
+.range input::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--text); border: 2px solid var(--panel); }
+/* Two thumbs on one track: two ranges stacked, only their thumbs taking taps. */
+.dual { position: relative; height: 22px; }
+.dual input { position: absolute; inset: 0; pointer-events: none; }
+.dual input::-webkit-slider-thumb { pointer-events: auto; }
+.dual input::-moz-range-thumb { pointer-events: auto; }
+.dual input + input::-webkit-slider-runnable-track { background: transparent; }
+.dual input + input::-moz-range-track { background: transparent; }
 .toggle { display: flex; }
 .toggle button { border-radius: 0; cursor: pointer; letter-spacing: 0.06em; }
 .toggle button:first-child { border-radius: 6px 0 0 6px; }

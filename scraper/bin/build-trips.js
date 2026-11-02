@@ -15,6 +15,13 @@
  *   derived/via/trips-<HOME>-<CITY>.json   the same rows (no `was`), each cell the cheapest trip
  *                                           staying in CITY: the dashboard's via filter
  *
+ *   derived/filters-<HOME>.json   the dashboard's length and long-haul filters, loaded when used:
+ *       { generatedAt, home, caps, rows: { <rowId>: { bands: { "<first day>": { hybrid, economy } },
+ *         fast: { hybrid, economy, months: { "<YYYY-MM>": { hybrid, economy } } } } } }
+ *     bands: the cheapest trip per two-day length band (build.js bandOf); fast (and each band
+ *     trip's own fast): { "<cap hours>": trip | null } for the caps where the cell's trip changes
+ *     (CAPS): the cell under a cap is the one at the tightest listed cap at or above it.
+ *
  * Every cell, overall and per month, gets the actual flights on each ticket
  * (src/trips/details.js; skipped with --no-details), and the listed prices: the price graph has
  * no times and can be stale, so a cell's cheapest trip may not connect or may cost more as listed.
@@ -43,15 +50,15 @@ const path = require('node:path');
 const zlib = require('node:zlib');
 const config = require('../config/sweep.json');
 const { loadFares, bundleOf, fareOf } = require('../src/trips/fares');
-const { buildTrips, similarCount, scoreOf, rowId } = require('../../frontend/app/build.js');
+const { buildTrips, similarCount, scoreOf, rowId, bandOf } = require('../../frontend/app/build.js');
 const { CITIES, airportsOf } = require('../../frontend/app/cities.js');
 const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
-const { addDetails } = require('../src/trips/details');
+const { addDetails, capped, longestOf } = require('../src/trips/details');
 const { openBrowser, shoppingResults } = require('../src/gflights/browser');
 const alertConfig = require('../config/alerts.json');
 const { tierOf } = require('../src/alerts/rules');
 const { flexOf } = require('../../frontend/app/flex.js');
-const { markLows } = require('../src/trips/lows');
+const { markLows, cellTrips } = require('../src/trips/lows');
 const { applyMulti, multiCache, multiSaving } = require('../src/trips/multi');
 
 const CLASSES = ['hybrid', 'economy'];
@@ -66,6 +73,9 @@ const MULTI_RESERVE = 5 * 60e3;
 // and the fares behind them are 2-48 h old already. Every shown cell needs ~6,200 searches, a build
 // makes ~800: under SEARCH_HOURS = 3 they could never all be fresh at once.
 const SEARCH_HOURS = 24;
+// The board's long-haul filter (hours, loosest first): each dashboard cell's cheapest trip with
+// every long-haul flight at most that long, re-picked from its checked candidates' searches.
+const CAPS = [30, 24, 20, 18, 16, 14, 12, 10];
 
 /**
  * Search results from earlier builds, under SEARCH_HOURS old: { cache: key → result, at: key → ISO
@@ -133,7 +143,12 @@ function rowsFor(home, trips, via = '') {
     if (!rows.has(key)) rows.set(key, { in: t.in, out: t.out, set: t.set, hybrid: null, economy: null, months: {} });
     const row = rows.get(key);
     row.months[t.month] ??= { hybrid: null, economy: null };
-    row.months[t.month][t.cls] = strip(t);
+    row.months[t.month][t.cls] ??= strip(t);
+    if (!via) {
+      row.bands ??= {};
+      row.bands[bandOf(t.days)] ??= { hybrid: null, economy: null };
+      row.bands[bandOf(t.days)][t.cls] ??= strip(t);
+    }
     row.cands ??= { hybrid: [], economy: [] };
     row.cands[t.cls].push(t, ...t.fallbacks);
   }
@@ -163,7 +178,7 @@ function rowsFor(home, trips, via = '') {
         if (i === 0) (r.top ??= {})[cls] = true;
         if (i <= THROW_INS || kept.get(cls).has(r)) return;
         r[cls] = null;
-        for (const m of Object.values(r.months)) m[cls] = null;
+        for (const m of [...Object.values(r.months), ...Object.values(r.bands ?? {})]) m[cls] = null;
       });
     }
   }
@@ -202,6 +217,10 @@ async function verify(byHome, trips, { cache, browser, listed, deadline }) {
       const cands = r.cands[cls].filter((t) => t.depart.startsWith(month));
       return { rank: base + (r.top?.[cls] ? 3 : 4), cls, month, cands, cand: overall(cands[0], trips, month), put: (t) => { m[cls] = t; } };
     }),
+    ...Object.entries(r.bands ?? {}).filter(([, b]) => b[cls]).map(([band, b]) => {
+      const cands = r.cands[cls].filter((t) => bandOf(t.days) === Number(band));
+      return { rank: base + 4, cls, cands, cand: overall(cands[0], trips), put: (t) => { b[cls] = t; } };
+    }),
   ]);
   const cells = [...byHome].flatMap(([view, rows]) => rows.flatMap((r) => cellsOf(r, view.endsWith('|') ? 0 : 5)))
     .map((p) => ({ ...p, i: 0, best: null, first: null }));
@@ -220,6 +239,7 @@ async function verify(byHome, trips, { cache, browser, listed, deadline }) {
       st.stay += s.stay;
       pending = pending.filter((p) => {
         p.first ??= p.cand;
+        if (p.cand.connects) (p.checked ??= []).push(p.cand);
         if (p.cand.connects === null) p.unknown = true;
         if (p.cand.connects && !(p.best && rankOf(p.best) <= rankOf(p.cand))) p.best = p.cand;
         const next = p.cands[++p.i];
@@ -236,11 +256,38 @@ async function verify(byHome, trips, { cache, browser, listed, deadline }) {
       });
     }
   }
+  // The long-haul filter's cells, on the dashboard's (no searches: what the checks found).
+  const t1 = Date.now();
+  for (const p of cells) if (p.rank < 5 && p.best) await fastOf(p, cache);
+  st.fastMs = Date.now() - t1;
   for (const [view, rows] of byHome) {
     for (const r of rows) { delete r.cands; delete r.top; delete r.city; }
     byHome.set(view, sortRows(rows.filter((r) => r.hybrid || r.economy)));
   }
   return { ...st, ms: Date.now() - t0 };
+}
+
+/**
+ * A cell's trips under each long-haul cap (CAPS), from its checked candidates: best.fast = {
+ * "<cap>": trip | null } where the cell's trip changes, loosest first (a cap its trip already
+ * keeps to needs nothing; none under a cap: null, and every tighter cap is none too).
+ */
+async function fastOf(p, cache) {
+  const homes = config.origins;
+  const fast = {};
+  let cur = p.best;
+  for (const cap of CAPS) {
+    if (longestOf(cur, homes) <= cap * 60) continue;
+    let best = null;
+    for (const c of p.checked ?? []) {
+      const t = await capped(c, cache, cap * 60, homes);
+      if (t && !(best && rankOf(best) <= rankOf(t))) best = t;
+    }
+    fast[cap] = best && { ...best, tier: tierOf(alertConfig, p.cls, best.total) };
+    cur = best;
+    if (!cur) break;
+  }
+  if (Object.keys(fast).length) p.best.fast = fast;
 }
 
 /**
@@ -250,7 +297,7 @@ async function verify(byHome, trips, { cache, browser, listed, deadline }) {
  * Re-tiers and re-sorts the rows.
  */
 async function multiPass(dataDir, byHome, fares, search) {
-  const monthCells = (r) => Object.values(r.months).flatMap((m) => CLASSES.map((cls) => m[cls] && Object.assign(m[cls], { cls })));
+  const monthCells = (r) => [...Object.values(r.months), ...Object.values(r.bands ?? {})].flatMap((m) => CLASSES.map((cls) => m[cls] && Object.assign(m[cls], { cls })));
   const cellsOf = (main, months = false) => [...byHome].filter(([v]) => v.endsWith('|') === main)
     .flatMap(([, rows]) => rows.flatMap((r) => [...CLASSES.map((cls) => r[cls] && Object.assign(r[cls], { cls })), ...(months ? monthCells(r) : [])]).filter(Boolean)); // groupsOf reads cls
   const homes = fares.homes;
@@ -368,8 +415,8 @@ async function main() {
   // Stay ranges on every shown trip; lowest-ever marks.
   for (const rows of byHome.values()) {
     for (const r of rows) {
-      for (const trip of [r.hybrid, r.economy, ...Object.values(r.months).flatMap((m) => [m.hybrid, m.economy])]) {
-        const flex = trip && flexOf(trip, fares);
+      for (const trip of CLASSES.flatMap((cls) => cellTrips(r, cls))) {
+        const flex = flexOf(trip, fares);
         if (flex?.length) trip.flex = flex;
       }
     }
@@ -397,6 +444,15 @@ async function main() {
       }
     }
     fs.mkdirSync(path.join(dataDir, 'derived'), { recursive: true });
+    // The filters' cells to their own file, loaded only when a filter is used.
+    const filters = {};
+    for (const r of rows) {
+      const take = (t) => { const f = t?.fast; if (t) delete t.fast; return f; };
+      const fast = { ...Object.fromEntries(CLASSES.map((cls) => [cls, take(r[cls])])), months: Object.fromEntries(Object.entries(r.months).map(([m, c]) => [m, Object.fromEntries(CLASSES.map((cls) => [cls, take(c[cls])]))])) };
+      filters[rowId(r)] = { bands: r.bands ?? {}, fast };
+      delete r.bands;
+    }
+    fs.writeFileSync(path.join(dataDir, 'derived', `filters-${home}.json`), JSON.stringify({ generatedAt, home, caps: CAPS, rows: filters }));
     fs.writeFileSync(path.join(dataDir, 'derived', `trips-${home}.json`), JSON.stringify({ generatedAt, home, vias, rows })); // compact: the phone loads it
     const top = rows[0]?.hybrid;
     console.log(`${home}: ${rows.length} rows${top ? `, best hybrid ${rowId(rows[0])} ${top.total} (${top.depart}…${top.ret})` : ''}`);

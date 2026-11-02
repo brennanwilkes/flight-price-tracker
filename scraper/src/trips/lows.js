@@ -81,8 +81,7 @@ function markLows(dataDir, rowsByHome, at, { record: save = true } = {}) {
     for (const r of rows) {
       for (const cls of ['hybrid', 'economy']) {
         const route = routeOf(home, cls, r);
-        for (const trip of [r[cls], ...Object.values(r.months ?? {}).map((m) => m[cls])]) {
-          if (!trip) continue;
+        for (const trip of cellTrips(r, cls)) {
           const low = lowOf(route, trip);
           if (low) trip.low = low;
           for (const t of trip.tickets ?? []) {
@@ -115,4 +114,13 @@ function markLows(dataDir, rowsByHome, at, { record: save = true } = {}) {
   writeJson(priceFile, prices);
 }
 
-module.exports = { markLows };
+/**
+ * Every trip a row shows for a class: its cell, the month and length-band cells, and each one's
+ * trips under the long-haul filter (build-trips.js fastOf).
+ */
+function cellTrips(r, cls) {
+  const cells = [r[cls], ...Object.values(r.months ?? {}).map((m) => m[cls]), ...Object.values(r.bands ?? {}).map((b) => b[cls])].filter(Boolean);
+  return [...cells, ...cells.flatMap((t) => Object.values(t.fast ?? {}).filter(Boolean))];
+}
+
+module.exports = { markLows, cellTrips };

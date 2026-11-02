@@ -9,7 +9,7 @@
 // - The current commit is checked on resume and every 5 min while visible. Newer data applies at
 //   once on resume; mid-use it's a tap-to-show bar, so prices don't change under a tap. Data
 //   whose generatedAt isn't newer than what's shown (a stale API answer) is ignored.
-import { CITIES, HOI_AN, place, cityName, rowName, landsAfter, countryOf } from './cities.js';
+import { CITIES, HOI_AN, place, cityName, rowName, landsAfter, countryOf, isLong } from './cities.js';
 import { samePrice } from './price.js';
 import { tripMap } from './map.js';
 import { sweepIfAsked } from './alerts.js';
@@ -44,7 +44,11 @@ const MAX_VIAS = 3;
 // Board rows drawn at first (cheapest first); the rest on asking. Each crossing has a few rows,
 // one per set of throw-in cities, so the board runs to hundreds.
 const BOARD_ROWS = 100;
-const state = { home: /^(YVR|YYJ)$/.test(params.get('home') ?? '') ? params.get('home') : localGet('home') ?? 'YVR', month: '', vias: [], sha: null, data: {} };
+// The length filter's bands (build.js bandOf: first days) and the long-haul filter's steps in
+// hours (null: any), as the sliders run.
+const BANDS = [14, 16, 18, 20];
+const CAPS = [10, 12, 14, 16, 18, 20, 24, 30, null];
+const state = { cap: null, len: [14, 21], home: /^(YVR|YYJ)$/.test(params.get('home') ?? '') ? params.get('home') : localGet('home') ?? 'YVR', month: '', vias: [], sha: null, data: {} };
 // Priority class, per device: sorts the board, opens first, leads History. Alerts cover both.
 state.priority = localGet('priority') === 'economy' ? 'economy' : 'hybrid';
 const otherClass = () => (state.priority === 'hybrid' ? 'economy' : 'hybrid');
@@ -92,9 +96,19 @@ async function fetchTrips(sha, key) {
   return res.json();
 }
 
-/** The current view's trips, and its home's (for the via list), fetched once per data commit. */
+// A filter is on: the length range is narrowed, or long hauls capped.
+const filtering = () => state.cap != null || state.len[0] > 14 || state.len[1] < 21;
+
+/**
+ * The current view's trips, and its home's (for the via list), fetched once per data commit; with
+ * a filter on, the home's filter cells too (derived/filters-<HOME>.json, build-trips.js).
+ */
 async function load() {
   state.data[state.home] ??= await fetchTrips(state.sha, state.home);
+  if (filtering() && !state.data[`filters-${state.home}`]) {
+    const res = await fetch(`${dataBase(state.sha)}/derived/filters-${state.home}.json`, { cache: 'no-cache' }).catch(() => null);
+    state.data[`filters-${state.home}`] = res?.ok ? await res.json() : { rows: {} }; // older builds: the trips' own cells, filtered
+  }
   const known = state.data[state.home].vias ?? [];
   state.vias = state.vias.filter((c) => known.includes(c));
   const key = viewKey();
@@ -163,9 +177,33 @@ function keepChecked(row, approx) {
   return row;
 }
 
-/** Rows for the current month filter, each with its two cells, sorted by hybrid then economy. */
+/** The longest long-haul flight on a trip, minutes (0 when its flights aren't known). */
+const longest = (t) => Math.max(0, ...t.tickets.filter((x) => isLong(x.from, x.to, HOMES)).flatMap((x) => Object.values(x.flights ?? {}).map((f) => f.min ?? 0)));
+
+/**
+ * A row's cell for a class under the filters: the month's, or the cheapest of the length bands in
+ * range, each under the long-haul cap (its trip at the tightest cap at or above it the builder
+ * listed: build-trips.js fastOf). fr: the row's filter cells (none in a via view, or before
+ * they load): then the row's own cells, hidden where they don't fit.
+ */
+function cellOf(r, cls, fr) {
+  const [lo, hi] = state.len, cap = state.cap;
+  const under = (t, fast) => {
+    if (!t || cap == null || !fast) return t;
+    const at = Object.keys(fast).map(Number).filter((c) => c >= cap);
+    return at.length ? fast[Math.min(...at)] : t;
+  };
+  const fits = (t) => t && t.days >= lo && t.days <= hi && (cap == null || longest(t) <= cap * 60);
+  const cands = state.month ? [under(r.months[state.month]?.[cls], fr?.fast.months?.[state.month]?.[cls])]
+    : (lo > 14 || hi < 21) && fr ? Object.entries(fr.bands).filter(([b]) => +b >= lo && +b + 1 <= hi).map(([, b]) => under(b[cls], b[cls]?.fast))
+      : [under(r[cls], fr?.fast[cls])];
+  return cands.filter(fits).sort((a, b) => a.total - b.total)[0] ?? null;
+}
+
+/** Rows for the current filters, each with its two cells, sorted by the priority class then the other. */
 function rows(data) {
-  const pick = (r) => (state.month ? r.months[state.month] ?? {} : r);
+  const fr = filtering() && !state.vias.length ? state.data[`filters-${state.home}`]?.rows : null;
+  const pick = (r) => (filtering() || state.month ? Object.fromEntries(COLUMNS.map(([cls]) => [cls, cellOf(r, cls, fr?.[rowId(r)])])) : r);
   const price = (t) => t?.total ?? Infinity;
   return data.rows
     .map((r) => ({ ...r, cells: pick(r) }))
@@ -612,6 +650,19 @@ async function refresh(resumed) {
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refresh(true); });
 setInterval(() => { if (document.visibilityState === 'visible') refresh(false); }, POLL_MS);
 $('#month').addEventListener('change', (e) => { state.month = e.target.value; render(); });
+// Sliders: the label follows the thumb; letting go applies it (loading the filter cells once).
+function readSliders() {
+  let [lo, hi] = [Number($('#lenlo').value), Number($('#lenhi').value)];
+  if (lo > hi) { if (document.activeElement === $('#lenlo')) $('#lenhi').value = hi = lo; else $('#lenlo').value = lo = hi; }
+  state.len = [BANDS[lo], BANDS[hi] + 1];
+  state.cap = CAPS[Number($('#cap').value)];
+  $('#lenval').textContent = `${state.len[0]}–${state.len[1]} days`;
+  $('#capval').textContent = state.cap == null ? 'any' : `≤ ${state.cap} h`;
+}
+for (const id of ['cap', 'lenlo', 'lenhi']) {
+  $(`#${id}`).addEventListener('input', readSliders);
+  $(`#${id}`).addEventListener('change', () => { readSliders(); show(); });
+}
 $('#via').addEventListener('change', (e) => { if (e.target.value) state.vias = [...state.vias, e.target.value]; show(); });
 $('#vias').addEventListener('click', (e) => {
   const c = e.target.closest('button')?.dataset.city;

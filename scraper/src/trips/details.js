@@ -11,7 +11,7 @@
  * min, plane }], stops: [{ at, min }], likely? }.
  */
 const { search, parseResults } = require('../gflights/flights');
-const { airportsOf } = require('../../../frontend/app/cities.js');
+const { airportsOf, isLong } = require('../../../frontend/app/cities.js');
 const { fareKey } = require('./fares');
 const { samePrice } = require('../../../frontend/app/price.js');
 
@@ -160,56 +160,109 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
     // A plain search lists only Google's top flights; where none of those connects, the full list.
     let picks;
     for (const full = new Set(); ;) {
-      picks = plan(flights, lists, trip.stay);
-      if (trip.stay && misses(picks)) { const loose = plan(flights, lists); if (misses(loose) < misses(picks)) picks = loose; }
+      picks = choose(trip, flights, lists);
       const i = browser ? picks.findIndex((p, j) => p?.miss === 'connection' && !full.has(j)) : -1;
       if (i < 0) break;
       full.add(i);
       const all = await fullOnce(flights[i].query);
       if (!all.error && all.length) lists[i] = all;
     }
-    trip.connects = true;
-    trip.conn = 0;
+    const s = settle(trip, flights, lists, picks);
     for (const [i, f] of flights.entries()) {
       f.ticket.flights ??= {};
       if (listed && f.dir === 'out' && !lists[i].error && lists[i].length && (f.ticket.kind === 'ow' || f.ticket.kind === 'rt')) listed.set(fareKey(f.ticket), cheapest(lists[i]).price);
-      let pick = picks[i];
-      if (!pick) continue; // search failed: unknown
-      if (pick.miss) {
-        f.ticket.flights[f.dir] = pick;
-        stats[pick.miss]++;
-        if (pick.miss === 'connection') trip.connects = false;
-        continue;
-      }
-      if (f.dir === 'back') {
-        // A return's price is on its outbound, so which return goes with it is a guess: the same
-        // airline as the outbound, of those that still fit the flights either side.
-        const airlines = picks[flights.findIndex((g) => g.ticket === f.ticket && g.dir === 'out')]?.airlines;
-        if (!airlines) continue; // unknown outbound: can't tell
-        const [prev, next] = [picks[i - 1], picks[i + 1]].map((p) => (p?.legs ? p : null));
-        const ok = lists[i].filter((o) => (!prev || fits(trip.stay, i, prev, o)) && (!next || fits(trip.stay, i + 1, o, next)));
-        const same = ok.filter((o) => o.airlines.some((a) => airlines.includes(a)));
-        pick = { ...(same.length ? same : ok).slice().sort((a, b) => connPen(f, a) - connPen(f, b) || a.price - b.price)[0], likely: true };
-      }
+      const pick = s.picks[i];
+      if (!pick) continue; // search failed, or a return whose outbound is unknown
       f.ticket.flights[f.dir] = pick;
-      trip.conn += connPen(f, pick);
+      if (pick.miss) { stats[pick.miss]++; continue; }
       // The listed price is what booking costs; the graph's can be stale (seen: $4,262 graph,
       // $5,012 cheapest listed).
       if (f.dir === 'out') { f.ticket.graph = f.ticket.price; f.ticket.price = pick.price; }
     }
-    // The Hoi An stay, from the real landing to the real departure: a flight that lands the next
-    // day (overnight connection, long haul) eats into it. Short: not a trip, like a missed connection.
-    if (trip.stay) {
-      const [a, b] = [flights[trip.stay.after], flights[trip.stay.after + 1]].map((f) => f.ticket.flights[f.dir]);
-      if (a?.legs && b?.legs) {
-        const days = (Date.parse(b.legs[0].depDate) - Date.parse(a.legs.at(-1).arrDate)) / 864e5;
-        if (days < trip.stay.need) { trip.connects = false; stats.stay++; }
-      }
-    }
-    // A search skipped (out of time) or failed: the trip is unknown, not a trip that connects.
-    if (trip.connects && lists.some((l) => l.error)) trip.connects = null;
+    if (s.short) stats.stay++;
+    trip.connects = s.connects;
+    trip.conn = s.conn;
     trip.total = trip.tickets.reduce((sum, t) => sum + t.price, 0);
   }
 }
 
-module.exports = { addDetails, flightsOf };
+/** Each flight's pick (plan), the Hoi An stay kept when any pick can, else as many connections as can be. */
+function choose(trip, flights, lists) {
+  const picks = plan(flights, lists, trip.stay);
+  if (!trip.stay || !misses(picks)) return picks;
+  const loose = plan(flights, lists);
+  return misses(loose) < misses(picks) ? loose : picks;
+}
+
+/**
+ * The picks made final: a return's flight back chosen, the long connections' penalty summed, and
+ * whether the trip connects (false: a missed connection, or the real flights leave the Hoi An stay
+ * short; null: a search skipped or failed). { picks, connects, conn, short }.
+ */
+function settle(trip, flights, lists, chosen) {
+  const picks = [];
+  let connects = true, conn = 0;
+  for (const [i, f] of flights.entries()) {
+    let pick = chosen[i];
+    if (!pick || pick.miss) { picks.push(pick); if (pick?.miss === 'connection') connects = false; continue; }
+    if (f.dir === 'back') {
+      // A return's price is on its outbound, so which return goes with it is a guess: the same
+      // airline as the outbound, of those that still fit the flights either side.
+      const airlines = chosen[flights.findIndex((g) => g.ticket === f.ticket && g.dir === 'out')]?.airlines;
+      if (!airlines) { picks.push(null); continue; } // unknown outbound: can't tell
+      const [prev, next] = [chosen[i - 1], chosen[i + 1]].map((p) => (p?.legs ? p : null));
+      const ok = lists[i].filter((o) => (!prev || fits(trip.stay, i, prev, o)) && (!next || fits(trip.stay, i + 1, o, next)));
+      const same = ok.filter((o) => o.airlines.some((a) => airlines.includes(a)));
+      pick = { ...(same.length ? same : ok).slice().sort((a, b) => connPen(f, a) - connPen(f, b) || a.price - b.price)[0], likely: true };
+    }
+    picks.push(pick);
+    conn += connPen(f, pick);
+  }
+  // The Hoi An stay, from the real landing to the real departure: a flight that lands the next
+  // day (overnight connection, long haul) eats into it. Short: not a trip, like a missed connection.
+  let short = false;
+  if (trip.stay) {
+    const [a, b] = [picks[trip.stay.after], picks[trip.stay.after + 1]];
+    if (a?.legs && b?.legs && (Date.parse(b.legs[0].depDate) - Date.parse(a.legs.at(-1).arrDate)) / 864e5 < trip.stay.need) { connects = false; short = true; }
+  }
+  // A search skipped (out of time) or failed: the trip is unknown, not a trip that connects.
+  if (connects && lists.some((l) => l.error)) connects = null;
+  return { picks, connects, conn, short };
+}
+
+/** The longest long-haul flight on a checked trip, in minutes (cities.js isLong; 0 when none is known). */
+function longestOf(trip, homes) {
+  return Math.max(0, ...trip.tickets.filter((t) => isLong(t.from, t.to, homes)).flatMap((t) => Object.values(t.flights ?? {}).map((f) => f.min ?? 0)));
+}
+
+/**
+ * The trip with every long-haul flight (cities.js isLong) at most `maxMin` long, from searches
+ * already in `cache` (the full list where there is one): its own copy with those flights and
+ * their listed prices, or null when the searches aren't there or no such flights connect. No search
+ * is made: the board's long-haul filter, from what the checks found.
+ */
+async function capped(trip, cache, maxMin, homes) {
+  const flights = flightsOf(trip);
+  const lists = [];
+  for (const f of flights) {
+    const key = JSON.stringify(f.query);
+    let l = cache.has(`full ${key}`) ? await cache.get(`full ${key}`) : null;
+    if (!Array.isArray(l) || !l.length) l = cache.has(key) ? await cache.get(key) : null;
+    if (!Array.isArray(l) || !l.length) return null;
+    if (isLong(f.ticket.from, f.ticket.to, homes)) l = l.filter((o) => o.min <= maxMin);
+    if (!l.length) return null;
+    lists.push(l);
+  }
+  const s = settle(trip, flights, lists, choose(trip, flights, lists));
+  if (s.connects !== true || s.picks.some((p) => !p?.legs)) return null;
+  const copies = new Map(trip.tickets.map((t) => [t, { ...t, flights: {} }]));
+  for (const [i, f] of flights.entries()) {
+    const t = copies.get(f.ticket);
+    t.flights[f.dir] = s.picks[i];
+    if (f.dir === 'out') { t.graph = f.ticket.graph ?? f.ticket.price; t.price = s.picks[i].price; }
+  }
+  const tickets = trip.tickets.map((t) => copies.get(t));
+  return { ...trip, tickets, conn: s.conn, connects: true, total: tickets.reduce((sum, t) => sum + t.price, 0) };
+}
+
+module.exports = { addDetails, flightsOf, capped, longestOf };
