@@ -16,7 +16,7 @@ import { sweepIfAsked } from './alerts.js';
 import { renderHealth } from './health.js';
 import { renderHistory } from './history.js';
 import { register, showBar, clearBar } from './pwa.js';
-import { staysOf as tripStays, rowId } from './build.js';
+import { staysOf as tripStays, rowId, HOI_AN_NIGHTS } from './build.js';
 
 const params = new URLSearchParams(location.search);
 const ALERT_SHA = /^[0-9a-f]{40}$/.test(params.get('v') ?? '') ? params.get('v') : null;
@@ -340,8 +340,8 @@ const minutesAt = (date, hm) => Date.parse(`${date}T${hm}:00Z`) / 60e3; // local
 /** The flights Google lists for this leg (scraper/src/trips/details.js), or undefined. */
 const flightOf = (l) => l.t.flights?.[l.leg ?? 'out'];
 
-/** Between two legs: the time in the city, from real flight times when known. */
-function layover(prev, next, flex = null, hoian = false) {
+/** Between two legs: the time in the city, from real flight times when known. hoian: the trip's Hoi An stay, when it's this one. */
+function layover(prev, next, flex = null, hoian = null) {
   // The Hoi An stay from a city farther than Da Nang or Hue: say it's in there (build.js anchors).
   const viaHoiAn = hoian && (prev.to !== next.from || CITIES[prev.to]?.vietnam > 0);
   const where = viaHoiAn
@@ -350,7 +350,8 @@ function layover(prev, next, flex = null, hoian = false) {
   if (flightOf(next)?.miss === 'connection') return `<li class="layover bad"><span>Misses connection · ${where}</span></li>`;
   const { nights, wait } = stay(prev, next);
   // "4–12 nights": the stay lengths possible at about the same price (builder: flex.js).
-  const count = flex && nights > 0 ? `${Math.max(0, nights - flex[1])}–${nights + flex[2]} nights` : `${nights} night${nights > 1 ? 's' : ''}`;
+  // Never under the Hoi An stay's need: the range is from planned days, the real landing can be a day on.
+  const count = flex && nights > 0 ? `${Math.max(hoian?.need ?? 0, nights - flex[1])}–${nights + flex[2]} nights` : `${nights} night${nights > 1 ? 's' : ''}`;
   if (nights > 0) return `<li class="layover"><span>${count} · ${where}</span></li>`;
   return `<li class="layover"><span>${wait != null ? `${dur(wait)} layover` : 'Same day'} · ${where}</span></li>`;
 }
@@ -424,17 +425,24 @@ const leavesFrom = (l) => flightOf(l)?.legs?.[0].from ?? l.from;
 /**
  * Nights stayed per city (overnight stays only), for the map: airport landed at → [nights or
  * "lo–hi", …] in order (the map draws airports, so a Tokyo stay is labelled at HND or NRT). The
- * Hoi An stay's nights are Hoi An's, less the days overland (cities.js vietnam).
+ * Hoi An stay: HOI_AN_NIGHTS or more there, up to its most less the days overland (cities.js
+ * vietnam), and whatever's left over in the city it's in and out of.
  */
 function staysOf(list, flex = [], hoian = null) {
   const out = new Map();
+  const add = (c, lo, hi) => out.set(c, [...(out.get(c) ?? []), lo === hi ? lo : `${lo}–${hi}`]);
   for (let i = 1; i < list.length; i++) {
-    let { nights } = stay(list[i - 1], list[i]);
+    const { nights } = stay(list[i - 1], list[i]);
     if (nights <= 0) continue;
-    const at = hoian?.after === i - 1 ? HOI_AN : landsAt(list[i - 1]);
-    if (at === HOI_AN) nights -= (CITIES[list[i - 1].to]?.vietnam ?? 0) + (CITIES[list[i].from]?.vietnam ?? 0);
     const span = flex.find(([k]) => k === i - 1); // "6–16", as on the stay rows
-    out.set(at, [...(out.get(at) ?? []), span ? `${Math.max(0, nights - span[1])}–${nights + span[2]}` : nights]);
+    const hi = nights + (span?.[2] ?? 0);
+    if (hoian?.after === i - 1) {
+      const free = hi - (CITIES[list[i - 1].to]?.vietnam ?? 0) - (CITIES[list[i].from]?.vietnam ?? 0);
+      add(HOI_AN, HOI_AN_NIGHTS, Math.max(HOI_AN_NIGHTS, free));
+      if (list[i - 1].to === list[i].from && free > HOI_AN_NIGHTS) add(landsAt(list[i - 1]), 0, free - HOI_AN_NIGHTS);
+      continue;
+    }
+    add(landsAt(list[i - 1]), Math.max(0, nights - (span?.[1] ?? 0)), hi);
   }
   return out;
 }
@@ -529,7 +537,7 @@ function renderSheet() {
     </div>
     ${tripMap(flown(list, ticketOf, trip.stay), state.home, [...new Set([...list.flatMap((l) => [l.from, l.to, leavesFrom(l), landsAt(l)]), HOI_AN])], staysOf(list, trip.flex, trip.stay))}
     <ol class="legs${trip.tickets.some((t) => t.kind !== 'ow') ? ' has-rail' : ''}">${withRails(list, ticketOf, list.flatMap((l, i) => [
-      ...(i ? [layover(list[i - 1], l, trip.flex?.find(([k]) => k === i - 1), trip.stay?.after === i - 1)] : []), legItem(l, ticketOf)])).join('')}</ol>
+      ...(i ? [layover(list[i - 1], l, trip.flex?.find(([k]) => k === i - 1), trip.stay?.after === i - 1 ? trip.stay : null)] : []), legItem(l, ticketOf)])).join('')}</ol>
 `;
   sheet.querySelector('.close').addEventListener('click', closeTrip);
   for (const b of sheet.querySelectorAll('.seg button')) {

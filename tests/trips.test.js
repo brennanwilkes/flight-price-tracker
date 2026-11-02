@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert');
-const { buildTrips, nearestStay, addDays } = require('../frontend/app/build.js');
+const { buildTrips, nearestStay, reentersVietnam, scoreOf, addDays } = require('../frontend/app/build.js');
 
 const D0 = '2027-10-01';
 const day = (n) => addDays(D0, n);
@@ -390,4 +390,16 @@ test('the Hoi An stay goes with the nearest Vietnam city that has the days: Da N
   assert.deepStrictEqual(nearestStay('MNL', D0, [...short.slice(0, 1), { kind: 'stay', from: 'HAN', to: 'HAN', need: 7 }, ...short.slice(1)], 17, anchors)[1].from, 'HAN');
   const jaw = [flights[0], { kind: 'stay', from: 'HAN', to: 'DAD', need: 6 }, flights[3]];
   assert.deepStrictEqual(nearestStay('MNL', D0, jaw, 17, anchors), jaw);
+});
+
+test('trip shape: flying into Vietnam a second time counts the whole tolerance against a trip', () => {
+  const stay = { kind: 'stay', from: 'DAD', to: 'DAD', need: 5 };
+  const via = (to) => [stay, { kind: 'ow', from: 'DAD', to: 'ICN', date: day(7) }, { kind: 'ow', from: 'ICN', to, date: day(12) }];
+  assert.strictEqual(reentersVietnam('DAD', via('MNL')), false);
+  assert.strictEqual(reentersVietnam('DAD', via('HAN')), true);
+  assert.strictEqual(reentersVietnam('MNL', [{ kind: 'ow', from: 'MNL', to: 'HAN', date: day(2) }, stay]), false);
+  // Capped at the tolerance: back into Vietnam wins only when more than 5% cheaper (economy).
+  const trip = (total, reentry) => ({ cls: 'economy', total, pen: 0, reentry });
+  assert.ok(scoreOf(trip(1000, true)) > scoreOf(trip(1040, false)));
+  assert.ok(scoreOf(trip(1000, true)) < scoreOf(trip(1060, false)));
 });

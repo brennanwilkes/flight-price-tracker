@@ -37,7 +37,7 @@ const HOLD = 3; // and for this many days after they land
  * together at most the "same price" tolerance (price.js): a pick never costs more than that over
  * the cheapest it beat.
  */
-const scoreOf = (t) => (t ? t.total + Math.min(samePrice(t) * t.total, (t.pen ?? 0) + (t.conn ?? 0)) : Infinity);
+const scoreOf = (t, reentry = true) => (t ? t.total + Math.min(samePrice(t) * t.total, (t.pen ?? 0) + (t.conn ?? 0) + (reentry && t.reentry ? REENTRY : 0)) : Infinity);
 const addDays = (iso, n) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
 
 // Trip-shape preferences (SCOPE), in dollars added to a plan's score (never its price), so they
@@ -45,6 +45,10 @@ const addDays = (iso, n) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 864e5)
 const PRE_NIGHT = 4; // a night away from Hoi An before it: time elsewhere goes after Hoi An
 const BOTH_ENDS = 30; // 2+ nights in the arrival city both before and after Hoi An
 const ONE_NIGHT = 25; // flying on after a single night (a ~14 h overnight): 0 nights or 2+ suit better
+// Into Vietnam a second time (visas): the whole tolerance, so it only wins clearly cheaper. Scored
+// on finished trips only (trip.reentry), not inside the planner nor in a cell's shortlist (keep):
+// a trip that one ticket makes far cheaper (build-trips multiSaving) still gets its chance.
+const REENTRY = 10000;
 
 /**
  * Best plans within Asia from arrival city `x`, landing day 1 after departure `d0`: the cheapest,
@@ -251,6 +255,17 @@ function shapePen(x, d0, hops, t) {
   return pen + (xBefore >= 2 && xAfter >= 2 ? BOTH_ENDS : 0);
 }
 
+/** True when a plan flies into Vietnam a second time (REENTRY). x: the arrival city. */
+function reentersVietnam(x, hops) {
+  let vn = inVietnam(x), entries = +vn;
+  for (const h of hops) {
+    if (h.kind === 'stay') continue;
+    if (inVietnam(h.to) && !vn) entries++;
+    vn = inVietnam(h.to);
+  }
+  return entries > 1;
+}
+
 /**
  * The plan's Hoi An stay moved to the nearest anchor with the days for it (Da Nang's nights over
  * Saigon's), when it's in and out of one city; the flights and price stay, only where the nights
@@ -426,8 +441,8 @@ function buildTrips(fares, { need = [], homes = fares.homes } = {}) {
   const keep = (trip, via) => {
     const key = `${trip.home}|${trip.cls}|${trip.in}|${trip.out}|${trip.set}|${trip.month}|${via}`;
     const list = top.get(key) ?? [];
-    if (list.length <= FALLBACKS || scoreOf(list.at(-1)) > scoreOf(trip)) {
-      const at = list.findIndex((t) => scoreOf(t) > scoreOf(trip));
+    if (list.length <= FALLBACKS || scoreOf(list.at(-1), false) > scoreOf(trip, false)) {
+      const at = list.findIndex((t) => scoreOf(t, false) > scoreOf(trip, false));
       list.splice(at < 0 ? list.length : at, 0, trip);
       if (list.length > FALLBACKS + 1) list.pop();
       top.set(key, list);
@@ -452,6 +467,7 @@ function buildTrips(fares, { need = [], homes = fares.homes } = {}) {
             if (sigs.has(sig)) return false;
             sigs.add(sig);
             p.pen = shapePen(x, d0, p.hops, t);
+            p.reentry = reentersVietnam(x, p.hops);
             return true;
           }));
         }
@@ -465,7 +481,7 @@ function buildTrips(fares, { need = [], homes = fares.homes } = {}) {
             const days = (Date.parse(ret) - Date.parse(d0)) / 864e5;
             if (days < MIN_DAYS || days > MAX_DAYS) continue;
             for (const p of plan(x, days)) offer({
-              ...base, out: x, total: price + p.cost, pen: p.pen, ret, days, sameDay: hasSameDay(d0, p.hops, ret), safe: isSafe(d0, p.hops, ret),
+              ...base, out: x, total: price + p.cost, pen: p.pen, reentry: p.reentry, ret, days, sameDay: hasSameDay(d0, p.hops, ret), safe: isSafe(d0, p.hops, ret),
               ...ticketsOf({ kind: 'rt', from: home, to: x, date: d0, ret, cabin, price }, p.hops, null),
             });
           }
@@ -478,7 +494,7 @@ function buildTrips(fares, { need = [], homes = fares.homes } = {}) {
               const backPrice = fares.oneWay(y, home, cabin, ret);
               if (backPrice == null) continue;
               for (const p of plan(y, days)) offer({
-                ...base, out: y, total: outPrice + p.cost + backPrice, pen: p.pen, ret, days, sameDay: hasSameDay(d0, p.hops, ret), safe: isSafe(d0, p.hops, ret),
+                ...base, out: y, total: outPrice + p.cost + backPrice, pen: p.pen, reentry: p.reentry, ret, days, sameDay: hasSameDay(d0, p.hops, ret), safe: isSafe(d0, p.hops, ret),
                 ...ticketsOf({ kind: 'ow', from: home, to: x, date: d0, cabin, price: outPrice }, p.hops,
                   { kind: 'ow', from: y, to: home, date: ret, cabin, price: backPrice }),
               });
@@ -489,7 +505,8 @@ function buildTrips(fares, { need = [], homes = fares.homes } = {}) {
     }
   }
   // A trip can head several lists (its cell's and its cities'), so each entry is its own copy.
-  const trips = [...top].map(([key, [first, ...rest]]) => {
+  const trips = [...top].map(([key, list]) => {
+    const [first, ...rest] = list.toSorted((a, b) => scoreOf(a) - scoreOf(b)); // REENTRY now counted
     const s = safe.get(key);
     const via = key.slice(key.lastIndexOf('|') + 1);
     return { ...first, via, fallbacks: s && !rest.includes(s) && s !== first ? [...rest, s] : rest };
@@ -509,4 +526,4 @@ function similarCount(dateSets, trip, month = null) {
   return n;
 }
 
-export { buildTrips, similarCount, scoreOf, hopPlans, ticketsOf, staysOf, setOf, rowId, hasSameDay, isSafe, nearestStay, addDays };
+export { buildTrips, similarCount, scoreOf, hopPlans, ticketsOf, staysOf, setOf, rowId, hasSameDay, isSafe, nearestStay, reentersVietnam, addDays, HOI_AN_NIGHTS };
