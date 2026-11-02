@@ -75,7 +75,7 @@ const MULTI_RESERVE = 5 * 60e3;
 const SEARCH_HOURS = 24;
 // The board's long-haul filter (hours, loosest first): each dashboard cell's cheapest trip with
 // every long-haul flight at most that long, re-picked from its checked candidates' searches.
-const CAPS = [30, 24, 20, 18, 16, 14, 12, 10];
+const CAPS = [18, 16, 15, 14, 13, 12, 11, 10];
 
 /**
  * Search results from earlier builds, under SEARCH_HOURS old: { cache: key → result, at: key → ISO

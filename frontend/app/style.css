@@ -110,9 +110,13 @@ option { background: var(--panel); color: var(--text); }
   background: var(--panel); border: 1px solid var(--line); border-radius: 6px; font: 500 11px var(--mono); color: var(--muted); letter-spacing: 0.04em; }
 .range b { color: var(--text); font-weight: 600; }
 .range input { width: 100%; margin: 0; height: 22px; background: transparent; -webkit-appearance: none; appearance: none; }
-.range input::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: var(--line); }
+/* The track shaded between --lo and --hi (main.js): the range let through. */
+.range { --lo: 0%; --hi: 100%; }
+.range input::-webkit-slider-runnable-track { height: 4px; border-radius: 2px;
+  background: linear-gradient(to right, var(--line) var(--lo), var(--text) var(--lo), var(--text) var(--hi), var(--line) var(--hi)); }
 .range input::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; margin-top: -6px; border-radius: 50%; background: var(--text); border: 2px solid var(--panel); }
-.range input::-moz-range-track { height: 4px; border-radius: 2px; background: var(--line); }
+.range input::-moz-range-track { height: 4px; border-radius: 2px;
+  background: linear-gradient(to right, var(--line) var(--lo), var(--text) var(--lo), var(--text) var(--hi), var(--line) var(--hi)); }
 .range input::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--text); border: 2px solid var(--panel); }
 /* Two thumbs on one track: two ranges stacked, only their thumbs taking taps. */
 .dual { position: relative; height: 22px; }
@@ -121,6 +125,9 @@ option { background: var(--panel); color: var(--text); }
 .dual input::-moz-range-thumb { pointer-events: auto; }
 .dual input + input::-webkit-slider-runnable-track { background: transparent; }
 .dual input + input::-moz-range-track { background: transparent; }
+#reset { flex: none; font: 600 12px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--text);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 0 12px; cursor: pointer; }
+#reset[hidden] { display: none; }
 .toggle { display: flex; }
 .toggle button { border-radius: 0; cursor: pointer; letter-spacing: 0.06em; }
 .toggle button:first-child { border-radius: 6px 0 0 6px; }

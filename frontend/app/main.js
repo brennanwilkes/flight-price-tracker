@@ -47,7 +47,7 @@ const BOARD_ROWS = 100;
 // The length filter's bands (build.js bandOf: first days) and the long-haul filter's steps in
 // hours (null: any), as the sliders run.
 const BANDS = [14, 16, 18, 20];
-const CAPS = [10, 12, 14, 16, 18, 20, 24, 30, null];
+const CAPS = [10, 11, 12, 13, 14, 15, 16, 18, null];
 const state = { cap: null, len: [14, 21], home: /^(YVR|YYJ)$/.test(params.get('home') ?? '') ? params.get('home') : localGet('home') ?? 'YVR', month: '', vias: [], sha: null, data: {} };
 // Priority class, per device: sorts the board, opens first, leads History. Alerts cover both.
 state.priority = localGet('priority') === 'economy' ? 'economy' : 'hybrid';
@@ -294,6 +294,7 @@ function fillFilters(data) {
     .map(([country, cs]) => `<optgroup label="${esc(country || 'Other')}">${cs.map((c) => `<option value="${c}">${esc(cityName(c))}</option>`).join('')}</optgroup>`).join('')}`;
   $('#vias').innerHTML = state.vias.map((c) => `<button type="button" data-city="${c}" aria-label="Remove ${esc(cityName(c))}">${esc(cityName(c))}<span aria-hidden="true">×</span></button>`).join('');
   $('#vias').classList.toggle('pending', !!state.data[viewKey()]?.approx); // exact rows still building
+  shade();
 }
 
 // Tabs by hash: #history, #health, else the board (whose trip view is #trip=…).
@@ -658,7 +659,26 @@ function readSliders() {
   state.cap = CAPS[Number($('#cap').value)];
   $('#lenval').textContent = `${state.len[0]}–${state.len[1]} days`;
   $('#capval').textContent = state.cap == null ? 'any' : `≤ ${state.cap} h`;
+  shade();
 }
+/** Each track shaded over what it lets through; Reset shown while anything is filtered. */
+function shade() {
+  const pct = (el) => `${(100 * Number(el.value)) / Number(el.max)}%`;
+  const [cap, lo, hi] = ['#cap', '#lenlo', '#lenhi'].map((id) => $(id));
+  cap.parentElement.style.setProperty('--hi', pct(cap));
+  lo.closest('.range').style.setProperty('--lo', pct(lo));
+  lo.closest('.range').style.setProperty('--hi', pct(hi));
+  $('#reset').hidden = !(filtering() || state.month || state.vias.length);
+}
+$('#reset').addEventListener('click', () => {
+  $('#cap').value = $('#cap').max;
+  $('#lenlo').value = 0;
+  $('#lenhi').value = $('#lenhi').max;
+  state.month = '';
+  state.vias = [];
+  readSliders();
+  show();
+});
 for (const id of ['cap', 'lenlo', 'lenhi']) {
   $(`#${id}`).addEventListener('input', readSliders);
   $(`#${id}`).addEventListener('change', () => { readSliders(); show(); });
