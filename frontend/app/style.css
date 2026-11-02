@@ -100,6 +100,7 @@ option { background: var(--panel); color: var(--text); }
    city doesn't move anything and its chips sit side by side. */
 @media (max-width: 520px) {
   .cityfield { order: 9; flex-basis: 100%; padding: 2px; }
+  .ranges { flex-direction: column; } /* each slider the full width */
 }
 #vias.pending button { border-style: dashed; animation: pending 1.2s ease-in-out infinite alternate; }
 @keyframes pending { to { border-color: var(--muted); } }
