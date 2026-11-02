@@ -3,7 +3,8 @@
 /* Price-graph sweep across the travel window (config/sweep.json, src/sweep/plan.js): long legs,
  * hops and Asia round trips, each graph refreshed by its tier's max age, the most overdue first,
  * until the time budget runs out (the rest waits for the next sweep). Before that, a slice of the
- * hop network is re-checked (src/network). State: state/graphs.json, state/network.json.
+ * hop network is re-checked (src/network). State: state/graphs.json, state/graph-fails.json,
+ * state/network.json.
  *
  *   node scraper/bin/sweep.js --data <dataDir> [--egress vpn|direct] [--routes YVR-ICN,ICN-DAD]
  *
@@ -68,9 +69,11 @@ async function main() {
   const egress = arg('egress', 'direct');
   const only = arg('routes')?.split(',');
   const stateFile = path.join(dataDir, 'state', 'graphs.json');
+  const failsFile = path.join(dataDir, 'state', 'graph-fails.json');
   const networkFile = path.join(dataDir, 'state', 'network.json');
   const state = readJson(stateFile, null) ?? migrateHops(dataDir);
   const network = readJson(networkFile, { pairs: {} });
+  const fails = readJson(failsFile, {});
   const observedAt = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   const t0 = Date.now();
   const run = { at: observedAt, egress, control: null, ok: 0, failed: 0, cells: 0, priced: 0, changes: 0, errors: [] };
@@ -99,7 +102,7 @@ async function main() {
         console.log(`network: ${s.checked} pairs checked, ${s.kept} short, ${s.failed} failed; ${run.network.routes} routes known`);
       }
       const { start: wStart, end: wEnd } = config.window;
-      const work = planSweep(config, state, network, Date.now(), only);
+      const work = planSweep(config, state, network, Date.now(), only, fails);
       run.due = work.length;
       run.pages = work.length > BACKLOG ? Math.max(CONCURRENCY, CONCURRENCY_BACKLOG) : CONCURRENCY;
       await pool(work, run.pages, async (q) => {
@@ -109,6 +112,7 @@ async function main() {
           const cells = await withRetry(() => priceGraph(ctx, { ...q, from: airportsOf(q.from), to: airportsOf(q.to), start: wStart, end: wEnd }), label);
           const changes = recordCells(dataDir, q.routeId, q.tripLen ?? 0, cells, { observedAt, egress });
           state[graphKey(q)] = observedAt;
+          delete fails[graphKey(q)];
           const priced = cells.filter((x) => x.price != null);
           run.ok++;
           run.cells += cells.length;
@@ -118,6 +122,7 @@ async function main() {
           console.log(`${label}: ${priced.length}/${cells.length} priced, min ${min}, ${changes} changed`);
         } catch (e) {
           run.failed++;
+          fails[graphKey(q)] = { n: (fails[graphKey(q)]?.n ?? 0) + 1, at: observedAt };
           run.errors.push(`${label}: ${e.message}`);
           console.log(`${label}: FAILED ${e.message}`);
         }
@@ -128,6 +133,7 @@ async function main() {
   }
 
   writeJson(stateFile, Object.fromEntries(Object.entries(state).sort()));
+  writeJson(failsFile, Object.fromEntries(Object.entries(fails).sort()));
   run.seconds = Math.round((Date.now() - t0) / 1000);
   const total = run.ok + run.failed;
   const success = run.control > 0 && total > 0 && run.failed / total <= MAX_FAILED_SHARE;

@@ -13,6 +13,9 @@
  *            gateway it has flights with (the network): the long haul broken up (build.js); with
  *            lengthRange, round trips home ⇄ stop per trip length instead (the trip inside them)
  * state/graphs.json: { '<routeId>|<tripLen>': last successful scrape (ISO) }.
+ * state/graph-fails.json: { '<routeId>|<tripLen>': { n, at } }, failures since the last success; a
+ * graph that keeps failing (a route with nothing listed in the window shows no price graph) waits
+ * its max age, doubling per failure up to a week, instead of taking the front of every sweep.
  */
 const { citiesWith, CITIES } = require('../../../frontend/app/cities.js');
 const { routesOf } = require('../network');
@@ -80,16 +83,24 @@ function allGraphs(config, network) {
   return [...byKey.values()];
 }
 
+const FAIL_WAIT_MAX_HOURS = 24 * 7;
+
+/** Hours a graph with `fail` ({ n, at }) waits after its last failure. */
+const failWait = (g, fail) => Math.min(FAIL_WAIT_MAX_HOURS, g.maxAgeHours * 2 ** (fail.n - 1));
+
 /**
  * Graphs due this sweep, most overdue first (age / max age; never scraped counts as 1.5 so it
  * doesn't starve the hourly routes), then by tier. `only`: route prefixes (e.g. 'YVR-ICN').
+ * A graph that failed last time is due once its wait is over, as overdue as a stale one (1).
  */
-function planSweep(config, state, network, now, only = null) {
+function planSweep(config, state, network, now, only = null, fails = {}) {
   const due = [];
   for (const g of allGraphs(config, network)) {
     if (only && !only.some((o) => g.routeId.startsWith(`${o}-`))) continue;
     const last = state[key(g)];
-    const overdue = last ? (now - Date.parse(last)) / (g.maxAgeHours * 3600e3) : 1.5;
+    const fail = fails[key(g)];
+    let overdue = last ? (now - Date.parse(last)) / (g.maxAgeHours * 3600e3) : 1.5;
+    if (fail) overdue = now - Date.parse(fail.at) >= failWait(g, fail) * 3600e3 ? Math.min(overdue, 1) : 0;
     if (only || overdue >= 1) due.push({ g, overdue });
   }
   return due.sort((x, y) => y.overdue - x.overdue || x.g.tier - y.g.tier).map((d) => d.g);
