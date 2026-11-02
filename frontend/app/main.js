@@ -343,9 +343,8 @@ const flightOf = (l) => l.t.flights?.[l.leg ?? 'out'];
 
 /** Between two legs: the time in the city, from real flight times when known. hoian: the trip's Hoi An stay, when it's this one. */
 function layover(prev, next, flex = null, hoian = null) {
-  // The Hoi An stay from a city farther than Da Nang or Hue: say it's in there (build.js anchors).
-  const viaHoiAn = hoian && (prev.to !== next.from || CITIES[prev.to]?.vietnam > 0);
-  const where = viaHoiAn
+  // The Hoi An stay: named with the city it's reached from (Da Nang + Hoi An), or both ends.
+  const where = hoian
     ? (prev.to === next.from ? `${esc(cityName(prev.to))} + Hoi An` : `${esc(cityName(prev.to))} → Hoi An → ${esc(cityName(next.from))}`)
     : esc(cityName(prev.to));
   if (flightOf(next)?.miss === 'connection') return `<li class="layover bad"><span>Misses connection · ${where}</span></li>`;

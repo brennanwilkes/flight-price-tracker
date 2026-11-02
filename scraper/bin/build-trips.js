@@ -44,6 +44,7 @@ const zlib = require('node:zlib');
 const config = require('../config/sweep.json');
 const { loadFares, bundleOf, fareOf } = require('../src/trips/fares');
 const { buildTrips, similarCount, scoreOf, rowId } = require('../../frontend/app/build.js');
+const { CITIES, airportsOf } = require('../../frontend/app/cities.js');
 const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
 const { addDetails } = require('../src/trips/details');
 const { openBrowser, shoppingResults } = require('../src/gflights/browser');
@@ -66,18 +67,41 @@ const MULTI_RESERVE = 5 * 60e3;
 // makes ~800: under SEARCH_HOURS = 3 they could never all be fresh at once.
 const SEARCH_HOURS = 24;
 
-/** Search results from earlier builds, under SEARCH_HOURS old: { cache: key → result, at: key → ISO time }. */
+/**
+ * Search results from earlier builds, under SEARCH_HOURS old: { cache: key → result, at: key → ISO
+ * time, lands: landings of them }.
+ */
 function loadSearches(file, now) {
-  const cache = new Map(), at = new Map();
-  if (!file || !fs.existsSync(file)) return { cache, at };
-  try {
-    for (const [k, when, v] of JSON.parse(zlib.gunzipSync(fs.readFileSync(file)))) {
-      if (now - Date.parse(when) < SEARCH_HOURS * 3600e3) { cache.set(k, Promise.resolve(v)); at.set(k, when); }
+  const cache = new Map(), at = new Map(), rows = [];
+  if (file && fs.existsSync(file)) {
+    try {
+      for (const [k, when, v] of JSON.parse(zlib.gunzipSync(fs.readFileSync(file)))) {
+        if (now - Date.parse(when) < SEARCH_HOURS * 3600e3) { cache.set(k, Promise.resolve(v)); at.set(k, when); rows.push([k, v]); }
+      }
+    } catch (e) {
+      console.log(`search cache unreadable, starting empty: ${e.message}`);
     }
-  } catch (e) {
-    console.log(`search cache unreadable, starting empty: ${e.message}`);
   }
-  return { cache, at };
+  return { cache, at, lands: landings(rows) };
+}
+
+/**
+ * "from|to|date" (cities) → days after leaving that the earliest listed flight lands, over every
+ * search of that flight (cabins, plain and full lists): the builder plans with it (fares.js lands),
+ * so a trip whose every flight lands too late for the next one, or for the Hoi An stay, isn't
+ * proposed and searched only to fail.
+ */
+function landings(rows) {
+  const cityOf = new Map(Object.keys(CITIES).map((c) => [JSON.stringify(airportsOf(c)), c]));
+  const out = new Map();
+  for (const [k, opts] of rows) {
+    const q = JSON.parse(k.replace(/^full /, ''));
+    const [from, to] = [q.from, q.to].map((a) => cityOf.get(JSON.stringify(a)) ?? a);
+    const days = Math.min(...opts.map((o) => (Date.parse(o.legs.at(-1).arrDate) - Date.parse(q.out)) / 864e5));
+    const key = `${from}|${to}|${q.out}`;
+    if (Number.isFinite(days) && !(out.get(key) <= days)) out.set(key, days);
+  }
+  return out;
 }
 /** This build's successful searches, with the time each was made. */
 async function saveSearches(file, { cache, at }, now) {
@@ -293,18 +317,19 @@ async function main() {
   rankOf = (t) => scoreOf(t) - multiSaving(multi, t, config.origins);
   // Phase timings: where a slow build spends its time, in the CI log as it runs.
   const lap = (what) => console.log(`${what}: ${Math.round((Date.now() - t0) / 1000)} s in, heap ${Math.round(process.memoryUsage().heapUsed / 2 ** 20)} MB`);
-  let fares = loadFares(dataDir, config, { checked: checked() });
+  const details0 = !process.argv.includes('--no-details');
+  const searches = loadSearches(arg('search-cache'), Date.parse(generatedAt));
+  console.log(`search cache: ${searches.cache.size} under ${SEARCH_HOURS} h old, ${[...searches.lands.values()].filter((d) => d > 0).length} flights landing a day or more on`);
+  let fares = loadFares(dataDir, config, { checked: checked(), lands: searches.lands });
   lap('fares loaded');
   let trips = buildTrips(fares);
   lap(`${trips.length} trips planned`);
   let { vias, byHome } = viewsOf(trips);
   lap(`rows for ${vias.length} vias`);
   let details = null;
-  if (!process.argv.includes('--no-details')) {
+  if (details0) {
     // Searches whose page inlines no results are asked again in a real page (gflights/flights.js).
     const { browser: chrome, ctx } = await openBrowser();
-    const searches = loadSearches(arg('search-cache'), Date.parse(generatedAt));
-    console.log(`search cache: ${searches.cache.size} under ${SEARCH_HOURS} h old`);
     const session = { cache: searches.cache, browser: (q, opts) => { details.browser++; return shoppingResults(ctx, q, opts); }, listed: new Map(), deadline: deadline - DETAILS_RESERVE };
     details = { browser: 0, rounds: 0, searches: 0, failed: 0, late: 0, ms: 0 };
     try {
@@ -317,7 +342,10 @@ async function main() {
         session.listed.clear();
         console.log(`details round ${details.rounds}: ${s.cells} cells, ${s.replaced} moved to another trip (connects, or cheaper as listed), ${s.unresolved} with none that connects, ${s.unknown} hidden with no flights checked; ${s.searches} searches${s.late ? ` (${s.late} skipped, out of time)` : ''}, ${s.none} flights not listed yet, ${s.stay} trips with a short Hoi An stay; ${moved.length} fares listed at a new price; ${s.ms}ms`);
         if (!moved.length || details.rounds >= ROUNDS || Date.now() > session.deadline) break;
-        fares = loadFares(dataDir, config, { checked: checked() });
+        const done = [];
+        for (const [k, r] of session.cache) { const v = await r; if (Array.isArray(v) && v.length) done.push([k, v]); }
+        searches.lands = landings(done); // this round's searches too
+        fares = loadFares(dataDir, config, { checked: checked(), lands: searches.lands });
         trips = buildTrips(fares);
         ({ vias, byHome } = viewsOf(trips));
         lap('planned again');

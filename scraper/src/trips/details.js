@@ -16,7 +16,8 @@ const { fareKey } = require('./fares');
 const { samePrice } = require('../../../frontend/app/price.js');
 
 const MIN_CONNECT_MIN = 4 * 60;
-const CONCURRENCY = 6; // searches in flight; a browser fallback (~10 s) holds one of these
+const CONCURRENCY = 12; // plain searches in flight (~2 s each)
+const PAGES = 4; // browser pages at once (10-60 s each): a search waiting on one doesn't hold up the plain ones
 const SLOW_PAGE_MS = 60_000; // retries and full lists: some searches (YYJ business returns) take Google > 30 s
 
 const at = (date, hm) => Date.parse(`${date}T${hm}:00Z`) / 60000; // minutes, local clock (comparisons only within one city)
@@ -70,6 +71,21 @@ function plan(flights, lists, stay = null) {
   close(flights.length);
   return picks;
 }
+/** browser limited to PAGES at once, across every addDetails call sharing `cache`. */
+function paged(browser, cache) {
+  const slots = (cache.pages ??= { free: PAGES, waiting: [] });
+  return async (...args) => {
+    if (slots.free) slots.free--;
+    else await new Promise((go) => slots.waiting.push(go));
+    try {
+      return await browser(...args);
+    } finally {
+      const go = slots.waiting.shift();
+      if (go) go(); else slots.free++;
+    }
+  };
+}
+
 /** The trip's flights in flying order (trip.order, build.js): [{ ticket, dir: 'out'|'back', query, price? }]. */
 function flightsOf(trip) {
   return trip.order.map(([i, dir]) => {
@@ -93,6 +109,7 @@ function flightsOf(trip) {
  */
 async function addDetails(trips, cache = new Map(), browser = null, listed = null, deadline = Infinity) {
   const LATE = { error: 'out of time', late: true }; // not cached
+  browser &&= paged(browser, cache);
   const searchOnce = (q) => {
     const key = JSON.stringify(q);
     if (!cache.has(key)) {
@@ -122,13 +139,13 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
     while (next < queries.length) await searchOnce(queries[next++]);
   }));
   cache.late ??= new Set();
-  for (const q of queries) {
+  await Promise.all(queries.map(async (q) => {
     const r = await searchOnce(q);
-    if (r.late) { if (!cache.late.has(JSON.stringify(q))) { cache.late.add(JSON.stringify(q)); stats.late++; } continue; }
+    if (r.late) { if (!cache.late.has(JSON.stringify(q))) { cache.late.add(JSON.stringify(q)); stats.late++; } return; }
     stats.searches++;
     if (r.error && browser) { const all = await fullOnce(q); if (!all.late) cache.set(JSON.stringify(q), all); } // retried in a page
     if ((await searchOnce(q)).error) { stats.failed++; stats.error ??= `${q.from}-${q.to} ${q.out}: ${r.error}`; }
-  }
+  }));
 
   // Trips picked CONCURRENCY at a time: a trip waiting on a full list (a page, 10-60 s) holds one.
   let nextTrip = 0;

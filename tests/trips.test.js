@@ -403,3 +403,21 @@ test('trip shape: flying into Vietnam a second time counts the whole tolerance a
   assert.ok(scoreOf(trip(1000, true)) > scoreOf(trip(1040, false)));
   assert.ok(scoreOf(trip(1000, true)) < scoreOf(trip(1060, false)));
 });
+
+test('landing days: a hop that only flies overnight lands the next day, so the Hoi An stay starts then', () => {
+  const fares = (lands) => ({
+    ...world({
+      rt: { [`YVR-MNL-Y|${D0}`]: [{ ret: day(14), price: 900 }] },
+      hops: { [`MNL-DAD|${day(2)}`]: 100, [`DAD-MNL|${day(7)}`]: 100, [`DAD-MNL|${day(8)}`]: 150 },
+    }),
+    lands: (from, to, date) => lands[`${from}|${to}|${date}`] ?? null,
+  });
+  const back = (trips) => trips.find((t) => !t.via && t.cls === 'economy').tickets.find((k) => k.from === 'DAD').date;
+  assert.strictEqual(back(buildTrips(fares({}))), day(7)); // lands day 2: 5 nights by day 7
+  assert.strictEqual(back(buildTrips(fares({ [`MNL|DAD|${day(2)}`]: 1 }))), day(8)); // lands day 3
+  // A long flight out landing two days on (every home's): the same, from the start.
+  const late = buildTrips(fares({ [`YVR|MNL|${D0}`]: 2, [`MNL|DAD|${day(2)}`]: 0 }));
+  assert.ok(late.some((t) => !t.via && t.cls === 'economy'));
+  const t0 = buildTrips({ ...fares({ [`YVR|MNL|${D0}`]: 2 }), hop: (f, to, d) => ({ [`MNL-DAD|${day(1)}`]: 100, [`DAD-MNL|${day(7)}`]: 100 })[`${f}-${to}|${d}`] ?? null });
+  assert.strictEqual(t0.length, 0); // landed day 2: no flight on day 1 to take
+});

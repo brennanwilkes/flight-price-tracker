@@ -111,7 +111,7 @@ function hopPlans(x, d0, fares, need = [], prefs = false) {
     }
     return changed;
   };
-  land(1, { city: x, done: 0, open: NONE, seen: 0, xs: 0, run: 0, cost: 0, score: 0 }, null, null);
+  land(arrival(x, d0, fares), { city: x, done: 0, open: NONE, seen: 0, xs: 0, run: 0, cost: 0, score: 0 }, null, null);
 
   for (let t = 1; t <= MAX_DAYS; t++) {
     if (t > 1) { // stay a night
@@ -151,7 +151,9 @@ function hopPlans(x, d0, fares, need = [], prefs = false) {
           continue;
         }
         for (const [to, price] of hopsFrom(s.city, date)) {
-          land(t, fly(to, price), prev, { kind: 'ow', from: s.city, to, date, price });
+          // Lands the next day when every listed flight does (overnight): the night is on the way.
+          const late = Math.max(0, fares.lands?.(s.city, to, date) ?? 0);
+          land(t + late, fly(to, price), prev, { kind: 'ow', from: s.city, to, date, price, ...(late ? { late } : {}) });
         }
         if (s.open !== NONE) continue;
         for (const [to, ret, price] of returnsFrom(s.city, date)) {
@@ -233,6 +235,14 @@ function hopPlans(x, d0, fares, need = [], prefs = false) {
 }
 
 /**
+ * The day (after departure d0, landing day 1 at the earliest) the long flight out lands in x: day 2
+ * when every listed flight from every home lands two days on (long connections through the US).
+ */
+function arrival(x, d0, fares) {
+  return 1 + Math.max(0, Math.min(...fares.homes.map((h) => (fares.lands?.(h, x, d0) ?? 1) - 1)));
+}
+
+/**
  * A plan's trip-shape penalty (hopPlans with prefs scores the same): PRE_NIGHT per night before
  * Hoi An, ONE_NIGHT per stay of exactly one night (the Hoi An stay and its exit city aside; the
  * last stay too, before the flight home on day t), BOTH_ENDS for 2+ nights in x both before and
@@ -269,9 +279,9 @@ function reentersVietnam(x, hops) {
 /**
  * The plan's Hoi An stay moved to the nearest anchor with the days for it (Da Nang's nights over
  * Saigon's), when it's in and out of one city; the flights and price stay, only where the nights
- * go changes. x: the arrival city (landed day 1), t: the day home.
+ * go changes. x: the arrival city (landed day `start`), t: the day home.
  */
-function nearestStay(x, d0, hops, t, anchors = { DAD: 0 }) {
+function nearestStay(x, d0, hops, t, anchors = { DAD: 0 }, start = 1) {
   const k = hops.findIndex((h) => h.kind === 'stay');
   if (k < 0 || hops[k].from !== hops[k].to || !anchors[hops[k].from]) return hops;
   const day = (iso) => (Date.parse(iso) - Date.parse(d0)) / 864e5;
@@ -281,7 +291,7 @@ function nearestStay(x, d0, hops, t, anchors = { DAD: 0 }) {
     const c = i ? flights[i - 1].to : x;
     if (!(anchors[c] < g)) continue;
     const need = 2 * anchors[c] + HOI_AN_NIGHTS;
-    if ((i < flights.length ? day(flights[i].date) : t) - (i ? day(flights[i - 1].date) : 1) >= need) { best = { i, c, need }; g = anchors[c]; }
+    if ((i < flights.length ? day(flights[i].date) : t) - (i ? day(flights[i - 1].date) + (flights[i - 1].late ?? 0) : start) >= need) { best = { i, c, need }; g = anchors[c]; }
   }
   if (!best) return hops;
   return [...flights.slice(0, best.i), { kind: 'stay', from: best.c, to: best.c, need: best.need }, ...flights.slice(best.i)];
@@ -347,7 +357,7 @@ function ticketsOf(first, hops, last) {
   for (const h of hops) {
     if (h.kind === 'stay') { stay = { after: order.length - 1, need: h.need }; continue; }
     if (h.kind === 'back') { order.push([open.pop(), 'back']); continue; }
-    const { kind, ...rest } = h;
+    const { kind, late: _late, ...rest } = h;
     tickets.push({ kind, ...rest, cabin: 'Y' });
     order.push([tickets.length - 1, 'out']);
     if (kind === 'rt') open.push(tickets.length - 1);
@@ -404,6 +414,8 @@ const rowId = (r) => `${r.in}-${r.out}${r.set ? `+${r.set}` : ''}`;
  * fares: {
  *   homes, cities,                                  // e.g. ['YVR','YYJ'], ['DAD','ICN',…]
  *   anchors                            → { city: ground days to Hoi An } (Vietnam anchors)
+ *   lands(from, to, date)              → days after leaving the earliest flight lands | null (unknown:
+ *                                        a hop lands that day, a long flight the next)
  *   roundTrip(from, to, cabin, out)    → [{ ret, price }]   (any trip lengths Google priced)
  *   oneWay(from, to, cabin, date)      → price | null      (long legs, either direction)
  *   hop(from, to, date)                → price | null      (economy within Asia)
@@ -462,7 +474,7 @@ function buildTrips(fares, { need = [], homes = fares.homes } = {}) {
         const k = `${y}|${t}`;
         if (!plans.has(k)) {
           const sigs = new Set();
-          plans.set(k, [...cheap(y, t), ...pref(y, t)].map((p) => ({ ...p, hops: nearestStay(x, d0, p.hops, t, fares.anchors) })).filter((p) => {
+          plans.set(k, [...cheap(y, t), ...pref(y, t)].map((p) => ({ ...p, hops: nearestStay(x, d0, p.hops, t, fares.anchors, arrival(x, d0, fares)) })).filter((p) => {
             const sig = p.hops.map((h) => `${h.kind}${h.from}${h.to}${h.date ?? ''}${h.ret ?? ''}`).join();
             if (sigs.has(sig)) return false;
             sigs.add(sig);

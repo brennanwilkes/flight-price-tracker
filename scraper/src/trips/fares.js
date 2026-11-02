@@ -6,6 +6,9 @@
  *
  * `checked`: listed prices from recent flight checks (fareKey → price, build-trips.js), which
  * replace the graph's for those fares: the graph can be stale or off ($138 graphed, $232 listed).
+ * `lands`: from the same checks, "from|to|date" → days after leaving that the earliest listed
+ * flight lands (build-trips.js landings): the builder's lands(), so a hop that only flies overnight
+ * puts the traveller there a day later.
  */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -13,7 +16,7 @@ const { readJson } = require('../store/routes');
 const { staleAfterHours } = require('../sweep/plan');
 const { citiesWith, CITIES } = require('../../../frontend/app/cities.js');
 
-function loadFares(dataDir, config, { now = Date.now(), checked = new Map() } = {}) {
+function loadFares(dataDir, config, { now = Date.now(), checked = new Map(), lands = new Map() } = {}) {
   const homes = config.origins;
   const cities = citiesWith('gateway', 'hop');
   const network = readJson(path.join(dataDir, 'state', 'network.json'), { pairs: {} });
@@ -59,6 +62,7 @@ function loadFares(dataDir, config, { now = Date.now(), checked = new Map() } = 
     oneWay: (from, to, cabin, date) => ow.get(`${from}|${to}|${cabin}|${date}`) ?? null,
     asiaRT: (from, to, date) => rt.get(`${from}|${to}|Y|${date}`) ?? [],
     hop: (from, to, date) => ow.get(`${from}|${to}|Y|${date}`) ?? null,
+    lands: (from, to, date) => lands.get(`${from}|${to}|${date}`) ?? null,
   };
 }
 
