@@ -275,7 +275,8 @@ body.sheet-open { overflow: hidden; }
 .map .sea { fill: var(--sea); }
 .map .land { fill: var(--land); stroke: var(--coast); stroke-width: 0.8; stroke-linejoin: round; }
 .map .leg { fill: none; stroke: var(--c); stroke-width: 3.5; stroke-linecap: round; }
-.map .ground { fill: none; stroke: var(--muted); stroke-width: 2.5; stroke-dasharray: 1 6; stroke-linecap: round; }
+.map .border { fill: none; stroke: var(--coast); stroke-width: 0.8; stroke-dasharray: 3 3; opacity: 0.6; }
+.map .ground { fill: none; stroke: var(--muted); stroke-width: 2.5; stroke-dasharray: 7 6; stroke-linejoin: round; }
 .map .leg.eco { stroke-dasharray: 8 6; }
 .map .city.via { fill: var(--sea); stroke: var(--text); stroke-width: 2; }
 .map .label.nights { font-size: 14px; font-weight: 500; fill: var(--muted); }

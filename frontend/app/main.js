@@ -9,7 +9,7 @@
 // - The current commit is checked on resume and every 5 min while visible. Newer data applies at
 //   once on resume; mid-use it's a tap-to-show bar, so prices don't change under a tap. Data
 //   whose generatedAt isn't newer than what's shown (a stale API answer) is ignored.
-import { CITIES, cityName, rowName } from './cities.js';
+import { CITIES, HOI_AN, cityName, rowName } from './cities.js';
 import { samePrice } from './price.js';
 import { tripMap } from './map.js';
 import { sweepIfAsked } from './alerts.js';
@@ -423,15 +423,18 @@ const leavesFrom = (l) => flightOf(l)?.legs?.[0].from ?? l.from;
 
 /**
  * Nights stayed per city (overnight stays only), for the map: airport landed at → [nights or
- * "lo–hi", …] in order (the map draws airports, so a Tokyo stay is labelled at HND or NRT).
+ * "lo–hi", …] in order (the map draws airports, so a Tokyo stay is labelled at HND or NRT). The
+ * Hoi An stay's nights are Hoi An's, less the days overland (cities.js vietnam).
  */
-function staysOf(list, flex = []) {
+function staysOf(list, flex = [], hoian = null) {
   const out = new Map();
   for (let i = 1; i < list.length; i++) {
-    const { nights } = stay(list[i - 1], list[i]);
+    let { nights } = stay(list[i - 1], list[i]);
     if (nights <= 0) continue;
+    const at = hoian?.after === i - 1 ? HOI_AN : landsAt(list[i - 1]);
+    if (at === HOI_AN) nights -= (CITIES[list[i - 1].to]?.vietnam ?? 0) + (CITIES[list[i].from]?.vietnam ?? 0);
     const span = flex.find(([k]) => k === i - 1); // "6–16", as on the stay rows
-    out.set(landsAt(list[i - 1]), [...(out.get(landsAt(list[i - 1])) ?? []), span ? `${Math.max(0, nights - span[1])}–${nights + span[2]}` : nights]);
+    out.set(at, [...(out.get(at) ?? []), span ? `${Math.max(0, nights - span[1])}–${nights + span[2]}` : nights]);
   }
   return out;
 }
@@ -456,11 +459,15 @@ function withRails(list, ticketOf, items) {
   });
 }
 
-/** Every flight actually flown, for the map: a leg's connections when known, else the leg. */
-const flown = (list, ticketOf) => list.flatMap((l, i) => {
+/**
+ * Every flight actually flown, for the map: a leg's connections when known, else the leg; and the
+ * Hoi An stay (after the leg `stay.after`) overland there and back.
+ */
+const flown = (list, ticketOf, stay) => list.flatMap((l, i) => {
   const f = flightOf(l);
   const tk = ticketOf.get(l.t);
-  const overland = i && list[i - 1].to !== l.from ? [{ from: list[i - 1].to, to: l.from, ground: true }] : [];
+  const overland = i && stay?.after === i - 1 ? [{ from: landsAt(list[i - 1]), to: HOI_AN, ground: true }, { from: HOI_AN, to: leavesFrom(l), ground: true }]
+    : i && list[i - 1].to !== l.from ? [{ from: list[i - 1].to, to: l.from, ground: true }] : [];
   return [...overland, ...(f?.legs ? f.legs.map((g) => ({ from: g.from, to: g.to, cabin: l.cabin, tk })) : [{ from: l.from, to: l.to, cabin: l.cabin, tk }])];
 });
 
@@ -520,7 +527,7 @@ function renderSheet() {
         <div class="cal"><small>${weekday(trip.ret)}</small><b>${boardDate(trip.ret)}</b></div>
       </div>
     </div>
-    ${tripMap(flown(list, ticketOf), state.home, [...new Set(list.flatMap((l) => [l.from, l.to, leavesFrom(l), landsAt(l)]))], staysOf(list, trip.flex))}
+    ${tripMap(flown(list, ticketOf, trip.stay), state.home, [...new Set([...list.flatMap((l) => [l.from, l.to, leavesFrom(l), landsAt(l)]), HOI_AN])], staysOf(list, trip.flex, trip.stay))}
     <ol class="legs${trip.tickets.some((t) => t.kind !== 'ow') ? ' has-rail' : ''}">${withRails(list, ticketOf, list.flatMap((l, i) => [
       ...(i ? [layover(list[i - 1], l, trip.flex?.find(([k]) => k === i - 1), trip.stay?.after === i - 1)] : []), legItem(l, ticketOf)])).join('')}</ol>
 `;

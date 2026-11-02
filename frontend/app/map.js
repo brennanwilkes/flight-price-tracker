@@ -3,8 +3,8 @@
 // solid for business and dashed for economy. Long hauls are great circles toward home, leaving the
 // map where they really would, with the home city named at the edge. Arrowheads give direction: a
 // hop flown both ways is two arcs bending to opposite sides.
-import { place, cityName } from './cities.js';
-import { LAND, STEP } from './land.js';
+import { place, cityName, HOI_AN } from './cities.js';
+import { LAND, BORDERS, STEP } from './land.js';
 
 const W = 640, H = 480; // viewBox; the crop is grown to this aspect
 const PAD = 2.5; // degrees around the cities
@@ -18,6 +18,25 @@ const HOME = { lon: -123.18, lat: 49.19 }; // YVR; YYJ is the same direction at 
 // viewBox units: mono ≈ 0.6em wide.
 const CHAR_W = 15.6, CHAR_W_SMALL = 12.6, LINE_H = 28;
 const LONG_SHOWN = 5; // of greatCircle's 64 steps (~7° of arc for these routes)
+
+// The North–South railway, Hanoi to Saigon, roughly (stations as [lon, lat]); DA_NANG is its index.
+// Overland legs follow it, Hoi An off it from Da Nang.
+const RAIL = [[105.84, 21.02], [105.92, 20.54], [106.17, 20.43], [105.97, 20.25], [105.78, 19.81], [105.67, 18.68],
+  [106.03, 17.88], [106.6, 17.47], [107.1, 16.82], [107.58, 16.46], [108.07, 16.25], [108.2, 16.07], [108.48, 15.57],
+  [108.8, 15.12], [109.13, 13.8], [109.3, 13.08], [109.18, 12.25], [108.95, 11.58], [108.5, 11.25], [108.03, 10.98],
+  [107.24, 10.94], [106.82, 10.95], [106.68, 10.78]];
+const DA_NANG = 11;
+
+/** An overland leg as [lon, lat] points: from a along the railway to b. */
+function railPath(a, b) {
+  const at = (c) => (c === HOI_AN ? DA_NANG : RAIL.reduce((best, [lon, lat], i) => {
+    const d = Math.hypot(lon - place(c).lon, lat - place(c).lat);
+    return d < best.d ? { i, d } : best;
+  }, { i: 0, d: Infinity }).i);
+  const [i, j] = [at(a), at(b)];
+  const rail = i <= j ? RAIL.slice(i, j + 1) : RAIL.slice(j, i + 1).reverse();
+  return [[place(a).lon, place(a).lat], ...rail, [place(b).lon, place(b).lat]];
+}
 
 const RAD = Math.PI / 180;
 const mercY = (lat) => Math.log(Math.tan(Math.PI / 4 + (lat * RAD) / 2)) / RAD;
@@ -81,12 +100,19 @@ export function tripMap(legs, home, cities, stays = new Map()) {
     }
     return `${d}Z`;
   }).join('');
+  const borders = BORDERS.map((r) => {
+    let d = '';
+    for (let i = 0; i < r.length; i += 2) {
+      const [x, y] = px(r[i] * STEP, r[i + 1] * STEP);
+      d += `${i ? 'L' : 'M'}${f(x)} ${f(y)}`;
+    }
+    return d;
+  }).join('');
 
   const lines = [], arrows = [], exits = [], drawn = new Map(), once = new Set();
   for (const { from: a, to: b, cabin, tk, ground } of legs) {
-    if (ground) { // overland (Vietnam open jaw): a plain grey line, no ticket
-      const [p, q] = [pt(a), pt(b)];
-      lines.push(`<path class="ground" d="M${f(p[0])} ${f(p[1])}L${f(q[0])} ${f(q[1])}"/>`);
+    if (ground) { // overland (to and from Hoi An): a grey line along the railway, no ticket
+      lines.push(`<path class="ground" d="M${railPath(a, b).map(([lon, lat]) => px(lon, lat).map(f).join(' ')).join('L')}"/>`);
       continue;
     }
     const cls = `${cabin === 'J' ? 'biz' : 'eco'}" style="--c: var(--tk${tk})`;
@@ -198,6 +224,7 @@ export function tripMap(legs, home, cities, stays = new Map()) {
   return `<svg class="map" viewBox="0 0 ${W} ${H}" role="img" aria-label="Trip map">
     <rect class="sea" width="${W}" height="${H}"/>
     <path class="land" d="${land}"/>
+    <path class="border" d="${borders}"/>
     ${lines.join('')}${arrows.join('')}${dots}${homeLabel}
   </svg>`;
 }

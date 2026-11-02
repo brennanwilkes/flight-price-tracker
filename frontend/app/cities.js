@@ -87,7 +87,10 @@ export const AIRPORTS = {
 };
 
 /** Name and map position for a city or airport code (no position: home, or off the map). */
-export const place = (code) => CITIES[code] ?? AIRPORTS[code] ?? { name: code };
+// Hoi An: no airport, on the map only (the stay, reached overland: build.js anchors).
+export const HOI_AN = 'HOI';
+const HOI_AN_PLACE = { name: 'Hoi An', lon: 108.33, lat: 15.88 };
+export const place = (code) => (code === HOI_AN ? HOI_AN_PLACE : CITIES[code] ?? AIRPORTS[code] ?? { name: code });
 export const cityName = (code) => place(code).name;
 /** A board row's name: "Bangkok / Bali + Hanoi" (crossing, then throw-ins; build.js setOf). */
 export const rowName = (r) => [r.in === r.out ? cityName(r.in) : `${cityName(r.in)} / ${cityName(r.out)}`, ...(r.set ? r.set.split('+').map(cityName).sort() : [])].join(' + ');

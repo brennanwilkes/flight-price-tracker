@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert');
-const { buildTrips, addDays } = require('../frontend/app/build.js');
+const { buildTrips, nearestStay, addDays } = require('../frontend/app/build.js');
 
 const D0 = '2027-10-01';
 const day = (n) => addDays(D0, n);
@@ -372,4 +372,22 @@ test('rows: a city never among the cheapest ways through still gets a row', () =
     },
   }), cities: ['DAD', 'HAN', 'ICN', 'MNL', 'CEB', 'SIN', 'HKG', 'TPE', 'PEN'] });
   assert.strictEqual(find(trips, 'hybrid', 'ICN', 'ICN', 'PEN').total, 4800);
+});
+
+test('the Hoi An stay goes with the nearest Vietnam city that has the days: Da Nang over Hanoi', () => {
+  // Hanoi 7 days, Seoul a night, then Da Nang 6: planned from Hanoi, moved to Da Nang (no ground days).
+  const flights = [
+    { kind: 'ow', from: 'MNL', to: 'HAN', date: day(2), price: 100 },
+    { kind: 'ow', from: 'HAN', to: 'ICN', date: day(9), price: 100 },
+    { kind: 'ow', from: 'ICN', to: 'DAD', date: day(10), price: 100 },
+    { kind: 'ow', from: 'DAD', to: 'MNL', date: day(16), price: 100 },
+  ];
+  const stay = (at, need, i) => [...flights.slice(0, i), { kind: 'stay', from: at, to: at, need }, ...flights.slice(i)];
+  const anchors = { DAD: 0, HAN: 1 };
+  assert.deepStrictEqual(nearestStay('MNL', D0, stay('HAN', 7, 1), 17, anchors), stay('DAD', 5, 3));
+  // Da Nang 4 nights only: stays in Hanoi. An open jaw (in at one city, out of another) is kept.
+  const short = flights.map((f) => (f.to === 'DAD' ? { ...f, date: day(12) } : f));
+  assert.deepStrictEqual(nearestStay('MNL', D0, [...short.slice(0, 1), { kind: 'stay', from: 'HAN', to: 'HAN', need: 7 }, ...short.slice(1)], 17, anchors)[1].from, 'HAN');
+  const jaw = [flights[0], { kind: 'stay', from: 'HAN', to: 'DAD', need: 6 }, flights[3]];
+  assert.deepStrictEqual(nearestStay('MNL', D0, jaw, 17, anchors), jaw);
 });

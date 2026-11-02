@@ -252,6 +252,27 @@ function shapePen(x, d0, hops, t) {
 }
 
 /**
+ * The plan's Hoi An stay moved to the nearest anchor with the days for it (Da Nang's nights over
+ * Saigon's), when it's in and out of one city; the flights and price stay, only where the nights
+ * go changes. x: the arrival city (landed day 1), t: the day home.
+ */
+function nearestStay(x, d0, hops, t, anchors = { DAD: 0 }) {
+  const k = hops.findIndex((h) => h.kind === 'stay');
+  if (k < 0 || hops[k].from !== hops[k].to || !anchors[hops[k].from]) return hops;
+  const day = (iso) => (Date.parse(iso) - Date.parse(d0)) / 864e5;
+  const flights = hops.filter((h) => h.kind !== 'stay');
+  let best = null, g = anchors[hops[k].from]; // the nearest so far: ground days each way
+  for (let i = 0; i <= flights.length; i++) {
+    const c = i ? flights[i - 1].to : x;
+    if (!(anchors[c] < g)) continue;
+    const need = 2 * anchors[c] + HOI_AN_NIGHTS;
+    if ((i < flights.length ? day(flights[i].date) : t) - (i ? day(flights[i - 1].date) : 1) >= need) { best = { i, c, need }; g = anchors[c]; }
+  }
+  if (!best) return hops;
+  return [...flights.slice(0, best.i), { kind: 'stay', from: best.c, to: best.c, need: best.need }, ...flights.slice(best.i)];
+}
+
+/**
  * fares' hops and Asia returns by origin and day: hopsFrom(city, date) → [[to, price]],
  * returnsFrom(city, date) → [[to, ret, price]]. Built once per fares object, on first use.
  */
@@ -426,7 +447,7 @@ function buildTrips(fares, { need = [], homes = fares.homes } = {}) {
         const k = `${y}|${t}`;
         if (!plans.has(k)) {
           const sigs = new Set();
-          plans.set(k, [...cheap(y, t), ...pref(y, t)].filter((p) => {
+          plans.set(k, [...cheap(y, t), ...pref(y, t)].map((p) => ({ ...p, hops: nearestStay(x, d0, p.hops, t, fares.anchors) })).filter((p) => {
             const sig = p.hops.map((h) => `${h.kind}${h.from}${h.to}${h.date ?? ''}${h.ret ?? ''}`).join();
             if (sigs.has(sig)) return false;
             sigs.add(sig);
@@ -488,4 +509,4 @@ function similarCount(dateSets, trip, month = null) {
   return n;
 }
 
-export { buildTrips, similarCount, scoreOf, hopPlans, ticketsOf, staysOf, setOf, rowId, hasSameDay, isSafe, addDays };
+export { buildTrips, similarCount, scoreOf, hopPlans, ticketsOf, staysOf, setOf, rowId, hasSameDay, isSafe, nearestStay, addDays };
