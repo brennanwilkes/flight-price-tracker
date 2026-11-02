@@ -10,7 +10,7 @@
  */
 const { search } = require('../gflights/flights');
 const { addDays } = require('../gflights/browser');
-const { citiesWith, airportsOf } = require('../../../frontend/app/cities.js');
+const { citiesWith, airportsOf, isPacific } = require('../../../frontend/app/cities.js');
 
 const MAX_ONE_STOP_MIN = 8 * 60;
 const DAYS_OUT = [40, 44];
@@ -19,13 +19,17 @@ const CONCURRENCY = 6;
 
 const short = (o) => o.stops.length === 0 || (o.stops.length === 1 && o.min <= MAX_ONE_STOP_MIN);
 
-/** Pairs due a check: never checked first (gateway pairs before hop-only ones), then oldest; at most `max`. */
+/**
+ * Pairs due a check: never checked first (gateway pairs before hop-only ones), then oldest; at most
+ * `max`. Pacific stops (cities.js) pair with the gateways only: the long haul's second half.
+ */
 function planNetwork(network, now, max) {
-  const cities = citiesWith('gateway', 'hop');
+  const cities = citiesWith('gateway', 'hop', 'pacific');
   const gateways = new Set(citiesWith('gateway'));
   const due = [];
   for (const a of cities) {
     for (const b of cities) {
+      if ((isPacific(a) || isPacific(b)) && !gateways.has(a) && !gateways.has(b)) continue;
       const at = network.pairs?.[`${a}-${b}`]?.at;
       const rank = (gateways.has(a) ? 0 : 1) + (gateways.has(b) ? 0 : 1);
       if (a !== b && (!at || now - Date.parse(at) > MAX_AGE_DAYS * 864e5)) due.push({ a, b, last: at ? Date.parse(at) : 0, rank });
@@ -64,7 +68,8 @@ async function checkPairs(network, pairs, { browser = null, at = new Date().toIS
   return stats;
 }
 
-/** Pairs with a short flight, as 'A-B' keys. */
-const routesOf = (network) => Object.keys(network.pairs ?? {}).filter((k) => !network.pairs[k].none);
+/** Pairs with a short flight, as 'A-B' keys: within Asia, or with `pacific` a Pacific stop's (cities.js). */
+const routesOf = (network, pacific = false) => Object.keys(network.pairs ?? {})
+  .filter((k) => !network.pairs[k].none && k.split('-').some(isPacific) === pacific);
 
 module.exports = { planNetwork, checkPairs, routesOf, MAX_ONE_STOP_MIN };

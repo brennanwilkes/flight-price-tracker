@@ -9,7 +9,7 @@
 // - The current commit is checked on resume and every 5 min while visible. Newer data applies at
 //   once on resume; mid-use it's a tap-to-show bar, so prices don't change under a tap. Data
 //   whose generatedAt isn't newer than what's shown (a stale API answer) is ignored.
-import { CITIES, HOI_AN, place, cityName, rowName } from './cities.js';
+import { CITIES, HOI_AN, place, cityName, rowName, landsAfter } from './cities.js';
 import { samePrice } from './price.js';
 import { tripMap } from './map.js';
 import { sweepIfAsked } from './alerts.js';
@@ -332,9 +332,9 @@ const legacyOrder = (trip) => {
   return all.sort((a, b) => (a[1] === 'back') - (b[1] === 'back') || a[2].localeCompare(b[2])).map(([i, leg]) => [i, leg]);
 };
 
-// Long hauls land the day after they leave (Asia is a day ahead); hops land the same day.
-// Only a fallback: with flight details the real arrival is known.
-const landsOn = (l) => (CITIES[l.from]?.lon == null || CITIES[l.to]?.lon == null ? addDay(l.date) : l.date);
+// Long hauls land the day after they leave (Asia is a day ahead), hops the same day (cities.js
+// landsAfter: a Pacific stop's legs too). Only a fallback: with flight details the real arrival is known.
+const landsOn = (l) => (landsAfter(l.from, l.to, HOMES) ? addDay(l.date) : l.date);
 const addDay = (iso) => new Date(Date.parse(`${iso}T12:00:00Z`) + 864e5).toISOString().slice(0, 10);
 const dur = (min) => `${Math.floor(min / 60)}h${String(min % 60).padStart(2, '0')}`;
 const minutesAt = (date, hm) => Date.parse(`${date}T${hm}:00Z`) / 60e3; // local clock; compare within one city only

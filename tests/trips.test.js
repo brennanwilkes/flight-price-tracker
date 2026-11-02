@@ -421,3 +421,33 @@ test('landing days: a hop that only flies overnight lands the next day, so the H
   const t0 = buildTrips({ ...fares({ [`YVR|MNL|${D0}`]: 2 }), hop: (f, to, d) => ({ [`MNL-DAD|${day(1)}`]: 100, [`DAD-MNL|${day(7)}`]: 100 })[`${f}-${to}|${d}`] ?? null });
   assert.strictEqual(t0.length, 0); // landed day 2: no flight on day 1 to take
 });
+
+test('Pacific stop: the long haul broken up at Honolulu, nights there both ways, its own row', () => {
+  const w = world({
+    ow: {
+      [`YVR-ICN-J|${D0}`]: 3000, // direct, both ways: the plain row
+      [`ICN-YVR-J|${day(16)}`]: 3000,
+      [`YVR-HNL-J|${day(-2)}`]: 700, // out two days early, two nights in Honolulu
+      [`HNL-ICN-J|${D0}`]: 1500, // lands day 1, like a flight from home
+      [`ICN-HNL-J|${day(16)}`]: 1400, // home the same way, a night there
+      [`HNL-YVR-J|${day(17)}`]: 600,
+    },
+    hops: { [`ICN-DAD|${day(3)}`]: 200, [`DAD-ICN|${day(9)}`]: 180 },
+  });
+  w.pacific = ['HNL'];
+  const trips = buildTrips(w);
+  assert.strictEqual(find(trips, 'hybrid', 'ICN', 'ICN').total, 6380);
+  const t = find(trips, 'hybrid', 'ICN', 'ICN', 'HNL');
+  assert.strictEqual(t.total, 4580);
+  assert.strictEqual(t.depart, day(-2));
+  assert.strictEqual(t.ret, day(17));
+  assert.strictEqual(t.days, 19);
+  assert.deepStrictEqual(t.tickets.map((k) => `${k.from}-${k.to} ${k.date} ${k.cabin}`), [
+    `YVR-HNL ${day(-2)} J`, `HNL-ICN ${D0} J`, `ICN-DAD ${day(3)} Y`, `DAD-ICN ${day(9)} Y`, `ICN-HNL ${day(16)} J`, `HNL-YVR ${day(17)} J`,
+  ]);
+  const { staysOf } = require('../frontend/app/build.js');
+  assert.deepStrictEqual(staysOf(t, ['YVR']).nights.HNL, 3); // 2 out, 1 back
+  // The via filter: the Honolulu trips, and a 'need' build finds them too.
+  assert.ok(trips.some((x) => x.via === 'HNL' && x.set === 'HNL'));
+  assert.strictEqual(buildTrips(w, { need: ['HNL'] }).filter((x) => !x.via).every((x) => x.set.includes('HNL')), true);
+});

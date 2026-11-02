@@ -20,6 +20,7 @@ export function faresOf(bundle) {
   return {
     homes: bundle.homes,
     cities: bundle.cities,
+    pacific: bundle.pacific ?? [],
     anchors: bundle.anchors,
     departures: bundle.departures,
     tiers: bundle.tiers,

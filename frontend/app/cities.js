@@ -1,5 +1,8 @@
 // Cities the trips are built from (SCOPE, coverage). role: gateway = long legs from home and hops;
-// hop = hops only. airports: what Google is asked for (default: the code itself). vietnam: an
+// hop = hops only; pacific = a stop breaking up the long haul (build.js), flown to from home and
+// on to the gateways it has flights with, in the long legs' cabin; land: days after leaving that
+// a flight lands, [from home, on to Asia] (the date line is crossed on one of them); far: off the
+// trip map (map.js draws the line toward it). airports: what Google is asked for (default: the code itself). vietnam: an
 // anchor for the Hoi An stay, with the ground days from there to Hoi An each way; vn: in Vietnam,
 // not an anchor.
 export const CITIES = {
@@ -50,10 +53,23 @@ export const CITIES = {
   BWN: { name: 'Brunei', lon: 114.93, lat: 4.94, role: 'hop' },
   DLI: { name: 'Da Lat', lon: 108.38, lat: 11.75, role: 'hop', vn: true },
   SYX: { name: 'Hainan', lon: 109.41, lat: 18.3, role: 'hop', airports: ['SYX', 'HAK'] },
+  HNL: { name: 'Honolulu', lon: -157.92, lat: 21.32, role: 'pacific', land: [0, 1], far: true },
+  GUM: { name: 'Guam', lon: 144.8, lat: 13.48, role: 'pacific', land: [1, 0] },
 };
 
 /** Whether a city is in Vietnam (rows don't name it, inVietnam's users: build.js setOf). */
 export const inVietnam = (c) => CITIES[c]?.vietnam != null || !!CITIES[c]?.vn;
+/** Whether a city is a stop on the way across the Pacific (role pacific). */
+export const isPacific = (c) => CITIES[c]?.role === 'pacific';
+/**
+ * Days after leaving that a flight usually lands (the date line): from home 1 (0 to a Pacific stop
+ * before the line), from a Pacific stop on to Asia its land[1], anything else 0.
+ */
+export const landsAfter = (from, to, homes) => (homes.includes(from)
+  ? (isPacific(to) ? CITIES[to].land[0] : 1)
+  : isPacific(from) && !homes.includes(to) ? CITIES[from].land[1] : 0);
+/** A long-haul flight: to or from home, or a Pacific stop (the long legs' cabin). */
+export const isLong = (from, to, homes) => homes.includes(from) || homes.includes(to) || isPacific(from) || isPacific(to);
 /** Codes of the Asia cities with the given role(s). */
 export const citiesWith = (...roles) => Object.keys(CITIES).filter((c) => roles.includes(CITIES[c].role));
 /** What Google is asked for: one airport code, or several. */

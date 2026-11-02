@@ -1,7 +1,7 @@
 /* How flexible a trip's stays are: "10 nights (4–12)" on the dashboard.
  *
  * Each flight that can move on its own is moved earlier or later: economy one-ways inside Asia, and
- * the first and last long flights (the trip kept 14–21 days; a one-way or return priced from the
+ * the first and last long flights (to and from home: a Pacific stop's flight on to Asia stays put) (the trip kept 14–21 days; a one-way or return priced from the
  * graph's other days for that flight). A multi-city ticket's flights stay put: the graph has no
  * price for that ticket on other days, and a range is only claimed from real prices. Every flight stays in order (same-day connections
  * allowed) and the Hoi An stay ≥ its need (build.js). A move costing about the same (price.js: a
@@ -10,6 +10,7 @@
  * can be `fewer` less or `more` more.
  */
 import { samePrice } from './price.js';
+import { isLong, landsAfter } from './cities.js';
 
 const MAX_SHIFT = 14;
 const MIN_DAYS = 14;
@@ -27,13 +28,11 @@ function flightAt(t, dir) {
 
 function flexOf(trip, fares) {
   if (!trip?.order) return [];
-  const homes = new Set(fares.homes);
   const fl = trip.order.map(([i, dir]) => {
     const t = trip.tickets[i];
     const f = flightAt(t, dir);
-    const long = homes.has(f.from) || homes.has(f.to);
     const date = dayNo(f.date);
-    return { t, dir, ...f, date, land: date + (long ? 1 : 0), long };
+    return { t, dir, ...f, date, land: date + landsAfter(f.from, f.to, fares.homes), long: isLong(f.from, f.to, fares.homes) };
   });
   const last = fl.length - 1;
   // A flight's graph price on another day, or null: what moving it alone would cost.

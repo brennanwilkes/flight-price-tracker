@@ -56,6 +56,7 @@ function loadFares(dataDir, config, { now = Date.now(), checked = new Map(), lan
     raw: { rt, ow }, // for bundleOf
     homes,
     cities,
+    pacific: citiesWith('pacific'),
     anchors: Object.fromEntries(Object.entries(CITIES).filter(([, c]) => c.vietnam != null).map(([k, c]) => [k, c.vietnam])),
     departures: [...departures].sort(),
     roundTrip: (from, to, cabin, out) => rt.get(`${from}|${to}|${cabin}|${out}`) ?? [], // long legs and Asia returns
@@ -68,7 +69,7 @@ function loadFares(dataDir, config, { now = Date.now(), checked = new Map(), lan
 
 /**
  * The fares as one compact JSON value, for the page's own builds (the multi-city via filter):
- * { homes, cities, anchors, departures, base, ow: { "from-to-cabin": [day, price, …] },
+ * { homes, cities, pacific, anchors, departures, base, ow: { "from-to-cabin": [day, price, …] },
  *   rt: { "from-to-cabin": [day, retDay, price, …] } }, days counted from `base`.
  * faresOf (frontend/app/fares.js) turns it back into what loadFares returns.
  */
@@ -94,8 +95,8 @@ function bundleOf(fares) {
     const [from, to, cabin, out] = k.split('|');
     for (const r of list) (rt[`${from}-${to}-${cabin}`] ??= []).push(day(out), day(r.ret), r.price);
   }
-  const { homes, cities, anchors, departures } = fares;
-  return { homes, cities, anchors, departures, base, ow, rt };
+  const { homes, cities, pacific, anchors, departures } = fares;
+  return { homes, cities, pacific, anchors, departures, base, ow, rt };
 }
 
 module.exports = { loadFares, bundleOf, fareKey, fareOf };

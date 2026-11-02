@@ -64,16 +64,22 @@ function greatCircle(a, b, n = 64) {
  * The trip as an SVG. legs: the flights in flying order, [{ from, to, cabin, tk }], tk being the
  * ticket's colour number; cities: the trip's own cities (any other airport is a connection);
  * stays: city → nights for each overnight stay, noted under the city's name. A code without
- * coordinates (YVR, YYJ, SEA…) is off the map, toward home.
+ * coordinates (YVR, YYJ, SEA…) is off the map, toward home; a far one (Honolulu: cities.js) is off
+ * it toward where it is.
  */
 export function tripMap(legs, home, cities, stays = new Map()) {
-  const onMap = (c) => place(c).lon != null;
+  const onMap = (c) => place(c).lon != null && !place(c).far;
   legs = legs.filter((l) => onMap(l.from) || onMap(l.to));
   const stops = [...new Set(legs.flatMap((l) => [l.from, l.to]).filter(onMap))];
-  // Each long-haul city's route home, and a point LONG_SHOWN along it that the crop must include,
-  // so the line has room before it leaves the map.
-  const gateways = [...new Set(legs.filter((l) => !onMap(l.from) || !onMap(l.to)).map((l) => (onMap(l.from) ? l.from : l.to)))];
-  const routes = new Map(gateways.map((c) => [c, greatCircle(place(c), HOME)]));
+  // Each long haul's route, from its city on the map toward home or the far end ("city>end"), and
+  // a point LONG_SHOWN along it that the crop must include, so the line has room before it leaves the map.
+  const away = (l) => (onMap(l.from) ? l.to : l.from);
+  const toward = (end) => (place(end).far ? end : home); // named where the line leaves the map
+  const routeOf = (l) => `${onMap(l.from) ? l.from : l.to}>${toward(away(l))}`;
+  const routes = new Map(legs.filter((l) => !onMap(l.from) || !onMap(l.to)).map((l) => {
+    const [city, end] = routeOf(l).split('>');
+    return [routeOf(l), greatCircle(place(city), place(end).far ? place(end) : HOME)];
+  }));
   const cityLons = stops.map((c) => place(c).lon), cityLats = stops.map((c) => place(c).lat);
   const compact = matchMedia('(max-width: 600px)').matches && Math.max(Math.max(...cityLons) - Math.min(...cityLons), Math.max(...cityLats) - Math.min(...cityLats)) < COMPACT;
   const { pad, minSpan, longShown } = compact ? COMPACT_CROP : { pad: PAD, minSpan: MIN_SPAN, longShown: LONG_SHOWN };
@@ -117,14 +123,14 @@ export function tripMap(legs, home, cities, stays = new Map()) {
     }
     const cls = `${cabin === 'J' ? 'biz' : 'eco'}" style="--c: var(--tk${tk})`;
     if (!onMap(a) || !onMap(b)) {
-      // Long haul: the great circle toward home (from the city), until it leaves the crop.
-      const city = onMap(a) ? a : b;
-      // A second long haul from the same city (another ticket) runs alongside the first.
-      const tks = drawn.get(city) ?? [];
+      // Long haul: the great circle toward home or the far stop (from the city), until it leaves the crop.
+      const route = routeOf({ from: a, to: b });
+      // A second long haul on the same route (another ticket) runs alongside the first.
+      const tks = drawn.get(route) ?? [];
       if (!tks.includes(tk)) tks.push(tk);
-      drawn.set(city, tks);
+      drawn.set(route, tks);
       const k = tks.indexOf(tk);
-      const raw = routes.get(city).map(([lon, lat]) => px(lon, lat));
+      const raw = routes.get(route).map(([lon, lat]) => px(lon, lat));
       const pts = raw.map(([x, y], i) => {
         const [p, q] = [raw[Math.max(i - 1, 0)], raw[Math.min(i + 1, raw.length - 1)]];
         const len = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1;
@@ -133,11 +139,11 @@ export function tripMap(legs, home, cities, stays = new Map()) {
       const inside = ([x, y]) => x >= 0 && x <= W && y >= 0 && y <= H;
       const end = pts.findIndex((p) => !inside(p));
       const seen = pts.slice(0, end < 0 ? pts.length : end + 1);
-      if (!once.has(`${city}|${tk}`)) { // a return ticket's two flights share one line
-        once.add(`${city}|${tk}`);
+      if (!once.has(`${route}|${tk}`)) { // a return ticket's two flights share one line
+        once.add(`${route}|${tk}`);
         lines.push(`<path class="leg ${cls}" d="M${seen.map(([x, y]) => `${f(x)} ${f(y)}`).join('L')}"/>`);
         const [ex, ey] = seen[seen.length - 1];
-        if (!k) exits.push({ x: Math.min(Math.max(ex, 0), W), y: Math.min(Math.max(ey, 0), H) });
+        if (!k) exits.push({ x: Math.min(Math.max(ex, 0), W), y: Math.min(Math.max(ey, 0), H), name: cityName(route.split('>')[1]) });
       }
       // Inbound arrow nearer the city, outbound one further along; each points the way flown.
       const j = Math.max(1, Math.min(seen.length - 2, onMap(b) ? 1 : 3));
@@ -205,20 +211,20 @@ export function tripMap(legs, home, cities, stays = new Map()) {
       <text class="label nights" x="${f(l.tx)}" y="${f(l.ty)}" dy="${l.down ? 1.45 : -1.45}em" dominant-baseline="middle" text-anchor="${l.anchor}">${l.nights}</text>` : ''}`;
   }).join('');
 
-  // Home, named where each long-haul line leaves the map: beside the line, on the inner side,
-  // so the text never sits on it. Exits close together share one label.
-  const near = exits.length === 2 && Math.hypot(exits[0].x - exits[1].x, exits[0].y - exits[1].y) < 120;
-  const homeLabel = (near ? [{ x: (exits[0].x + exits[1].x) / 2, y: (exits[0].y + exits[1].y) / 2 }] : exits).map(({ x, y }) => {
+  // Home (or the far stop), named where each long-haul line leaves the map: beside the line, on
+  // the inner side, so the text never sits on it. Exits close together toward one place share a label.
+  const near = exits.length === 2 && exits[0].name === exits[1].name && Math.hypot(exits[0].x - exits[1].x, exits[0].y - exits[1].y) < 120;
+  const homeLabel = (near ? [{ x: (exits[0].x + exits[1].x) / 2, y: (exits[0].y + exits[1].y) / 2, name: exits[0].name }] : exits).map(({ x, y, name }) => {
     const top = y < 2, right = x > W - 2; // which edge it leaves by
     const lx = right ? W - 10 : x - 12;
     let ly = top ? 26 : y + 28;
-    const w = `${cityName(home)} ↗`.length * CHAR_W;
+    const w = `${name} ↗`.length * CHAR_W;
     for (let hit = true; hit && ly < H - 10;) { // below any city label it would sit on
       const b = boxes.find((b) => b.x0 < lx && b.x1 > lx - w && b.y0 < ly + 6 && b.y1 > ly - LINE_H);
       hit = !!b;
       if (b) ly = b.y1 + LINE_H;
     }
-    return `<text class="label home" x="${f(lx)}" y="${f(Math.min(ly, H - 10))}" text-anchor="end">${cityName(home)} ↗</text>`;
+    return `<text class="label home" x="${f(lx)}" y="${f(Math.min(ly, H - 10))}" text-anchor="end">${name} ${right && !top ? '→' : '↗'}</text>`;
   }).join('');
 
   return `<svg class="map" viewBox="0 0 ${W} ${H}" role="img" aria-label="Trip map">
