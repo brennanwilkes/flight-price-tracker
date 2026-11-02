@@ -241,6 +241,17 @@ const sortRows = (rows) => rows.sort((a, b) => price(a.hybrid) - price(b.hybrid)
  * overall cells, the month cells alike, then the via filter's the same way; past the deadline the
  * rest are dropped unless a checked candidate stands in (st.late: searches not made).
  */
+// A walk whose searches are all cached runs on promise callbacks alone, which never let the event
+// loop in: 215k cells held it 215 s (11:05 sweep, 2026-11-02), searches and page replies waiting.
+// Every BREATHE_MS of it, a turn for everything else.
+const BREATHE_MS = 50;
+let breath = Date.now();
+async function breathe() {
+  if (Date.now() - breath < BREATHE_MS) return;
+  await new Promise((r) => setImmediate(r));
+  breath = Date.now();
+}
+
 async function verify(byHome, trips, { cache, browser, listed, deadline, pages, warm = false }) {
   const t0 = Date.now();
   const st = { cells: 0, replaced: 0, unresolved: 0, unknown: 0, searches: 0, failed: 0, late: 0, none: 0, stay: 0, detailsMs: 0 };
@@ -280,6 +291,7 @@ async function verify(byHome, trips, { cache, browser, listed, deadline, pages, 
   const td = Date.now();
   await Promise.all(cells.map(async (p) => {
     do {
+      await breathe();
       const s = await addDetails([p.cand], cache, browser, listed, deadline, { prio: p.rank * TRIES + p.i, pages });
       st.searches += s.searches;
       st.failed += s.failed;
@@ -292,7 +304,7 @@ async function verify(byHome, trips, { cache, browser, listed, deadline, pages, 
   st.detailsMs = Date.now() - td;
   // The long-haul filter's cells, on the dashboard's (no searches: what the checks found).
   const t1 = Date.now();
-  if (!warm) for (const p of cells) if (p.rank < 5 && p.best) await fastOf(p, cache);
+  if (!warm) for (const p of cells) if (p.rank < 5 && p.best) { await breathe(); await fastOf(p, cache); }
   st.fastMs = Date.now() - t1;
   for (const [view, rows] of byHome) {
     for (const r of rows) { delete r.cands; delete r.top; delete r.city; }
