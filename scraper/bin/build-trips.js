@@ -68,7 +68,10 @@ const MULTI_BUDGET = 80; // multi-city searches per build (trips/multi.js)
 const PACIFIC_MULTI = 30; // of them, at most this many for trips through a Pacific stop first
 const ROUNDS = 3;
 const CHECKED_HOURS = 24;
-const DETAILS_RESERVE = 8 * 60e3; // multi-city ~4 min, a page still loading ≤ 4 min
+// Flight checks stop starting searches this long before the deadline: the ones in flight and the
+// picks after them run ~4.5 min on (02:05 sweep, 2026-11-02), then the multi-city pass needs
+// MULTI_RESERVE; at 8 min it never ran.
+const DETAILS_RESERVE = 13 * 60e3;
 const MULTI_RESERVE = 5 * 60e3;
 // A day's flights and times hold for a day; their listed prices are trusted as long (CHECKED_HOURS)
 // and the fares behind them are 2-48 h old already. Every shown cell needs ~6,200 searches, a build
