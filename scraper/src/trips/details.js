@@ -164,7 +164,11 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
     const t0 = Date.now();
     try {
       const r = await searchPlain(q, tries);
-      if (!r.length) tally.plainEmpty++;
+      if (!r.length) {
+        tally.plainEmpty++;
+        const route = `${[q.from].flat()[0]}-${[q.to].flat()[0]} ${q.cabin}${q.ret ? ' rt' : ''}`;
+        (tally.emptyBy ??= {})[route] = (tally.emptyBy[route] ?? 0) + 1;
+      }
       return r;
     } catch (e) {
       if (/HTTP (429|30\d)/.test(e.message)) { tally.blocked++; cache.blockedUntil = Date.now() + BLOCKED_PAUSE_MS; }
