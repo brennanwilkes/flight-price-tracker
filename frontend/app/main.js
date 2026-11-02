@@ -9,7 +9,7 @@
 // - The current commit is checked on resume and every 5 min while visible. Newer data applies at
 //   once on resume; mid-use it's a tap-to-show bar, so prices don't change under a tap. Data
 //   whose generatedAt isn't newer than what's shown (a stale API answer) is ignored.
-import { CITIES, HOI_AN, place, cityName, rowName, landsAfter } from './cities.js';
+import { CITIES, HOI_AN, place, cityName, rowName, landsAfter, countryOf } from './cities.js';
 import { samePrice } from './price.js';
 import { tripMap } from './map.js';
 import { sweepIfAsked } from './alerts.js';
@@ -250,7 +250,10 @@ function fillFilters(data) {
   const vias = state.data[state.home]?.vias ?? [];
   const more = vias.filter((c) => !state.vias.includes(c));
   $('#via').hidden = !more.length || state.vias.length >= MAX_VIAS;
-  $('#via').innerHTML = `<option value="">${state.vias.length ? '+' : 'Any city'}</option>${more.sort((a, b) => cityName(a).localeCompare(cityName(b))).map((c) => `<option value="${c}">${esc(cityName(c))}</option>`).join('')}`;
+  // Grouped by country, countries and their cities alphabetical.
+  const groups = Map.groupBy(more.sort((a, b) => cityName(a).localeCompare(cityName(b))), countryOf);
+  $('#via').innerHTML = `<option value="">${state.vias.length ? '+' : 'Any city'}</option>${[...groups].sort(([a], [b]) => a.localeCompare(b))
+    .map(([country, cs]) => `<optgroup label="${esc(country || 'Other')}">${cs.map((c) => `<option value="${c}">${esc(cityName(c))}</option>`).join('')}</optgroup>`).join('')}`;
   $('#vias').innerHTML = state.vias.map((c) => `<button type="button" data-city="${c}" aria-label="Remove ${esc(cityName(c))}">${esc(cityName(c))}<span aria-hidden="true">×</span></button>`).join('');
   $('#vias').classList.toggle('pending', !!state.data[viewKey()]?.approx); // exact rows still building
 }

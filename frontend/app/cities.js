@@ -57,6 +57,16 @@ export const CITIES = {
   GUM: { name: 'Guam', lon: 144.8, lat: 13.48, role: 'pacific', land: [1, 0] },
 };
 
+// Each city's country, for the via filter's groups.
+const COUNTRY = {
+  Vietnam: ['DAD', 'HUI', 'HAN', 'SGN', 'PQC', 'CXR', 'DLI'], 'South Korea': ['ICN', 'PUS', 'CJU'], Taiwan: ['TPE', 'KHH'],
+  'Hong Kong': ['HKG'], Macau: ['MFM'], Japan: ['TYO', 'OSA', 'FUK', 'CTS', 'OKA'], China: ['SHA', 'BJS', 'CAN', 'SYX'],
+  Philippines: ['MNL', 'CEB', 'PPS', 'MPH', 'IAO'], Singapore: ['SIN'], Thailand: ['BKK', 'CNX', 'HKT', 'KBV'],
+  Malaysia: ['KUL', 'PEN', 'LGK', 'BKI'], Indonesia: ['JKT', 'DPS', 'JOG', 'LOP'], Cambodia: ['REP', 'PNH'], Laos: ['LPQ'],
+  Brunei: ['BWN'], 'United States': ['HNL', 'GUM'],
+};
+/** A city's country (cities without one: ''). */
+export const countryOf = (c) => Object.keys(COUNTRY).find((k) => COUNTRY[k].includes(c)) ?? '';
 /** Whether a city is in Vietnam (rows don't name it, inVietnam's users: build.js setOf). */
 export const inVietnam = (c) => CITIES[c]?.vietnam != null || !!CITIES[c]?.vn;
 /** Whether a city is a stop on the way across the Pacific (role pacific). */
