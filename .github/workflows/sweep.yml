@@ -66,7 +66,16 @@ jobs:
           echo "BUILD_DEADLINE=$(( $(date +%s) + 49 * 60 ))" >> "$GITHUB_ENV"  # this step starts ~1 min in: leaves ~8 min to commit, push, alert
           args=()
           [[ -n "${{ inputs.routes }}" ]] && args+=(--routes "${{ inputs.routes }}")
-          scripts/run_sweep.sh scrape "${args[@]}" 2>&1 | tee sweep.log
+          # Flight checks beside the scrape (on the fares as they were), into the search cache the
+          # build reads: done ~1 min before the scrape's ~26 (searches in flight run ~4.5 min on).
+          scripts/run_sweep.sh snapshot
+          WARM_UNTIL=$(( $(date +%s) + 20 * 60 )) scripts/run_sweep.sh warm > warm.log 2>&1 &
+          warm=$!
+          rc=0
+          scripts/run_sweep.sh scrape "${args[@]}" 2>&1 | tee sweep.log || rc=$?
+          wait "$warm" || echo "checks beside the scrape failed (exit $?)"
+          sed 's/^/[checks] /' warm.log | tee -a sweep.log | grep -E 'planned|details|beside|rror' || true
+          exit "$rc"
 
       # Even after a failed scrape: trips from whatever fares are current.
       - name: Build trips

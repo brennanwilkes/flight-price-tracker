@@ -44,6 +44,10 @@
  *
  * --deadline: when the build must be done (CI's job limit). Flight checks start no search after
  * DETAILS_RESERVE before it, the multi-city pass searches only with MULTI_RESERVE left.
+ *
+ * --warm <epoch seconds>: flight checks only, until then (no new search after it), into the search
+ * cache; nothing else written. CI runs this beside the scrape on a snapshot of the data, so the
+ * build after it starts with those searches made.
  */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -213,7 +217,7 @@ const sortRows = (rows) => rows.sort((a, b) => price(a.hybrid) - price(b.hybrid)
  * overall cells, the month cells alike, then the via filter's the same way; past the deadline the
  * rest are dropped unless a checked candidate stands in (st.late: searches not made).
  */
-async function verify(byHome, trips, { cache, browser, listed, deadline }) {
+async function verify(byHome, trips, { cache, browser, listed, deadline, warm = false }) {
   const t0 = Date.now();
   const st = { cells: 0, replaced: 0, unresolved: 0, unknown: 0, searches: 0, failed: 0, late: 0, none: 0, stay: 0 };
   const cellsOf = (r, base) => CLASSES.filter((c) => r[c]).flatMap((cls) => [
@@ -263,7 +267,7 @@ async function verify(byHome, trips, { cache, browser, listed, deadline }) {
   }
   // The long-haul filter's cells, on the dashboard's (no searches: what the checks found).
   const t1 = Date.now();
-  for (const p of cells) if (p.rank < 5 && p.best) await fastOf(p, cache);
+  if (!warm) for (const p of cells) if (p.rank < 5 && p.best) await fastOf(p, cache);
   st.fastMs = Date.now() - t1;
   for (const [view, rows] of byHome) {
     for (const r of rows) { delete r.cands; delete r.top; delete r.city; }
@@ -363,7 +367,8 @@ async function main() {
   const dataDir = arg('data');
   if (!dataDir) throw new Error('--data <dir> is required');
   const t0 = Date.now();
-  const deadline = arg('deadline') ? Number(arg('deadline')) * 1000 : Infinity;
+  const warm = arg('warm') ? Number(arg('warm')) * 1000 : null;
+  const deadline = warm ?? (arg('deadline') ? Number(arg('deadline')) * 1000 : Infinity);
   const generatedAt = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   const checkedFile = path.join(dataDir, 'state', 'checked.json');
   const checkedLog = Object.fromEntries(Object.entries(fs.existsSync(checkedFile) ? JSON.parse(fs.readFileSync(checkedFile, 'utf8')) : {})
@@ -386,7 +391,7 @@ async function main() {
   if (details0) {
     // Searches whose page inlines no results are asked again in a real page (gflights/flights.js).
     const { browser: chrome, ctx } = await openBrowser();
-    const session = { cache: searches.cache, browser: (q, opts) => { details.browser++; return shoppingResults(ctx, q, opts); }, listed: new Map(), deadline: deadline - DETAILS_RESERVE };
+    const session = { cache: searches.cache, browser: (q, opts) => { details.browser++; return shoppingResults(ctx, q, opts); }, listed: new Map(), deadline: warm ?? deadline - DETAILS_RESERVE, warm: !!warm };
     details = { browser: 0, rounds: 0, searches: 0, failed: 0, late: 0, ms: 0 };
     try {
       for (;;) {
@@ -397,7 +402,7 @@ async function main() {
         for (const [k, price] of session.listed) checkedLog[k] = { price, at: generatedAt };
         session.listed.clear();
         console.log(`details round ${details.rounds}: ${s.cells} cells, ${s.replaced} moved to another trip (connects, or cheaper as listed), ${s.unresolved} with none that connects, ${s.unknown} hidden with no flights checked; ${s.searches} searches${s.late ? ` (${s.late} skipped, out of time)` : ''}, ${s.none} flights not listed yet, ${s.stay} trips with a short Hoi An stay; ${moved.length} fares listed at a new price; ${s.ms}ms`);
-        if (!moved.length || details.rounds >= ROUNDS || Date.now() > session.deadline) break;
+        if (warm || !moved.length || details.rounds >= ROUNDS || Date.now() > session.deadline) break;
         const done = [];
         for (const [k, r] of session.cache) { const v = await r; if (Array.isArray(v) && v.length) done.push([k, v]); }
         searches.lands = landings(done); // this round's searches too
@@ -410,6 +415,7 @@ async function main() {
       await chrome.close();
     }
     await saveSearches(arg('search-cache'), searches, generatedAt);
+    if (warm) { console.log(`checks beside the scrape: ${details.searches} searches (${details.browser} in a browser, ${details.failed} failed, ${details.late} left)`); return; }
     fs.mkdirSync(path.dirname(checkedFile), { recursive: true });
     fs.writeFileSync(checkedFile, JSON.stringify(checkedLog));
     console.log(`details: ${details.searches} searches (${details.browser} in a browser, ${details.failed} failed, ${details.late} skipped out of time${details.error ? `, e.g. ${details.error}` : ''}) over ${details.rounds} rounds`);

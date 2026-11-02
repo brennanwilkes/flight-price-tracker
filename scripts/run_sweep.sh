@@ -2,8 +2,12 @@
 # Run one sweep into the `data` branch, rebuild trips (derived/), and push it.
 #
 #   EGRESS=vpn|direct scripts/run_sweep.sh [scrape|build|alerts] [extra sweep.js args, e.g. --routes YVR-ICN]
+#   scripts/run_sweep.sh snapshot; WARM_UNTIL=<epoch s> scripts/run_sweep.sh warm
 #
-# With no step, all three in order. CI runs each as its own workflow step (sweep.yml).
+# With no step, scrape, build and alerts in order. CI runs each as its own workflow step (sweep.yml),
+# and the flight checks beside the scrape: `snapshot` copies the data branch as it is to
+# .worktrees/warm (before the scrape starts: one git at a time), `warm` checks flights on that copy
+# into the search cache until WARM_UNTIL (build-trips.js --warm), touching no git.
 #
 # The data branch is checked out as a worktree at .worktrees/data (created as an orphan branch on
 # the first run). The sweep's exit code is passed through AFTER committing, so a failed run still
@@ -15,6 +19,17 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DATA_BRANCH=data
 DATA_DIR="${DATA_DIR:-$REPO_ROOT/.worktrees/data}"
 cd "$REPO_ROOT"
+WARM_DIR="$REPO_ROOT/.worktrees/warm"
+
+if [[ "${1:-}" == snapshot ]]; then
+	rm -rf "$WARM_DIR" && mkdir -p "$WARM_DIR"
+	if git fetch -q origin "$DATA_BRANCH" 2>/dev/null; then git archive "origin/$DATA_BRANCH" | tar -x -C "$WARM_DIR"; fi
+	exit 0
+fi
+if [[ "${1:-}" == warm ]]; then
+	[[ -d "$WARM_DIR/routes" ]] || { echo "no data snapshot: no checks beside the scrape"; exit 0; }
+	exec node scraper/bin/build-trips.js --data "$WARM_DIR" --warm "$WARM_UNTIL" --search-cache "$REPO_ROOT/.search-cache.json.gz"
+fi
 
 git worktree prune
 if [[ ! -d "$DATA_DIR/.git" && ! -f "$DATA_DIR/.git" ]]; then
