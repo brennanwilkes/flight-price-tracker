@@ -125,7 +125,8 @@ option { background: var(--panel); color: var(--text); }
 .dual input::-moz-range-thumb { pointer-events: auto; }
 .dual input + input::-webkit-slider-runnable-track { background: transparent; }
 .dual input + input::-moz-range-track { background: transparent; }
-#reset { flex: none; font: 600 12px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--text);
+/* Reset: at the end of the first row, beside the home toggle. */
+#reset { flex: none; align-self: stretch; font: 600 12px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--text);
   background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 0 12px; cursor: pointer; }
 #reset[hidden] { display: none; }
 .toggle { display: flex; }
