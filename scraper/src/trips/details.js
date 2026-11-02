@@ -30,7 +30,19 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const SLOW_PAGE_MS = 60_000; // retries and full lists: some searches (YYJ business returns) take Google > 30 s
 
 const at = (date, hm) => Date.parse(`${date}T${hm}:00Z`) / 60000; // minutes, local clock (comparisons only within one city)
-const arrival = (o) => at(o.legs.at(-1).arrDate, o.legs.at(-1).arr);
+// Each option's first departure and last arrival, worked out once: plan() compares every option
+// with every one before it, and parsing the dates each time was most of the checks' CPU.
+const TIMES = new WeakMap();
+function timesOf(o) {
+  let t = TIMES.get(o);
+  if (!t) {
+    const a = o.legs[0], b = o.legs.at(-1);
+    t = { dep: at(a.depDate, a.dep), arr: at(b.arrDate, b.arr), depDay: Date.parse(a.depDate) / 864e5, arrDay: Date.parse(b.arrDate) / 864e5 };
+    TIMES.set(o, t);
+  }
+  return t;
+}
+const arrival = (o) => timesOf(o).arr;
 const cheapest = (opts) => opts.slice().sort((a, b) => a.price - b.price || a.min - b.min)[0];
 
 const priceOf = (f, o) => (f.dir === 'out' ? o.price : 0); // a return's price is on its outbound
@@ -60,8 +72,9 @@ function afterHour(date, before) {
 const misses = (picks) => picks.filter((p) => p?.miss === 'connection').length;
 /** Flight b (flight i of the trip) can follow a: leaves ≥ MIN_CONNECT after a lands, and keeps the Hoi An stay. */
 function fits(stay, i, a, b) {
-  if (at(b.legs[0].depDate, b.legs[0].dep) < arrival(a) + MIN_CONNECT_MIN) return false;
-  return !stay || i !== stay.after + 1 || (Date.parse(b.legs[0].depDate) - Date.parse(a.legs.at(-1).arrDate)) / 864e5 >= stay.need;
+  const ta = timesOf(a), tb = timesOf(b);
+  if (tb.dep < ta.arr + MIN_CONNECT_MIN) return false;
+  return !stay || i !== stay.after + 1 || tb.depDay - ta.arrDay >= stay.need;
 }
 /**
  * Each flight's pick: the cheapest flights that connect (long connections on a ticket count against

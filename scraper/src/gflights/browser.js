@@ -14,6 +14,11 @@ const RPC_TIMEOUT_MS = 20_000;
 // for good (seen on YYJ in CI), so load it again rather than keep waiting.
 const PAGE_TIMEOUT_MS = 20_000;
 const PAGE_LOADS = 3;
+// Flight lists (shoppingResults): loads per search, the wait for each but the last, and how long a
+// rejected reply gets for the page to ask again itself.
+const SHOP_LOADS = 2;
+const SHOP_TRY_MS = 25_000;
+const REJECT_GRACE_MS = 4_000;
 // Google computes uncached graphs on demand: YYJ ones take 2-22s+ where YVR's come back in 0.1s.
 // So wait long for a reply once the request is out, but re-click quickly if none went out.
 const GRAPH_TIMEOUT_MS = 60_000;
@@ -26,6 +31,7 @@ const PAGE_DEADLINE_MS = 4 * 60_000;
 const HORIZON_DAYS = 330;
 const today = () => new Date().toISOString().slice(0, 10);
 class NothingSent extends Error {}
+class Rejected extends Error {}
 
 // Runs in the page before Google's code: keeps a copy of every FlightsFrontendService response
 // as the page itself receives it. Reading bodies through DevTools (page.on('response')) loses
@@ -79,14 +85,17 @@ const addDays = (iso, n) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 864e5)
 
 /**
  * Run `action` and return `decode`d payloads of the first usable `rpc` response after it.
- * A rejected reply (HTTP 200, null wrb.fr payload) is skipped: the page retries those itself.
+ * A rejected reply (HTTP 200, null wrb.fr payload) is skipped: the page retries those itself, given
+ * up on `rejectGrace` ms after one. `load`: the action loads the page, its log starting anew.
  */
-async function capture(page, rpc, decode, action, step, timeout = RPC_TIMEOUT_MS) {
+async function capture(page, rpc, decode, action, step, timeout = RPC_TIMEOUT_MS, rejectGrace = Infinity, load = false) {
   const deadline = Date.now() + timeout;
   let seen = await page.evaluate(() => window.__rpc.length);
   let rejected = 0;
+  let rejectedAt = 0;
   let unreadable = 0;
   await action();
+  if (load) seen = 0;
   for (;;) {
     const fresh = await page.evaluate((i) => window.__rpc.slice(i), seen);
     seen += fresh.length;
@@ -96,7 +105,9 @@ async function capture(page, rpc, decode, action, step, timeout = RPC_TIMEOUT_MS
       const payloads = parseBatchExecute(r.text).filter((p) => p != null);
       if (payloads.length) return payloads.flatMap(decode);
       rejected++;
+      rejectedAt ||= Date.now();
     }
+    if (rejectedAt && Date.now() - rejectedAt > rejectGrace) throw new Rejected(`${step}: ${rpc} rejected, not asked again within ${rejectGrace}ms`);
     if (Date.now() >= deadline) throw new Error(`${step}: no usable ${rpc} response within ${timeout}ms (${rejected} rejected, ${unreadable} unreadable)`);
     await page.waitForTimeout(200);
   }
@@ -210,8 +221,22 @@ async function shoppingResults(ctx, query, { timeout = 30_000 } = {}) {
   const page = await newPage(ctx, timeout + 60_000);
   const label = `${query.from}-${query.to} ${query.out}`;
   try {
-    const payloads = await capture(page, 'GetShoppingResults', (p) => [p],
-      () => page.goto(pageUrl(query), { waitUntil: 'domcontentloaded', timeout: PAGE_TIMEOUT_MS }), label, timeout);
+    // A rejected reply that the page doesn't ask again for, or a load that sends nothing: loaded
+    // again rather than waited out (10% of the checks' pages sat out a 60 s timeout, 13:05 sweep
+    // 2026-11-02; an idle page answers in 3-6 s).
+    const until = Date.now() + timeout;
+    let payloads;
+    for (let n = 1; ; n++) {
+      const left = until - Date.now();
+      try {
+        payloads = await capture(page, 'GetShoppingResults', (p) => [p],
+          () => page.goto(pageUrl(query), { waitUntil: 'domcontentloaded', timeout: PAGE_TIMEOUT_MS }), label,
+          n < SHOP_LOADS ? Math.min(left, SHOP_TRY_MS) : left, REJECT_GRACE_MS, true);
+        break;
+      } catch (e) {
+        if (n >= SHOP_LOADS || until - Date.now() < 5_000) throw e;
+      }
+    }
     // The first reply is only Google's "top flights"; the rest (often the cheapest) load behind
     // "View more flights".
     const more = page.getByRole('button', { name: /more flights/i }).first();
