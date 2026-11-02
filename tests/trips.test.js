@@ -73,16 +73,26 @@ test('same-day connection is allowed but marked; trip length stays within 14-21 
 
 test('alts counts other date sets about the same price (business 2%, economy 5%), per month and overall', () => {
   const { similarCount } = require('../frontend/app/build.js');
-  const sets = new Map([['YVR|hybrid|MNL|MNL|', new Map([
-    ['2027-09-05|2027-09-22', 4000], // the best
-    ['2027-09-06|2027-09-23', 4080], // +2%: counts
-    ['2027-09-07|2027-09-24', 4081], // just over
-    ['2027-10-01|2027-10-18', 4010], // other month
-  ])]]);
+  // As buildTrips keeps them: route → month → (day number × 64 + length) → cheapest total.
+  const table = (route, list) => {
+    const months = new Map();
+    for (const [depart, ret, total] of list) {
+      const m = months.get(depart.slice(0, 7)) ?? new Map();
+      m.set((Date.parse(depart) / 864e5) * 64 + (Date.parse(ret) - Date.parse(depart)) / 864e5, total);
+      months.set(depart.slice(0, 7), m);
+    }
+    return new Map([[route, months]]);
+  };
+  const sets = table('YVR|hybrid|MNL|MNL|', [
+    ['2027-09-05', '2027-09-22', 4000], // the best
+    ['2027-09-06', '2027-09-23', 4080], // +2%: counts
+    ['2027-09-07', '2027-09-24', 4081], // just over
+    ['2027-10-01', '2027-10-18', 4010], // other month
+  ]);
   const trip = { home: 'YVR', cls: 'hybrid', in: 'MNL', out: 'MNL', set: '', total: 4000, depart: '2027-09-05', ret: '2027-09-22' };
   assert.equal(similarCount(sets, trip, '2027-09'), 1);
   assert.equal(similarCount(sets, trip), 2);
-  const eco = new Map([['YVR|economy|MNL|MNL|', new Map([['2027-09-05|2027-09-22', 1000], ['2027-09-06|2027-09-23', 1050], ['2027-09-07|2027-09-24', 1051]])]]);
+  const eco = table('YVR|economy|MNL|MNL|', [['2027-09-05', '2027-09-22', 1000], ['2027-09-06', '2027-09-23', 1050], ['2027-09-07', '2027-09-24', 1051]]);
   assert.equal(similarCount(eco, { ...trip, cls: 'economy', total: 1000 }), 1);
 });
 
