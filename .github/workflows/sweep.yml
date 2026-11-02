@@ -27,6 +27,10 @@ jobs:
   sweep:
     runs-on: ubuntu-24.04
     timeout-minutes: 58  # scrape budget 25, then the build until BUILD_DEADLINE; the next hourly run queues
+    env:
+      # Trip planning holds every candidate trip (2.7 GB at 26 departure days, growing with each
+      # day Google opens); Node's default cap is ~4 GB of the runner's 16.
+      NODE_OPTIONS: --max-old-space-size=11264
     steps:
       - uses: actions/checkout@v4
 
