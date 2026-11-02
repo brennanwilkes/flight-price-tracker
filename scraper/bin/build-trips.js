@@ -56,7 +56,7 @@ const path = require('node:path');
 const zlib = require('node:zlib');
 const config = require('../config/sweep.json');
 const { loadFares, bundleOf, fareOf } = require('../src/trips/fares');
-const { buildTrips, similarCount, scoreOf, rowId, bandOf } = require('../../frontend/app/build.js');
+const { similarCount, scoreOf, rowId, bandOf } = require('../../frontend/app/build.js');
 const { CITIES, airportsOf, isPacific } = require('../../frontend/app/cities.js');
 const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
 const { addDetails, capped, longestOf } = require('../src/trips/details');
@@ -67,6 +67,7 @@ const { flexOf } = require('../../frontend/app/flex.js');
 const { packJson } = require('../../frontend/app/pack.js');
 const { markLows, cellTrips } = require('../src/trips/lows');
 const { applyMulti, multiCache, multiSaving } = require('../src/trips/multi');
+const { buildTripsThreaded } = require('../src/trips/threads');
 
 const CLASSES = ['hybrid', 'economy'];
 const TRIES = 10;
@@ -404,9 +405,11 @@ async function main() {
   const details0 = !process.argv.includes('--no-details');
   const searches = loadSearches(arg('search-cache'), Date.parse(generatedAt));
   console.log(`search cache: ${searches.cache.size} under ${SEARCH_HOURS} h old, ${searches.stale.size} up to ${STALE_DAYS} days, ${[...searches.lands.values()].filter((d) => d > 0).length} flights landing a day or more on`);
-  let fares = loadFares(dataDir, config, { checked: checked(), lands: searches.lands });
+  const now = Date.now();
+  const load = () => ({ dataDir, now, checked: checked(), lands: searches.lands });
+  let fares = loadFares(dataDir, config, load());
   lap('fares loaded');
-  let trips = buildTrips(fares);
+  let trips = await buildTripsThreaded(fares, load());
   lap(`${trips.length} trips planned`);
   let { vias, byHome } = viewsOf(trips);
   lap(`rows for ${vias.length} vias`);
@@ -430,8 +433,8 @@ async function main() {
         for (const [k, r] of session.cache) { const v = await r; if (Array.isArray(v) && v.length) done.push([k, v]); }
         for (const [k, v] of searches.stale) if (!session.cache.has(k)) done.push([k, v]);
         searches.lands = landings(done); // this round's searches too
-        fares = loadFares(dataDir, config, { checked: checked(), lands: searches.lands });
-        trips = buildTrips(fares);
+        fares = loadFares(dataDir, config, load());
+        trips = await buildTripsThreaded(fares, load());
         ({ vias, byHome } = viewsOf(trips));
         lap('planned again');
       }
@@ -439,8 +442,10 @@ async function main() {
       await chrome.close();
     }
     const t = searches.cache.tally ?? {};
-    const why = `${t.empty ?? 0} pages with none inlined (${t.refetched ?? 0} listed when asked again plain), ${t.full ?? 0} full lists, ${t.pages ?? 0} browser pages, ${t.refreshed ?? 0} stale searches refreshed, ${t.blocked ?? 0} refused by Google`;
+    const why = `${t.empty ?? 0} pages with none inlined, ${t.full ?? 0} full lists, ${t.pages ?? 0} browser pages, ${t.refreshed ?? 0} stale searches refreshed, ${t.blocked ?? 0} refused by Google`;
+    const pct = (a, q) => (a.length ? `${(a.toSorted((x, y) => x - y)[Math.floor(q * (a.length - 1))] / 1000).toFixed(1)} s` : '-');
     console.log(`search mix: ${why}`);
+    console.log(`search timing: ${t.plain ?? 0} plain fetches (median ${pct(t.plainMs ?? [], 0.5)}, 90% ${pct(t.plainMs ?? [], 0.9)}; ${t.plainEmpty ?? 0} with no results inlined, ${t.timeouts ?? 0} timed out, ${t.errors ?? 0} other errors), browser pages median ${pct(t.pageMs ?? [], 0.5)}, 90% ${pct(t.pageMs ?? [], 0.9)}`);
     await saveSearches(arg('search-cache'), searches, generatedAt);
     if (warm) { console.log(`checks beside the scrape: ${details.searches} searches (${details.browser} in a browser, ${details.failed} failed, ${details.late} left)`); return; }
     fs.mkdirSync(path.dirname(checkedFile), { recursive: true });

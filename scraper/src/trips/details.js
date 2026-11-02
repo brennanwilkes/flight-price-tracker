@@ -19,9 +19,6 @@ const { SELF_HOURS, SELF_PEN } = require('./multi');
 const MIN_CONNECT_MIN = 4 * 60;
 const CONCURRENCY = 12; // plain searches in flight (~2 s each)
 const PAGES = 4; // browser pages at once (10-60 s each), by default: a search waiting on one doesn't hold up the plain ones
-// A page that inlines no results is asked again plain this long after, before a browser page:
-// Google may have the search done by then.
-const REFETCH_MS = 20_000;
 // Google refusing plain searches (HTTP 429, or a redirect to its "unusual traffic" page): none
 // start for this long, so the price graphs on the same connection aren't refused too.
 const BLOCKED_PAUSE_MS = 60_000;
@@ -136,14 +133,13 @@ function flightsOf(trip) {
  * by `prio` (lowest first). `cache.stale` (optional Map, key → result): searches from earlier
  * builds, past their fresh hours, used at once (their flights; the fare's price stands, nothing
  * goes into `listed`) and searched again after everything else (cache.at loses the key: made now).
- * cache.tally counts across calls: empty pages, refetched (listed when asked again plain), pages,
- * full lists, refreshed, blocked (Google refusing plain searches).
+ * cache.tally counts across calls: empty pages, pages, full lists, refreshed, blocked (Google refusing plain searches).
  */
 async function addDetails(trips, cache = new Map(), browser = null, listed = null, deadline = Infinity, { prio = 0, pages = PAGES } = {}) {
   const LATE = { error: 'out of time', late: true }; // not cached
   const plain = slots(cache, 'plain', CONCURRENCY);
   const page = browser && slots(cache, 'pages', pages);
-  const tally = (cache.tally ??= { empty: 0, refetched: 0, pages: 0, full: 0, refreshed: 0, blocked: 0 });
+  const tally = (cache.tally ??= { empty: 0, pages: 0, full: 0, refreshed: 0, blocked: 0, plain: 0, plainEmpty: 0, timeouts: 0, errors: 0, plainMs: [], pageMs: [] });
   const stale = cache.stale ?? new Map(); // key → result, from earlier builds past their fresh hours
   const stats = { searches: 0, failed: 0, late: 0, full: 0, connection: 0, none: 0, stay: 0 };
   // A result into the cache as it comes; out of time: out again, not a result.
@@ -155,25 +151,35 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
   };
   const fetchPlain = (p, q, tries) => plain(p, deadline, async () => {
     for (let w; (w = (cache.blockedUntil ?? 0) - Date.now()) > 0;) await sleep(w);
+    const t0 = Date.now();
     try {
-      return await searchPlain(q, tries);
+      const r = await searchPlain(q, tries);
+      if (!r.length) tally.plainEmpty++;
+      return r;
     } catch (e) {
       if (/HTTP (429|30\d)/.test(e.message)) { tally.blocked++; cache.blockedUntil = Date.now() + BLOCKED_PAUSE_MS; }
+      if (/timeout|abort/i.test(e.message)) tally.timeouts++;
+      else tally.errors++;
       throw e;
+    } finally {
+      tally.plain++;
+      tally.plainMs.push(Date.now() - t0);
     }
   });
   const inPage = async (p, q, opts) => {
-    const r = await page(p, deadline, () => { tally.pages++; return browser(q, opts); });
+    const r = await page(p, deadline, async () => {
+      tally.pages++;
+      const t0 = Date.now();
+      try { return await browser(q, opts); } finally { tally.pageMs.push(Date.now() - t0); }
+    });
     return dedupe(r.flatMap(parseResults));
   };
-  // Plain first; a page with none inlined asked again plain (no slot held while waiting), then in a browser.
+  // Plain first; a page with none inlined, in a browser. (Asked again plain 20 s on, 0 of 291 had
+  // them: 06:05 sweep, 2026-11-02.)
   const plainThenPage = async (q, p) => {
     const opts = await fetchPlain(p, q);
     if (opts.length || !page) return opts;
     tally.empty++;
-    await sleep(REFETCH_MS);
-    const again = await fetchPlain(p, q, 1);
-    if (again.length) { tally.refetched++; return again; }
     return inPage(p, q);
   };
   // A stale result serves now; a fresh one replaces it once searched, after every check's search.

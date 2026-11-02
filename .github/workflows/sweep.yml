@@ -78,7 +78,7 @@ jobs:
           rc=0
           scripts/run_sweep.sh scrape "${args[@]}" 2>&1 | tee sweep.log || rc=$?
           wait "$warm" || echo "checks beside the scrape failed (exit $?)"
-          sed 's/^/[checks] /' warm.log | tee -a sweep.log | grep -E 'planned|details|beside|rror' || true
+          sed 's/^/[checks] /' warm.log | tee -a sweep.log | grep -E 'planned|details|beside|search|rror' || true
           exit "$rc"
 
       # Even after a failed scrape: trips from whatever fares are current.

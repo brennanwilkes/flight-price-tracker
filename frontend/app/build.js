@@ -493,15 +493,24 @@ const rowId = (r) => `${r.in}-${r.out}${r.set ? `+${r.set}` : ''}`;
  * opts.homes: a subset of fares.homes.
  */
 function buildTrips(fares, { need = [], homes = fares.homes } = {}) {
+  return finishTrips(planCities(fares, { need, homes }));
+}
+
+/**
+ * buildTrips' planning for the trips arriving in `cities` only: { top, safe, dateSets }, every
+ * key holding its arrival city, so parts for different cities never share a key and join by
+ * union (finishTrips). The build plans its cities on several threads (scraper/src/trips/threads.js).
+ */
+function planCities(fares, { need = [], homes = fares.homes, cities = fares.cities } = {}) {
   internTable = new Map();
   try {
-    return planTrips(fares, { need, homes });
+    return planParts(fares, { need, homes, cities });
   } finally {
     internTable = null;
   }
 }
 
-function planTrips(fares, { need, homes }) {
+function planParts(fares, { need, homes, cities }) {
   const classes = [['hybrid', 'J'], ['economy', 'Y']];
   const top = new Map(); // key → cheapest FALLBACKS + 1 trips, cheapest first
   const safe = new Map(); // key → cheapest safe trip
@@ -572,7 +581,7 @@ function planTrips(fares, { need, homes }) {
   };
 
   for (const d0 of bases) {
-    for (const x of fares.cities) {
+    for (const x of cities) {
       // Only cities a long leg flies to that day.
       if (!homes.some((h) => ['J', 'Y'].some((c) => fares.oneWay(h, x, c, d0) != null || fares.roundTrip(h, x, c, d0).length))
         && !pacific.some((p) => ['J', 'Y'].some((c) => onFrom(p, x, c, d0)))) continue;
@@ -689,6 +698,13 @@ function planTrips(fares, { need, homes }) {
       }
     }
   }
+  return { top, safe, dateSets };
+}
+
+/** The trips from planCities' parts (one, or several for disjoint cities, in order). */
+function finishTrips(...parts) {
+  const [top, safe, dateSets] = parts.length === 1 ? [parts[0].top, parts[0].safe, parts[0].dateSets]
+    : ['top', 'safe', 'dateSets'].map((k) => new Map(parts.flatMap((p) => [...p[k]])));
   // A trip can head several lists (its cell's and its cities'), so each entry is its own copy.
   const trips = [...top].map(([key, list]) => {
     const [first, ...rest] = list.toSorted((a, b) => scoreOf(a) - scoreOf(b)); // REENTRY now counted
@@ -716,4 +732,4 @@ function similarCount(dateSets, trip, month = null) {
   return n;
 }
 
-export { bandOf, buildTrips, similarCount, scoreOf, hopPlans, ticketsOf, staysOf, setOf, rowId, hasSameDay, isSafe, nearestStay, reentersVietnam, addDays, HOI_AN_NIGHTS };
+export { bandOf, buildTrips, planCities, finishTrips, similarCount, scoreOf, hopPlans, ticketsOf, staysOf, setOf, rowId, hasSameDay, isSafe, nearestStay, reentersVietnam, addDays, HOI_AN_NIGHTS };
