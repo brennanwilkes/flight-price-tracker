@@ -61,7 +61,10 @@ const ROUNDS = 3;
 const CHECKED_HOURS = 24;
 const DETAILS_RESERVE = 8 * 60e3; // multi-city ~4 min, a page still loading ≤ 4 min
 const MULTI_RESERVE = 5 * 60e3;
-const SEARCH_HOURS = 3; // the fares behind them are 2-48 h old already
+// A day's flights and times hold for a day; their listed prices are trusted as long (CHECKED_HOURS)
+// and the fares behind them are 2-48 h old already. Every shown cell needs ~6,200 searches, a build
+// makes ~800: under SEARCH_HOURS = 3 they could never all be fresh at once.
+const SEARCH_HOURS = 24;
 
 /** Search results from earlier builds, under SEARCH_HOURS old: { cache: key → result, at: key → ISO time }. */
 function loadSearches(file, now) {
@@ -353,7 +356,7 @@ async function main() {
   for (const [view, rows] of byHome) {
     const [home, via] = view.split('|');
     if (via) {
-      if (rows.length) fs.writeFileSync(path.join(dataDir, 'derived', 'via', `trips-${home}-${via}.json`), JSON.stringify({ generatedAt, home, via, rows }));
+      fs.writeFileSync(path.join(dataDir, 'derived', 'via', `trips-${home}-${via}.json`), JSON.stringify({ generatedAt, home, via, rows })); // listed in vias, so even when empty
       continue;
     }
     for (const r of rows) {

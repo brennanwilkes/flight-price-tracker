@@ -73,6 +73,8 @@ export const AIRPORTS = {
   PKX: { name: 'Beijing', lon: 116.41, lat: 39.51 }, CAN: { name: 'Guangzhou', lon: 113.3, lat: 23.39 },
   SZX: { name: 'Shenzhen', lon: 113.81, lat: 22.64 }, XMN: { name: 'Xiamen', lon: 118.13, lat: 24.54 },
   CTU: { name: 'Chengdu', lon: 103.95, lat: 30.58 }, KMG: { name: 'Kunming', lon: 102.93, lat: 25.1 },
+  TAO: { name: 'Qingdao', lon: 120.37, lat: 36.27 }, TNA: { name: 'Jinan', lon: 117.22, lat: 36.86 },
+  WUH: { name: 'Wuhan', lon: 114.21, lat: 30.78 },
   MFM: { name: 'Macau', lon: 113.59, lat: 22.15 }, KHH: { name: 'Kaohsiung', lon: 120.35, lat: 22.58 },
   CEB: { name: 'Cebu', lon: 123.98, lat: 10.31 }, CRK: { name: 'Clark', lon: 120.56, lat: 15.19 },
   CGK: { name: 'Jakarta', lon: 106.66, lat: -6.13 }, DPS: { name: 'Bali', lon: 115.17, lat: -8.75 },

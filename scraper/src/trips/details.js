@@ -88,7 +88,8 @@ function flightsOf(trip) {
  * Returns { searches, failed, late, full, connection, none, stay } (full: full-list page loads; connection,
  * none: misses; stay: trips whose real flights leave the Hoi An stay short).
  * `listed` (optional Map): each searched fare's cheapest listed price, by fareKey (fares.js).
- * After `deadline` (ms) no new search starts: those flights stay unknown (stats.late).
+ * After `deadline` (ms) no new search starts: those flights stay unknown (stats.late: each
+ * search counted once per cache, however many calls ask for it).
  */
 async function addDetails(trips, cache = new Map(), browser = null, listed = null, deadline = Infinity) {
   const LATE = { error: 'out of time', late: true }; // not cached
@@ -120,9 +121,10 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
   await Promise.all(Array.from({ length: CONCURRENCY }, async () => {
     while (next < queries.length) await searchOnce(queries[next++]);
   }));
+  cache.late ??= new Set();
   for (const q of queries) {
     const r = await searchOnce(q);
-    if (r.late) { stats.late++; continue; }
+    if (r.late) { if (!cache.late.has(JSON.stringify(q))) { cache.late.add(JSON.stringify(q)); stats.late++; } continue; }
     stats.searches++;
     if (r.error && browser) { const all = await fullOnce(q); if (!all.late) cache.set(JSON.stringify(q), all); } // retried in a page
     if ((await searchOnce(q)).error) { stats.failed++; stats.error ??= `${q.from}-${q.to} ${q.out}: ${r.error}`; }

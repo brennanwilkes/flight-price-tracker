@@ -9,7 +9,7 @@
 // - The current commit is checked on resume and every 5 min while visible. Newer data applies at
 //   once on resume; mid-use it's a tap-to-show bar, so prices don't change under a tap. Data
 //   whose generatedAt isn't newer than what's shown (a stale API answer) is ignored.
-import { CITIES, HOI_AN, cityName, rowName } from './cities.js';
+import { CITIES, HOI_AN, place, cityName, rowName } from './cities.js';
 import { samePrice } from './price.js';
 import { tripMap } from './map.js';
 import { sweepIfAsked } from './alerts.js';
@@ -87,6 +87,7 @@ const dataBase = (sha) => DATA_OVERRIDE ?? `https://raw.githubusercontent.com/${
 async function fetchTrips(sha, key) {
   const base = dataBase(sha);
   const res = await fetch(`${base}/derived/${key.includes('-') ? 'via/' : ''}trips-${key}.json`, { cache: 'no-cache' });
+  if (res.status === 404 && key.includes('-')) return { rows: [] }; // a city with no trips this build (older builds wrote no file)
   if (!res.ok) throw new Error(`trips-${key}.json: HTTP ${res.status}`);
   return res.json();
 }
@@ -469,14 +470,17 @@ function withRails(list, ticketOf, items) {
 
 /**
  * Every flight actually flown, for the map: a leg's connections when known, else the leg; and the
- * Hoi An stay (after the leg `stay.after`) overland there and back.
+ * Hoi An stay (after the leg `stay.after`) overland there and back. A connection the map can't
+ * place (Doha, Seattle) is passed over: the line runs between the airports either side.
  */
 const flown = (list, ticketOf, stay) => list.flatMap((l, i) => {
   const f = flightOf(l);
   const tk = ticketOf.get(l.t);
   const overland = i && stay?.after === i - 1 ? [{ from: landsAt(list[i - 1]), to: HOI_AN, ground: true }, { from: HOI_AN, to: leavesFrom(l), ground: true }]
     : i && list[i - 1].to !== l.from ? [{ from: list[i - 1].to, to: l.from, ground: true }] : [];
-  return [...overland, ...(f?.legs ? f.legs.map((g) => ({ from: g.from, to: g.to, cabin: l.cabin, tk })) : [{ from: l.from, to: l.to, cabin: l.cabin, tk }])];
+  const stops = f?.legs ? [f.legs[0].from, ...f.legs.map((g) => g.to)] : [l.from, l.to];
+  const drawn = stops.filter((c, k) => k === 0 || k === stops.length - 1 || place(c).lon != null);
+  return [...overland, ...drawn.slice(1).map((to, k) => ({ from: drawn[k], to, cabin: l.cabin, tk }))];
 });
 
 function openTrip(key, cls) {

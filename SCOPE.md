@@ -92,8 +92,12 @@ the builder searches every combination and the dashboard shows the best N.
   an hour.
 - **Run budget (2026-11-01):** each hourly job scrapes graphs for 25 min (6 pages at once while a
   backlog lasts, else 3), commits that, then builds to a deadline 49 min in: flight checks cheapest
-  overall cells first, results reused 3 h across runs (Actions cache), so a slow build skips checks
+  overall cells first, results reused 24 h across runs (Actions cache), so a slow build skips checks
   instead of losing the run. ~420 graphs/h against ~250/h the tiers need at steady state.
+- **Flight-check saturation (2026-11-02):** every shown cell, board and via views (45 cities), needs
+  ~6,200 distinct searches (months add none); a build makes ~800. Reused 24 h (was 3 h, which
+  capped fresh results at ~2,500: the board could never be fully checked), so ~19,000/day. Goal: no
+  cell hidden for want of a check once caught up.
 - **Vietnam anchor, not just Da Nang (added 2026-10-31):** the real destination is Hoi An, reached by
   train/bus. A trip may fly into and out of any of DAD, HUI, HAN, SGN, and may be open-jaw inside
   Vietnam (e.g. into Hanoi, out of Da Nang). Hoi An still needs ≥ 5 nights **after ground time**:
