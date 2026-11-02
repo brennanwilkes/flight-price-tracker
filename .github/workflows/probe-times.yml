@@ -7,6 +7,9 @@ on:
       search:
         description: From, to, date
         default: YVR ICN 2026-12-10
+      empty:
+        description: Searches that inlined nothing (FROM-TO-CABIN-date[-ret]); empty skips the time probe
+        default: ''
 
 permissions:
   contents: read
@@ -38,4 +41,8 @@ jobs:
           scripts/vpn_up.sh
           grep -q '^vpn_ok=true' "$GITHUB_OUTPUT" || { echo "::error::VPN did not come up"; exit 1; }
       - name: Probe
+        if: inputs.empty == ''
         run: node scraper/bin/probe-times.js ${{ inputs.search }} --browser
+      - name: Probe empty pages
+        if: inputs.empty != ''
+        run: node scraper/bin/probe-empty.js ${{ inputs.empty }}

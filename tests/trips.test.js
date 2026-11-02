@@ -602,6 +602,5 @@ test('no top flight connects: the flights leaving after the connection are searc
   await addDetails([trip], cache);
   assert.strictEqual(trip.connects, true);
   assert.deepStrictEqual(trip.tickets.map((t) => t.flights.out.airlines[0]), ['PR', 'VN']);
-  assert.strictEqual(cache.tally.window, 1);
-  assert.strictEqual(cache.tally.full, 0);
+  assert.deepStrictEqual([cache.tally.windowTry, cache.tally.windowHit, cache.tally.full], [1, 1, 0]);
 });

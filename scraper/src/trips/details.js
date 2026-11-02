@@ -149,7 +149,7 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
   const LATE = { error: 'out of time', late: true }; // not cached
   const plain = slots(cache, 'plain', CONCURRENCY);
   const page = browser && slots(cache, 'pages', pages);
-  const tally = (cache.tally ??= { empty: 0, pages: 0, full: 0, window: 0, refreshed: 0, blocked: 0, plain: 0, plainEmpty: 0, timeouts: 0, errors: 0, plainMs: [], pageMs: [] });
+  const tally = (cache.tally ??= { empty: 0, pages: 0, full: 0, window: 0, windowTry: 0, windowHit: 0, refreshed: 0, blocked: 0, plain: 0, plainEmpty: 0, timeouts: 0, errors: 0, plainMs: [], pageMs: [] });
   const stale = cache.stale ?? new Map(); // key → result, from earlier builds past their fresh hours
   const stats = { searches: 0, failed: 0, late: 0, full: 0, connection: 0, none: 0, stay: 0 };
   // A result into the cache as it comes; out of time: out again, not a result.
@@ -163,7 +163,8 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
     for (let w; (w = (cache.blockedUntil ?? 0) - Date.now()) > 0;) await sleep(w);
     const t0 = Date.now();
     try {
-      const r = await searchPlain(q, tries);
+      // A window with no flights in it comes back without a results blob: none, not a failure.
+      const r = q.after ? await searchPlain(q, 1).catch((e) => { if (/no results blob/.test(e.message)) return []; throw e; }) : await searchPlain(q, tries);
       if (!r.length) {
         tally.plainEmpty++;
         const route = `${[q.from].flat()[0]}-${[q.to].flat()[0]} ${q.cabin}${q.ret ? ' rt' : ''}`;
@@ -192,7 +193,7 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
   // them: 06:05 sweep, 2026-11-02.)
   const plainThenPage = async (q, p) => {
     const opts = await fetchPlain(p, q);
-    if (opts.length || !page) return opts;
+    if (opts.length || !page || q.after) return opts; // a window empty: the full list decides
     tally.empty++;
     return inPage(p, q);
   };
@@ -248,15 +249,20 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
     // A plain search lists only Google's top flights; where none of those connects, the top
     // flights leaving after the connection (plain), then the full list (a browser page).
     let picks;
-    for (const windowed = new Set(), full = new Set(); ;) {
+    for (let windowed = new Set(), full = new Set(), tried = -1; ;) {
       picks = choose(trip, flights, lists);
+      if (tried >= 0 && picks[tried]?.miss !== 'connection') tally.windowHit++;
+      tried = -1;
       const i = picks.findIndex((p, j) => p?.miss === 'connection' && !(windowed.has(j) && full.has(j)));
       if (i < 0) break;
       const after = !windowed.has(i) && afterHour(flights[i].query.out, lists[i - 1]);
       windowed.add(i);
       if (after) {
-        tally.window++;
-        const more = await searchOnce({ ...flights[i].query, after });
+        const wq = { ...flights[i].query, after };
+        if (!cache.has(JSON.stringify(wq))) tally.window++;
+        const more = await searchOnce(wq);
+        tally.windowTry++;
+        tried = i;
         if (!more.error && more.length) {
           const merged = dedupe([...lists[i], ...more]);
           if (STALE.has(lists[i]) || STALE.has(more)) STALE.add(merged);
