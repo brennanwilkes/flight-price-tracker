@@ -10,6 +10,9 @@ on:
       empty:
         description: Searches that inlined nothing (FROM-TO-CABIN-date[-ret]); empty skips the time probe
         default: ''
+      quick:
+        description: Only the plain search for each (1 = yes)
+        default: ''
 
 permissions:
   contents: read
@@ -45,4 +48,6 @@ jobs:
         run: node scraper/bin/probe-times.js ${{ inputs.search }} --browser
       - name: Probe empty pages
         if: inputs.empty != ''
+        env:
+          QUICK: ${{ inputs.quick }}
         run: node scraper/bin/probe-empty.js ${{ inputs.empty }}

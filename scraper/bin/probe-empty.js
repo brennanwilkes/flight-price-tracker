@@ -24,6 +24,7 @@ async function main() {
     const tfs = (x = {}) => buildTfs({ from, to, out, ret, cabin, ...x });
     const base = 'https://www.google.com/travel/flights';
     await get('base', `${base}?tfs=${tfs()}&hl=en&gl=CA&curr=CAD`);
+    if (process.env.QUICK) continue;
     await get('base again', `${base}?tfs=${tfs()}&hl=en&gl=CA&curr=CAD`);
     await get('/search', `${base}/search?tfs=${tfs()}&hl=en&gl=CA&curr=CAD`);
     await get('/search + tfu', `${base}/search?tfs=${tfs()}&tfu=EgYIABAAGAA&hl=en&gl=CA&curr=CAD`);
