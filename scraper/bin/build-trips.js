@@ -74,7 +74,8 @@ const MULTI_RESERVE = 5 * 60e3;
 // makes ~800: under SEARCH_HOURS = 3 they could never all be fresh at once.
 const SEARCH_HOURS = 24;
 // The board's long-haul filter (hours, loosest first): each dashboard cell's cheapest trip with
-// every long-haul flight at most that long, re-picked from its checked candidates' searches.
+// no single flight (connections apart) on its long-haul tickets longer, re-picked from its checked
+// candidates' searches.
 const CAPS = [18, 16, 15, 14, 13, 12, 11, 10];
 
 /**

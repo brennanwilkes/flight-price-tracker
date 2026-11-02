@@ -455,6 +455,8 @@ test('Pacific stop: the long haul broken up at Honolulu, nights there both ways,
 test('long-haul cap: the same trip re-picked from its searches with every long flight under the cap', async () => {
   const { addDetails, flightsOf, capped, longestOf } = require('../scraper/src/trips/details');
   const leg = (from, to, depDate, dep, arrDate, arr, price, airline, min) => ({ price, min, airlines: [airline], stops: [], legs: [{ code: `${airline}1`, airline, from, to, dep, arr, depDate, arrDate, min }] });
+  // Through Taipei: 26 h door to door, but its longest flight is 13 h.
+  const via = { ...leg('YVR', 'BKK', '2027-09-01', '01:00', '2027-09-02', '23:00', 4300, 'BR', 26 * 60), legs: [{ min: 13 * 60, from: 'YVR', to: 'TPE', dep: '01:00', depDate: '2027-09-01', arr: '05:00', arrDate: '2027-09-02' }, { min: 4 * 60, from: 'TPE', to: 'BKK', dep: '19:00', depDate: '2027-09-02', arr: '23:00', arrDate: '2027-09-02' }] };
   const trip = {
     order: [[0, 'out'], [1, 'out']],
     tickets: [
@@ -463,15 +465,17 @@ test('long-haul cap: the same trip re-picked from its searches with every long f
     ],
   };
   const answers = [
-    [leg('YVR', 'BKK', '2027-09-01', '01:00', '2027-09-02', '23:00', 4000, 'PR', 26 * 60), leg('YVR', 'BKK', '2027-09-01', '12:00', '2027-09-02', '18:00', 4600, 'CX', 15 * 60)],
+    [leg('YVR', 'BKK', '2027-09-01', '01:00', '2027-09-02', '23:00', 4000, 'PR', 26 * 60), leg('YVR', 'BKK', '2027-09-01', '12:00', '2027-09-02', '18:00', 4600, 'CX', 15 * 60), via],
     [leg('BKK', 'HAN', '2027-09-05', '06:40', '2027-09-05', '08:30', 200, 'VN', 15 * 60 + 50)], // a hop: never capped
   ];
   const cache = new Map(flightsOf(trip).map((f, i) => [JSON.stringify(f.query), Promise.resolve(answers[i])]));
   await addDetails([trip], cache);
   assert.strictEqual(longestOf(trip, ['YVR']), 26 * 60);
-  const fast = await capped(trip, cache, 16 * 60, ['YVR']);
-  assert.strictEqual(fast.tickets[0].flights.out.airlines[0], 'CX');
-  assert.strictEqual(fast.total, 4800);
+  assert.strictEqual((await capped(trip, cache, 16 * 60, ['YVR'])).tickets[0].flights.out.airlines[0], 'BR'); // cheaper than CX, no flight over 13 h
+  const fast = await capped(trip, cache, 15 * 60, ['YVR']);
+  assert.strictEqual(fast.tickets[0].flights.out.airlines[0], 'BR');
+  assert.strictEqual(fast.total, 4500);
   assert.strictEqual(trip.total, 4200); // the cell's own trip unchanged
+  assert.strictEqual((await capped(trip, cache, 14 * 60, ['YVR'])).tickets[0].flights.out.airlines[0], 'BR');
   assert.strictEqual(await capped(trip, cache, 12 * 60, ['YVR']), null);
 });

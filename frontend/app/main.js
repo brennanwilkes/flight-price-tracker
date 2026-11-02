@@ -177,8 +177,8 @@ function keepChecked(row, approx) {
   return row;
 }
 
-/** The longest long-haul flight on a trip, minutes (0 when its flights aren't known). */
-const longest = (t) => Math.max(0, ...t.tickets.filter((x) => isLong(x.from, x.to, HOMES)).flatMap((x) => Object.values(x.flights ?? {}).map((f) => f.min ?? 0)));
+/** The longest single flight on a trip's long-haul tickets, minutes (0 when its flights aren't known). */
+const longest = (t) => Math.max(0, ...t.tickets.filter((x) => isLong(x.from, x.to, HOMES)).flatMap((x) => Object.values(x.flights ?? {}).flatMap((f) => (f.legs ?? []).map((g) => g.min ?? 0))));
 
 /**
  * A row's cell for a class under the filters: the month's, or the cheapest of the length bands in

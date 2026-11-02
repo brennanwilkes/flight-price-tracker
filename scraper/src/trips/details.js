@@ -230,13 +230,15 @@ function settle(trip, flights, lists, chosen) {
   return { picks, connects, conn, short };
 }
 
-/** The longest long-haul flight on a checked trip, in minutes (cities.js isLong; 0 when none is known). */
+// An option's longest single flight in minutes (a connection splits it: YVR-TPE-SGN is its YVR-TPE).
+const longestLeg = (o) => Math.max(0, ...(o.legs ?? []).map((g) => g.min ?? 0));
+/** The longest single flight on a checked trip's long-haul tickets, minutes (cities.js isLong; 0 when none is known). */
 function longestOf(trip, homes) {
-  return Math.max(0, ...trip.tickets.filter((t) => isLong(t.from, t.to, homes)).flatMap((t) => Object.values(t.flights ?? {}).map((f) => f.min ?? 0)));
+  return Math.max(0, ...trip.tickets.filter((t) => isLong(t.from, t.to, homes)).flatMap((t) => Object.values(t.flights ?? {}).map(longestLeg)));
 }
 
 /**
- * The trip with every long-haul flight (cities.js isLong) at most `maxMin` long, from searches
+ * The trip with no single flight on its long-haul tickets (cities.js isLong) over `maxMin`, from searches
  * already in `cache` (the full list where there is one): its own copy with those flights and
  * their listed prices, or null when the searches aren't there or no such flights connect. No search
  * is made: the board's long-haul filter, from what the checks found.
@@ -249,7 +251,7 @@ async function capped(trip, cache, maxMin, homes) {
     let l = cache.has(`full ${key}`) ? await cache.get(`full ${key}`) : null;
     if (!Array.isArray(l) || !l.length) l = cache.has(key) ? await cache.get(key) : null;
     if (!Array.isArray(l) || !l.length) return null;
-    if (isLong(f.ticket.from, f.ticket.to, homes)) l = l.filter((o) => o.min <= maxMin);
+    if (isLong(f.ticket.from, f.ticket.to, homes)) l = l.filter((o) => longestLeg(o) <= maxMin);
     if (!l.length) return null;
     lists.push(l);
   }
