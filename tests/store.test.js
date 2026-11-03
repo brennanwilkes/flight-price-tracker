@@ -27,8 +27,15 @@ test('recordCells: rows only on change (incl. to/from empty); first-priced time 
     `${at(3)},2027-09-02,2027-09-15,17,4817,vpn`,
   ]);
   const cur = JSON.parse(fs.readFileSync(path.join(dir, 'routes/YVR-ICN-J/current.json'), 'utf8'));
-  assert.deepStrictEqual(cur['2027-09-01|14'], { ret: '2027-09-15', price: 3999, seen: at(3), first: at(3) });
-  assert.deepStrictEqual(cur['2027-09-02|14'], { ret: '2027-09-15', price: null, seen: at(3), first: at(1) });
+  assert.deepStrictEqual(cur['2027-09-01|14'], { ret: '2027-09-15', price: 3999, seen: at(3), first: at(3), changed: at(3) });
+  assert.deepStrictEqual(cur['2027-09-02|14'], { ret: '2027-09-15', price: null, seen: at(3), first: at(1), changed: at(3) });
+
+  // A cell from before `changed` existed takes its last CSV row's time; an unchanged price keeps it.
+  const curFile = path.join(dir, 'routes/YVR-ICN-J/current.json');
+  delete cur['2027-09-01|14'].changed;
+  fs.writeFileSync(curFile, JSON.stringify(cur));
+  recordCells(dir, 'YVR-ICN-J', 14, [cell('2027-09-01', 3999)], opts(5));
+  assert.strictEqual(JSON.parse(fs.readFileSync(curFile, 'utf8'))['2027-09-01|14'].changed, at(3));
 });
 
 test('packJson/unpack: a ticket shared by several trips is stored once and comes back in place', async () => {

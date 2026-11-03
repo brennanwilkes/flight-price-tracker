@@ -240,6 +240,18 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
     if (Date.now() > deadline) return Promise.resolve(LATE);
     return settle0(key, run(p));
   };
+  // A search loaded from an earlier build (cache.at) made before the fare's graph price last changed.
+  const outdated = (f, list) => {
+    if (f.dir !== 'out' || !cache.changed) return false;
+    const changed = cache.changed.get(fareKey(f.ticket));
+    const ats = [cache.at?.get(f.key), cache.at?.get(`full ${f.key}`)].filter(Boolean);
+    if (!changed || !ats.length || ats.every((at) => at >= changed)) return false;
+    // Served as a stale search from here on (its flights stand, not its prices) until made again.
+    if (!stale.has(f.key) && Array.isArray(list) && list.length) { STALE.add(list); stale.set(f.key, list); }
+    for (const k of [f.key, `full ${f.key}`]) { cache.delete(k); cache.at?.delete(k); }
+    refresh(f.key, (pp) => plainThenPage(f.query, pp, f.key));
+    return true;
+  };
   const searchOnce = (q, key = JSON.stringify(q), p = prio) => once(key, (pp) => plainThenPage(q, pp, key), p);
   const hasFull = (key) => cache.has(`full ${key}`) || stale.has(`full ${key}`);
   // A plain search lists only Google's top flights (the cheapest among them); when none of those
@@ -302,7 +314,9 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
     const s = settle(trip, flights, lists, picks);
     for (const [i, f] of flights.entries()) {
       f.ticket.flights ??= {};
-      const old = STALE.has(lists[i]); // its listed prices from an earlier day: the fare's own price stands
+      // Its listed prices from an earlier day, or from before the graph's price last changed: the
+      // fare's own price stands (and the outdated search is made again, after the rest).
+      const old = STALE.has(lists[i]) || outdated(f, lists[i]);
       if (listed && !old && f.dir === 'out' && !lists[i].error && lists[i].length && (f.ticket.kind === 'ow' || f.ticket.kind === 'rt')) listed.set(fareKey(f.ticket), cheapest(lists[i]).price);
       const pick = s.picks[i];
       if (!pick) continue; // search failed, or a return whose outbound is unknown

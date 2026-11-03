@@ -27,6 +27,7 @@ function loadFares(dataDir, config, { now = Date.now(), checked = new Map(), lan
   const rt = new Map(); // "from|to|cabin|out" → [{ ret, price }]
   const ow = new Map(); // "from|to|cabin|date" → price (long legs and hops)
   const departures = new Set();
+  const changed = new Map(); // fareKey → when the graph's price last changed (ISO)
   for (const id of ids) {
     const parts = id.split('-');
     const oneWay = parts.at(-1) === 'OW';
@@ -34,6 +35,7 @@ function loadFares(dataDir, config, { now = Date.now(), checked = new Map(), lan
     for (const [key, c] of Object.entries(readJson(path.join(routesDir, id, 'current.json'), {}))) {
       const [out, tripLen] = key.split('|');
       if (c.price == null || now - Date.parse(c.seen) > staleAfter(id, Number(tripLen)) * 3600e3) continue;
+      if (c.changed) changed.set(oneWay ? `${from}|${to}|${cabin}|${out}` : `${from}|${to}|${cabin}|${out}|${c.ret}`, c.changed);
       if (oneWay) {
         ow.set(`${from}|${to}|${cabin}|${out}`, c.price);
         if (homes.includes(from)) departures.add(out);
@@ -46,7 +48,10 @@ function loadFares(dataDir, config, { now = Date.now(), checked = new Map(), lan
     }
   }
 
-  for (const [k, price] of checked) {
+  // A listed price checked before the graph's price last changed is outdated: the graph's stands.
+  for (const [k, c] of checked) {
+    const { price, at } = typeof c === 'number' ? { price: c } : c;
+    if (at && changed.get(k) > at) continue;
     const [from, to, cabin, out, ret] = k.split('|');
     const key = `${from}|${to}|${cabin}|${out}`;
     if (ret) { const r = rt.get(key)?.find((x) => x.ret === ret); if (r) r.price = price; } else if (ow.has(key)) ow.set(key, price);
@@ -54,6 +59,7 @@ function loadFares(dataDir, config, { now = Date.now(), checked = new Map(), lan
 
   return {
     raw: { rt, ow }, // for bundleOf
+    changed,
     homes,
     cities,
     pacific: citiesWith('pacific'),

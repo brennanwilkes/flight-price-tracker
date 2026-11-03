@@ -420,7 +420,7 @@ async function main() {
   const checkedFile = path.join(dataDir, 'state', 'checked.json');
   const checkedLog = Object.fromEntries(Object.entries(fs.existsSync(checkedFile) ? JSON.parse(fs.readFileSync(checkedFile, 'utf8')) : {})
     .filter(([, c]) => Date.parse(generatedAt) - Date.parse(c.at) < CHECKED_HOURS * 3600e3));
-  const checked = () => new Map(Object.entries(checkedLog).map(([k, c]) => [k, c.price]));
+  const checked = () => new Map(Object.entries(checkedLog).map(([k, c]) => [k, { price: c.price, at: c.at }]));
   const multi = multiCache(dataDir, Date.parse(generatedAt));
   rankOf = (t) => scoreOf(t) - multiSaving(multi, t, config.origins);
   // Phase timings: where a slow build spends its time, in the CI log as it runs.
@@ -431,6 +431,7 @@ async function main() {
   const now = Date.now();
   const load = () => ({ dataDir, now, checked: checked(), lands: searches.lands });
   let fares = loadFares(dataDir, config, load());
+  searches.cache.changed = fares.changed;
   lap('fares loaded');
   let trips = await buildTripsThreaded(fares, load());
   lap(`${trips.length} trips planned`);
@@ -457,6 +458,7 @@ async function main() {
         for (const [k, v] of searches.stale) if (!session.cache.has(k)) done.push([k, v]);
         searches.lands = landings(done); // this round's searches too
         fares = loadFares(dataDir, config, load());
+        searches.cache.changed = fares.changed;
         trips = await buildTripsThreaded(fares, load());
         ({ vias, byHome } = viewsOf(trips));
         lap('planned again');

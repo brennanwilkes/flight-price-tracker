@@ -25,5 +25,13 @@ test('listed prices from flight checks replace the graph prices they were checke
   assert.strictEqual(fares.hop('BKK', 'HAN', '2027-09-20'), null); // no graph price: not a fare to add
   assert.deepStrictEqual(fares.roundTrip('YVR', 'BKK', 'J', '2027-09-01'), [{ ret: '2027-09-15', price: 4800 }]);
   assert.strictEqual(fareOf(fares, fareKey(rt)), 4800);
+
+  // The graph's price changed after the check: the check is outdated and the graph's price stands
+  // (seen: $3,819 listed at 15:06, graph $4,239 from 23:06, booking $4,239).
+  put('YVR-BKK-J', { '2027-09-01|14': { ret: '2027-09-15', price: 5000, seen, changed: '2026-11-02T23:06:15Z' } });
+  const later = loadFares(dir, config, { checked: new Map([[fareKey(rt), { price: 4800, at: '2026-11-02T22:00:00Z' }]]) });
+  assert.strictEqual(fareOf(later, fareKey(rt)), 5000);
+  const after = loadFares(dir, config, { checked: new Map([[fareKey(rt), { price: 4800, at: '2026-11-03T00:00:00Z' }]]) });
+  assert.strictEqual(fareOf(after, fareKey(rt)), 4800);
   fs.rmSync(dir, { recursive: true });
 });
