@@ -12,6 +12,7 @@
 import { unpack } from './pack.js';
 import { CITIES, HOI_AN, place, cityName, rowName, landsAfter, countryOf, isLong } from './cities.js';
 import { samePrice } from './price.js';
+import { buildTfs } from './tfs.js';
 import { tripMap } from './map.js';
 import { sweepIfAsked } from './alerts.js';
 import { renderHealth } from './health.js';
@@ -345,14 +346,12 @@ function render() {
   renderSheet();
 }
 
-/** Google Flights search for one ticket. */
+/** Google Flights search for one ticket: the exact search it was priced from. */
 function flightsLink(t) {
   if (t.url) return t.url; // a multi-city ticket: that exact search (builder: multi.js)
-  const cabin = t.cabin === 'J' ? 'business class' : 'economy';
-  const q = t.kind === 'rt'
-    ? `Flights from ${t.from} to ${t.to} on ${t.date} through ${t.ret} ${cabin}`
-    : `One way flights from ${t.from} to ${t.to} on ${t.date} ${cabin}`;
-  return `https://www.google.com/travel/flights?q=${encodeURIComponent(q)}&curr=CAD&hl=en&gl=CA`;
+  const air = (c) => CITIES[c]?.airports ?? c;
+  const tfs = buildTfs({ from: air(t.from), to: air(t.to), out: t.date, ret: t.kind === 'rt' ? t.ret : null, cabin: t.cabin === 'J' ? 'J' : 'Y' });
+  return `https://www.google.com/travel/flights?tfs=${tfs}&hl=en&gl=CA&curr=CAD`;
 }
 
 /**

@@ -136,7 +136,8 @@ async function main() {
   writeJson(failsFile, Object.fromEntries(Object.entries(fails).sort()));
   run.seconds = Math.round((Date.now() - t0) / 1000);
   const total = run.ok + run.failed;
-  const success = run.control > 0 && total > 0 && run.failed / total <= MAX_FAILED_SHARE;
+  // Nothing due (every graph fresh) is a healthy sweep, not a failed one.
+  const success = run.control > 0 && (total > 0 ? run.failed / total <= MAX_FAILED_SHARE : run.due === 0);
   const healthFile = path.join(dataDir, 'state', 'health.json');
   const health = readJson(healthFile, { consecutiveFailures: 0, lastSuccess: null, runs: [] });
   health.consecutiveFailures = success ? 0 : health.consecutiveFailures + 1;
