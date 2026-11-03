@@ -317,7 +317,12 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
       // Its listed prices from an earlier day, or from before the graph's price last changed: the
       // fare's own price stands (and the outdated search is made again, after the rest).
       const old = STALE.has(lists[i]) || outdated(f, lists[i]);
-      if (listed && !old && f.dir === 'out' && !lists[i].error && lists[i].length && (f.ticket.kind === 'ow' || f.ticket.kind === 'rt')) listed.set(fareKey(f.ticket), cheapest(lists[i]).price);
+      if (listed && !old && f.dir === 'out' && !lists[i].error && lists[i].length && (f.ticket.kind === 'ow' || f.ticket.kind === 'rt')) {
+        listed.set(fareKey(f.ticket), cheapest(lists[i]).price);
+        // When the listing was searched (an earlier build's search: its time; else now).
+        const ats = [cache.at?.get(f.key), cache.at?.get(`full ${f.key}`)].filter(Boolean).sort();
+        (listed.at ??= new Map()).set(fareKey(f.ticket), ats[0] ?? new Date().toISOString().replace(/\.\d+Z$/, 'Z'));
+      }
       const pick = s.picks[i];
       if (!pick) continue; // search failed, or a return whose outbound is unknown
       f.ticket.flights[f.dir] = pick;

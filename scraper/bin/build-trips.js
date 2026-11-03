@@ -420,7 +420,9 @@ async function main() {
   const checkedFile = path.join(dataDir, 'state', 'checked.json');
   const checkedLog = Object.fromEntries(Object.entries(fs.existsSync(checkedFile) ? JSON.parse(fs.readFileSync(checkedFile, 'utf8')) : {})
     .filter(([, c]) => Date.parse(generatedAt) - Date.parse(c.at) < CHECKED_HOURS * 3600e3));
-  const checked = () => new Map(Object.entries(checkedLog).map(([k, c]) => [k, { price: c.price, at: c.at }]));
+  // A listed price stands only if searched after the graph's price last changed (fares.js); an
+  // entry without its search time (before 2026-11-03) can't show that and is dropped.
+  const checked = () => new Map(Object.entries(checkedLog).filter(([, c]) => c.searched).map(([k, c]) => [k, { price: c.price, at: c.searched }]));
   const multi = multiCache(dataDir, Date.parse(generatedAt));
   rankOf = (t) => scoreOf(t) - multiSaving(multi, t, config.origins);
   // Phase timings: where a slow build spends its time, in the CI log as it runs.
@@ -449,8 +451,9 @@ async function main() {
         details = { ...s, rounds: details.rounds + 1, browser: details.browser, searches: details.searches + s.searches, failed: details.failed + s.failed, late: details.late + s.late, ms: details.ms + s.ms };
         // Fares listed at another price than they were planned at: plan again with what's listed.
         const moved = [...session.listed].filter(([k, p]) => { const was = fareOf(fares, k); return was != null && Math.abs(p - was) > Math.max(2, was * 0.01); });
-        for (const [k, price] of session.listed) checkedLog[k] = { price, at: generatedAt };
+        for (const [k, price] of session.listed) checkedLog[k] = { price, at: generatedAt, searched: session.listed.at?.get(k) ?? generatedAt };
         session.listed.clear();
+        session.listed.at?.clear();
         console.log(`details round ${details.rounds}: ${s.cells} cells, ${s.replaced} moved to another trip (connects, or cheaper as listed), ${s.unresolved} with none that connects, ${s.unknown} hidden with no flights checked; ${s.searches} searches${s.late ? ` (${s.late} skipped, out of time)` : ''}, ${s.none} flights not listed yet, ${s.stay} trips with a short Hoi An stay; ${moved.length} fares listed at a new price; ${s.ms}ms (checks ${Math.round(s.detailsMs / 1000)} s, event loop delay ${s.lag}, long-haul caps ${Math.round(s.fastMs / 1000)} s, past the search deadline ${Math.round(Math.max(0, Date.now() - session.deadline) / 1000)} s)`);
         if (warm || !moved.length || details.rounds >= ROUNDS || Date.now() > session.deadline) break;
         const done = [];
