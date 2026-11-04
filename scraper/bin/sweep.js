@@ -17,7 +17,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const config = require('../config/sweep.json');
-const { openBrowser, priceGraph, shoppingResults, addDays } = require('../src/gflights/browser');
+const { bgrTally, openBrowser, priceGraph, shoppingResults, addDays } = require('../src/gflights/browser');
 const { recordCells, readJson, writeJson } = require('../src/store/routes');
 const { planSweep, graphKey } = require('../src/sweep/plan');
 const { planNetwork, checkPairs, routesOf } = require('../src/network');
@@ -147,6 +147,7 @@ async function main() {
 
   const summary = `sweep ${observedAt} | ${success ? 'OK' : 'FAILED'} | ${run.ok}/${total} combos${run.skipped ? ` (${run.skipped} left for next sweep)` : ''} | ${run.priced} priced, ${run.changes} changed | control ${run.control} | ${egress} | ${run.seconds}s`;
   fs.writeFileSync(path.join(dataDir, '.sweep-summary'), `${summary}\n${run.errors.map((e) => `- ${e}`).join('\n')}\n`);
+  console.log(`rpc replies: ok ${bgrTally.ok.bgr} with bgr header / ${bgrTally.ok.none} without; rejected ${bgrTally.rejected.bgr} with / ${bgrTally.rejected.none} without`);
   console.log(summary);
   if (!success) process.exitCode = 1;
 }

@@ -42,14 +42,16 @@ const RECORDER = `(() => {
   const sent = (window.__sent = []);
   const want = (u) => /FlightsFrontendService\\//.test(String(u));
   const open = XMLHttpRequest.prototype.open;
-  XMLHttpRequest.prototype.open = function (m, u, ...rest) { this.__u = String(u); return open.call(this, m, u, ...rest); };
+  XMLHttpRequest.prototype.open = function (m, u, ...rest) { this.__u = String(u); this.__bgr = false; return open.call(this, m, u, ...rest); };
+  const setHeader = XMLHttpRequest.prototype.setRequestHeader;
+  XMLHttpRequest.prototype.setRequestHeader = function (k, v) { if (/^x-goog-batchexecute-bgr$/i.test(k) && v) this.__bgr = true; return setHeader.call(this, k, v); };
   const send = XMLHttpRequest.prototype.send;
   XMLHttpRequest.prototype.send = function (...a) {
     if (want(this.__u)) sent.push(this.__u);
     if (want(this.__u)) this.addEventListener('loadend', () => {
       let text = null;
       try { text = this.responseText; } catch {}
-      log.push({ url: this.__u, status: this.status, text });
+      log.push({ url: this.__u, status: this.status, text, bgr: this.__bgr });
     });
     return send.apply(this, a);
   };
@@ -57,8 +59,10 @@ const RECORDER = `(() => {
   window.fetch = async (...a) => {
     const u = a[0] instanceof Request ? a[0].url : a[0];
     if (want(u)) sent.push(String(u));
+    let bgr = false;
+    try { bgr = !!new Headers(a[0] instanceof Request ? a[0].headers : a[1]?.headers).get('x-goog-batchexecute-bgr'); } catch {}
     const res = await f(...a);
-    if (want(u)) res.clone().text().then((text) => log.push({ url: String(u), status: res.status, text }), () => log.push({ url: String(u), status: res.status, text: null }));
+    if (want(u)) res.clone().text().then((text) => log.push({ url: String(u), status: res.status, text, bgr }), () => log.push({ url: String(u), status: res.status, text: null, bgr }));
     return res;
   };
 })();`;
@@ -88,10 +92,14 @@ const addDays = (iso, n) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 864e5)
  * A rejected reply (HTTP 200, null wrb.fr payload) is skipped: the page retries those itself, given
  * up on `rejectGrace` ms after one. `load`: the action loads the page, its log starting anew.
  */
+// Per process: RPC replies by outcome and whether the request carried the bgr header.
+const bgrTally = { ok: { bgr: 0, none: 0 }, rejected: { bgr: 0, none: 0 } };
+
 async function capture(page, rpc, decode, action, step, timeout = RPC_TIMEOUT_MS, rejectGrace = Infinity, load = false) {
   const deadline = Date.now() + timeout;
   let seen = await page.evaluate(() => window.__rpc.length);
   let rejected = 0;
+  let rejectedBgr = 0; // of those, how many carried the page's X-Goog-BatchExecute-Bgr header
   let rejectedAt = 0;
   let unreadable = 0;
   await action();
@@ -103,12 +111,14 @@ async function capture(page, rpc, decode, action, step, timeout = RPC_TIMEOUT_MS
       if (!r.url.includes(`FlightsFrontendService/${rpc}`)) continue;
       if (r.text == null) { unreadable++; continue; }
       const payloads = parseBatchExecute(r.text).filter((p) => p != null);
+      bgrTally[payloads.length ? 'ok' : 'rejected'][r.bgr ? 'bgr' : 'none']++;
       if (payloads.length) return payloads.flatMap(decode);
       rejected++;
+      if (r.bgr) rejectedBgr++;
       rejectedAt ||= Date.now();
     }
-    if (rejectedAt && Date.now() - rejectedAt > rejectGrace) throw new Rejected(`${step}: ${rpc} rejected, not asked again within ${rejectGrace}ms`);
-    if (Date.now() >= deadline) throw new Error(`${step}: no usable ${rpc} response within ${timeout}ms (${rejected} rejected, ${unreadable} unreadable)`);
+    if (rejectedAt && Date.now() - rejectedAt > rejectGrace) throw new Rejected(`${step}: ${rpc} rejected (${rejectedBgr} with bgr header), not asked again within ${rejectGrace}ms`);
+    if (Date.now() >= deadline) throw new Error(`${step}: no usable ${rpc} response within ${timeout}ms (${rejected} rejected, ${rejectedBgr} of them with bgr header, ${unreadable} unreadable)`);
     await page.waitForTimeout(200);
   }
 }
@@ -249,4 +259,4 @@ async function shoppingResults(ctx, query, { timeout = 30_000 } = {}) {
   }
 }
 
-module.exports = { openBrowser, priceGraph, bookingOptions, shoppingResults, addDays };
+module.exports = { bgrTally, openBrowser, priceGraph, bookingOptions, shoppingResults, addDays };
