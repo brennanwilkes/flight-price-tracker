@@ -178,7 +178,6 @@ async function saveSearches(file, { cache, at }, now) {
 /**
  * Every shown cell's trip costs what its flights were listed at (details.js listedOnly): any
  * other (a round trip's return only guessed among them), and the cell isn't shown.
- * with its outbound chosen (the price is the outbound's listing, the return shown a likely one).
  */
 function dropUnlisted(byHome) {
   let dropped = 0;
