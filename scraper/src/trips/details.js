@@ -24,6 +24,9 @@ const PAGES = 4; // browser pages at once (10-60 s each), by default: a search w
 const BLOCKED_PAUSE_MS = 60_000;
 // Refreshing a stale search (cache.stale) waits behind every search a check still needs.
 const REFRESH_PRIO = 1e6;
+// A round trip's returns with its outbound chosen (returnQuery): after every check's search, before
+// the refreshes. Only the flights shown depend on it, not whether the trip connects.
+const RETURN_PRIO = 5e5;
 // Lists served from cache.stale: their flights and times hold, their prices are only a hint.
 const STALE = new WeakSet();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -146,6 +149,32 @@ function flightsOf(trip) {
   });
 }
 /**
+ * The search listing a round trip's returns with its outbound `out` (an option) chosen: the page
+ * Google shows once that outbound row is clicked (tfs segment field 4, probed in CI 2026-11-05: the
+ * one-way search home showed CI via TPE for a PR-via-MNL outbound whose real returns are PR401/403 +
+ * PR116). Its rows are returns priced as the whole round trip.
+ */
+function returnQuery(t, out) {
+  return {
+    from: airportsOf(t.from), to: airportsOf(t.to), out: t.date, ret: t.ret, cabin: t.cabin,
+    selected: out.legs.map((l) => ({ from: l.from, to: l.to, date: l.depDate, airline: l.code.slice(0, 2), number: l.code.slice(2) })),
+  };
+}
+/**
+ * The return to show from `list` (returnQuery's rows) for flights[i], fitting the picks either
+ * side: the least connection penalty, then the cheapest. null when none is a return that fits.
+ */
+function chosenReturn(trip, flights, picks, i, list) {
+  const f = flights[i];
+  const from = [f.query.from].flat();
+  const [prev, next] = [picks[i - 1], picks[i + 1]].map((p) => (p?.legs ? p : null));
+  const ok = list.filter((o) => from.includes(o.legs[0].from) && o.legs[0].depDate === f.query.out
+    && (!prev || fits(trip.stay, i, prev, o)) && (!next || fits(trip.stay, i + 1, o, next)));
+  return ok.sort((a, b) => connPen(f, a) - connPen(f, b) || a.price - b.price)[0] ?? null;
+}
+const outPick = (flights, picks, t) => picks[flights.findIndex((g) => g.ticket === t && g.dir === 'out')];
+
+/**
  * Fill `flights` on the given trips' tickets, and set each trip's `connects` (false when some
  * connection has no flight, or the real flights leave the Hoi An stay short; null when a search
  * was skipped or failed). A ticket with a
@@ -166,7 +195,7 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
   const LATE = { error: 'out of time', late: true }; // not cached
   const plain = slots(cache, 'plain', CONCURRENCY);
   const page = browser && slots(cache, 'pages', pages);
-  const tally = (cache.tally ??= { empty: 0, pages: 0, full: 0, far: 0, window: 0, windowTry: 0, windowHit: 0, refreshed: 0, blocked: 0, plain: 0, plainEmpty: 0, timeouts: 0, errors: 0, plainMs: [], pageMs: [] });
+  const tally = (cache.tally ??= { returns: 0, returnHit: 0, empty: 0, pages: 0, full: 0, far: 0, window: 0, windowTry: 0, windowHit: 0, refreshed: 0, blocked: 0, plain: 0, plainEmpty: 0, timeouts: 0, errors: 0, plainMs: [], pageMs: [] });
   const stale = cache.stale ?? new Map(); // key → result, from earlier builds past their fresh hours
   const stats = { searches: 0, failed: 0, late: 0, full: 0, connection: 0, none: 0, stay: 0 };
   // A result into the cache as it comes; out of time: out again, not a result.
@@ -335,7 +364,43 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
     trip.connects = s.connects;
     trip.conn = s.conn;
     trip.total = trip.tickets.reduce((sum, t) => sum + t.price, 0);
+    // Each round trip's return from the list with its outbound chosen (a browser page: plain pages
+    // inline nothing that far out), applied when it comes; whether the trip connects doesn't wait
+    // on it. Out of time or failed: the guess stands, marked likely. Searched by returnsDone, for
+    // the trips kept only (a check walks past most of the trips it checks).
+    for (const [i, f] of flights.entries()) {
+      const out = f.dir === 'back' && s.picks[i]?.likely && outPick(flights, s.picks, f.ticket);
+      if (!out?.legs) continue;
+      const q = returnQuery(f.ticket, out);
+      const key = JSON.stringify(q);
+      (cache.returns ??= []).push({ trip, run: () => {
+        if (!cache.has(key) && !stale.has(key)) tally.returns++;
+        return once(key, (pp) => inPage(pp, q, { timeout: SLOW_PAGE_MS }), RETURN_PRIO + prio).then((list) => {
+          if (!Array.isArray(list) || !list.length || f.ticket.flights.back !== s.picks[i]) return;
+          const back = chosenReturn(trip, flights, s.picks, i, list);
+          if (!back) return;
+          tally.returnHit++;
+          f.ticket.flights.back = back;
+          // A return row is priced as the whole round trip with it (seen: $3,857 or $4,817 by
+          // return): the cheapest that fits can cost more than the cheapest outbound.
+          if (!STALE.has(list) && back.price > f.ticket.price) {
+            f.ticket.graph ??= f.ticket.price;
+            f.ticket.price = back.price;
+            trip.total = trip.tickets.reduce((sum, t) => sum + t.price, 0);
+          }
+        }, () => {});
+      } });
+    }
   }
+}
+
+/**
+ * Search the round trips' returns with the outbound chosen (addDetails, since the last call) for
+ * the trips in `keep` (a Set; all when omitted), and wait for them. The rest are dropped.
+ */
+async function returnsDone(cache, keep = null) {
+  const jobs = (cache.returns ?? []).splice(0).filter((j) => !keep || keep.has(j.trip));
+  await Promise.all(jobs.map((j) => j.run()));
 }
 
 /** Each flight's pick (plan), the Hoi An stay kept when any pick can, else as many connections as can be. */
@@ -413,6 +478,15 @@ async function capped(trip, cache, maxMin, homes) {
   }
   const s = settle(trip, flights, lists, choose(trip, flights, lists));
   if (s.connects !== true || s.picks.some((p) => !p?.legs)) return null;
+  // Each round trip's return from its outbound-chosen search, where the checks made it.
+  for (const [i, f] of flights.entries()) {
+    const out = f.dir === 'back' && s.picks[i].likely && outPick(flights, s.picks, f.ticket);
+    if (!out) continue;
+    const key = JSON.stringify(returnQuery(f.ticket, out));
+    const list = cache.has(key) ? await cache.get(key) : cache.stale?.get(key);
+    const back = Array.isArray(list) && chosenReturn(trip, flights, s.picks, i, list);
+    if (back) s.picks[i] = back;
+  }
   const copies = new Map(trip.tickets.map((t) => [t, { ...t, flights: {} }]));
   for (const [i, f] of flights.entries()) {
     const t = copies.get(f.ticket);
@@ -423,4 +497,4 @@ async function capped(trip, cache, maxMin, homes) {
   return { ...trip, tickets, conn: s.conn, connects: true, total: tickets.reduce((sum, t) => sum + t.price, 0) };
 }
 
-module.exports = { addDetails, flightsOf, capped, longestOf, slots, Late, STALE };
+module.exports = { addDetails, returnsDone, flightsOf, capped, longestOf, slots, Late, STALE };

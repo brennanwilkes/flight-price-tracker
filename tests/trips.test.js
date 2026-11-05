@@ -636,3 +636,40 @@ test('past the inline horizon: one browser page per search, its full list reused
   assert.strictEqual(cache.tally.far, 2);
   assert.ok(cache.has(`full ${JSON.stringify(flightsOf(trip)[0].query)}`));
 });
+
+test("a round trip's return is from the search with its outbound chosen, not the cheapest one-way home", async () => {
+  const { addDetails, returnsDone, flightsOf } = require('../scraper/src/trips/details');
+  const opt = (price, ...legs) => ({ price, min: 0, airlines: [...new Set(legs.map((l) => l[0].slice(0, 2)))], stops: [],
+    legs: legs.map(([code, from, to, depDate, dep, arrDate, arr]) => ({ code, airline: code.slice(0, 2), from, to, dep, arr, depDate, arrDate, min: 0 })) });
+  const trip = {
+    order: [[0, 'out'], [0, 'back']],
+    tickets: [{ kind: 'rt', cabin: 'J', from: 'YVR', to: 'ICN', date: '2027-09-01', ret: '2027-09-22', price: 3900 }],
+  };
+  const outs = [opt(3857, ['PR117', 'YVR', 'MNL', '2027-09-01', '23:55', '2027-09-03', '04:10'], ['PR400', 'MNL', 'ICN', '2027-09-04', '00:50', '2027-09-04', '05:55'])];
+  const oneWayHome = [opt(2100, ['CI163', 'ICN', 'TPE', '2027-09-22', '08:00', '2027-09-22', '09:40'], ['CI32', 'TPE', 'YVR', '2027-09-22', '23:40', '2027-09-22', '19:30'])];
+  const returns = [
+    opt(4817, ['PR403', 'ICN', 'MNL', '2027-09-22', '20:30', '2027-09-22', '23:45'], ['PR136', 'MNL', 'YVR', '2027-09-23', '11:05', '2027-09-23', '08:00']),
+    opt(3857, ['PR401', 'ICN', 'MNL', '2027-09-22', '07:20', '2027-09-22', '10:35'], ['PR116', 'MNL', 'YVR', '2027-09-22', '20:10', '2027-09-22', '17:00']),
+  ];
+  const [fo, fb] = flightsOf(trip);
+  const cache = new Map([[JSON.stringify(fo.query), Promise.resolve(outs)], [JSON.stringify(fb.query), Promise.resolve(oneWayHome)]]);
+  const asked = [];
+  const browser = async (q) => { asked.push(q); return []; }; // answered from the cache below
+  const key = JSON.stringify({ from: 'YVR', to: 'ICN', out: '2027-09-01', ret: '2027-09-22', cabin: 'J',
+    selected: [{ from: 'YVR', to: 'MNL', date: '2027-09-01', airline: 'PR', number: '117' }, { from: 'MNL', to: 'ICN', date: '2027-09-04', airline: 'PR', number: '400' }] });
+  cache.set(key, Promise.resolve(returns));
+  await addDetails([trip], cache, browser);
+  await returnsDone(cache);
+  assert.strictEqual(asked.length, 0);
+  assert.deepStrictEqual(trip.tickets[0].flights.back.legs.map((l) => l.code), ['PR401', 'PR116']);
+  assert.ok(!trip.tickets[0].flights.back.likely);
+  assert.strictEqual(trip.total, 3857);
+
+  // That search failing: the guess stands, marked likely.
+  const again = { ...trip, tickets: [{ ...trip.tickets[0], flights: undefined, price: 3900 }] };
+  cache.delete(key);
+  await addDetails([again], cache, async () => { throw new Error('refused'); });
+  await returnsDone(cache);
+  assert.deepStrictEqual(again.tickets[0].flights.back.legs.map((l) => l.code), ['CI163', 'CI32']);
+  assert.ok(again.tickets[0].flights.back.likely);
+});
