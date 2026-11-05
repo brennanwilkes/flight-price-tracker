@@ -28,12 +28,18 @@ function decode(buf, depth = 0) {
       if (depth < 4 && len) { try { inner = decode(b, depth + 1); } catch {} }
       const txt = b.toString('utf8');
       out.push(inner && !/^[\x20-\x7e]+$/.test(txt) ? `${f}{${inner}}` : `${f}="${txt}"`);
-    } else throw new Error(`wire ${w}`);
+    } else if (w === 5) { out.push(`${f}=f32:${buf.readUInt32LE(i)}`); i += 4; }
+    else if (w === 1) { out.push(`${f}=f64:${buf.subarray(i, i + 8).toString('hex')}`); i += 8; }
+    else throw new Error(`wire ${w}`);
     if (i > buf.length) throw new Error('overrun');
   }
   return out.join(' ');
 }
-const tfsOf = (url) => decode(Buffer.from(new URL(url).searchParams.get('tfs'), 'base64url'));
+const tfsOf = (url) => {
+  const t = new URL(url).searchParams.get('tfs');
+  if (!t) return `(no tfs: ${url.slice(0, 200)})`;
+  try { return `${decode(Buffer.from(t, 'base64url'))}  [${t}]`; } catch (e) { return `(undecodable ${e.message}: ${t})`; }
+};
 
 async function rows(page, seen, ms = 45_000) {
   const t0 = Date.now();
