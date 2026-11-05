@@ -526,7 +526,7 @@ test('search slots: the waiting job with the lowest priority goes next', async (
   assert.deepEqual(order, ['first', 'dashboard, 10th try', 'via', 'refresh']);
 });
 
-test('a stale search serves its flights at once, the fare keeping its own price, and nothing is listed from it', async () => {
+test('a stale search serves its flights at once at the price they were listed at (never the graph\'s), and nothing is listed from it', async () => {
   const { addDetails, flightsOf } = require('../scraper/src/trips/details');
   const leg = (from, to, depDate, price) => ({ price, min: 60, airlines: ['VN'], stops: [], legs: [{ code: 'VN1', airline: 'VN', from, to, dep: '08:00', arr: '09:00', depDate, arrDate: depDate, min: 60 }] });
   const trip = { order: [[0, 'out']], tickets: [{ kind: 'ow', cabin: 'Y', from: 'HAN', to: 'DAD', date: '2027-09-03', price: 80 }] };
@@ -538,7 +538,9 @@ test('a stale search serves its flights at once, the fare keeping its own price,
   const s = await addDetails([trip], cache, null, listed, Date.now() - 1);
   assert.strictEqual(trip.connects, true);
   assert.strictEqual(trip.tickets[0].flights.out.legs[0].code, 'VN1');
-  assert.strictEqual(trip.tickets[0].price, 80, 'the graph price stands');
+  assert.strictEqual(trip.tickets[0].price, 95, 'the price its flights were listed at');
+  assert.strictEqual(trip.tickets[0].graph, 80);
+  assert.strictEqual(trip.total, 95);
   assert.strictEqual(listed.size, 0);
   assert.deepStrictEqual([s.searches, s.late], [0, 0]);
 });
@@ -672,4 +674,18 @@ test("a round trip's return is from the search with its outbound chosen, not the
   await returnsDone(cache);
   assert.deepStrictEqual(again.tickets[0].flights.back.legs.map((l) => l.code), ['CI163', 'CI32']);
   assert.ok(again.tickets[0].flights.back.likely);
+});
+
+test('a shown trip costs what its flights were listed at: a graph price, a missing listing or a stale total is refused', () => {
+  const { listedOnly, listedPrice } = require('../scraper/src/trips/details');
+  const row = (price, likely) => ({ price, min: 60, airlines: ['PR'], stops: [], legs: [{ code: 'PR1', from: 'YVR', to: 'MNL', dep: '08:00', arr: '09:00', depDate: '2027-09-07', arrDate: '2027-09-08', min: 600 }], ...(likely ? { likely } : {}) });
+  const rt = (price, back) => ({ kind: 'rt', price, flights: { out: row(3981), back } });
+  const trip = (...tickets) => ({ tickets, total: tickets.reduce((s, t) => s + t.price, 0) });
+  assert.strictEqual(listedOnly(trip(rt(3981, row(3981, true)))), true, 'guessed return: the outbound row price');
+  assert.strictEqual(listedOnly(trip(rt(3637, row(3981, true)))), false, 'the graph $3,637 under a $3,981 listing (seen)');
+  assert.strictEqual(listedOnly(trip(rt(4500, row(4500)))), true, 'the return searched with its outbound: its row');
+  assert.strictEqual(listedOnly(trip(rt(3981, row(4500)))), false);
+  assert.strictEqual(listedOnly(trip({ kind: 'ow', price: 300 })), false, 'no flights listed');
+  assert.strictEqual(listedOnly({ ...trip(rt(3981, row(1, true))), total: 3637 }), false, 'total not the tickets\' sum');
+  assert.strictEqual(listedPrice({ kind: 'ow', flights: { out: { miss: 'connection' } } }), null);
 });

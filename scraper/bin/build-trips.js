@@ -59,7 +59,7 @@ const { loadFares, bundleOf, fareOf } = require('../src/trips/fares');
 const { similarCount, scoreOf, rowId, bandOf } = require('../../frontend/app/build.js');
 const { CITIES, airportsOf, isPacific } = require('../../frontend/app/cities.js');
 const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
-const { addDetails, returnsDone, capped, longestOf } = require('../src/trips/details');
+const { addDetails, returnsDone, capped, longestOf, listedOnly } = require('../src/trips/details');
 const { openBrowserThread } = require('../src/gflights/browser-thread');
 const { monitorEventLoopDelay } = require('node:perf_hooks');
 const alertConfig = require('../config/alerts.json');
@@ -109,7 +109,7 @@ function loadSearches(file, now) {
   const cache = new Map(), at = new Map(), stale = new Map(), rows = [];
   if (file && fs.existsSync(file)) {
     try {
-      for (const [k, when, v] of JSON.parse(zlib.gunzipSync(fs.readFileSync(file)))) {
+      for (const [k, when, v] of readRows(zlib.gunzipSync(fs.readFileSync(file)))) {
         const age = now - Date.parse(when);
         if (age >= STALE_DAYS * 864e5) continue;
         at.set(k, when);
@@ -145,6 +145,16 @@ function landings(rows) {
   }
   return out;
 }
+/** The saved cache's rows: a row per line, or (an older file) one JSON array. */
+function* readRows(buf) {
+  if (buf.indexOf(10) < 0) { if (buf.length) yield* JSON.parse(buf); return; }
+  for (let i = 0; i < buf.length;) {
+    let j = buf.indexOf(10, i);
+    if (j < 0) j = buf.length;
+    if (j > i) yield JSON.parse(buf.subarray(i, j));
+    i = j + 1;
+  }
+}
 /** This build's successful searches, with the time each was made, and the stale ones not searched again. */
 async function saveSearches(file, { cache, at }, now) {
   if (!file) return;
@@ -155,8 +165,39 @@ async function saveSearches(file, { cache, at }, now) {
   }
   const fresh = rows.length;
   for (const [k, v] of cache.stale ?? []) if (!cache.has(k)) rows.push([k, at.get(k), v]);
-  fs.writeFileSync(file, zlib.gzipSync(JSON.stringify(rows)));
+  // A row per line: the whole cache as one string is past V8's string limit (seen: RangeError:
+  // Invalid string length, every other build from 03:05 UTC Nov 5).
+  const gz = zlib.createGzip();
+  const done = new Promise((ok, fail) => gz.pipe(fs.createWriteStream(file)).on('finish', ok).on('error', fail));
+  for (const r of rows) if (!gz.write(`${JSON.stringify(r)}\n`)) await new Promise((ok) => gz.once('drain', ok));
+  gz.end();
+  await done;
   console.log(`search cache: ${rows.length} kept (${fresh} under ${SEARCH_HOURS} h old)`);
+}
+
+/**
+ * Every shown cell's trip costs what its flights were listed at (details.js listedOnly): any
+ * other, and the cell isn't shown. guessed: shown trips with a round trip's return not searched
+ * with its outbound chosen (the price is the outbound's listing, the return shown a likely one).
+ */
+function dropUnlisted(byHome) {
+  let dropped = 0, guessed = 0;
+  const ok = (t) => { if (listedOnly(t)) return true; dropped++; return false; };
+  for (const rows of byHome.values()) {
+    for (const r of rows) {
+      const holders = [r, ...Object.values(r.months ?? {}), ...Object.values(r.bands ?? {})];
+      for (const h of holders) {
+        for (const cls of CLASSES) {
+          const c = h[cls];
+          if (!c) continue;
+          if (!ok(c)) { h[cls] = null; continue; }
+          if (c.tickets.some((t) => t.kind === 'rt' && t.flights?.back?.likely)) guessed++;
+          for (const [k, t] of Object.entries(c.fast ?? {})) if (t && !ok(t)) c.fast[k] = null;
+        }
+      }
+    }
+  }
+  return { dropped, guessed };
 }
 
 function arg(name, def) {
@@ -491,6 +532,9 @@ async function main() {
   const m = await multiPass(dataDir, byHome, fares, !process.argv.includes('--no-details') && Date.now() < deadline - MULTI_RESERVE);
   console.log(`multi-city: ${m.searched} searched (${m.failed} failed), ${m.merged} trips on one ticket (${m.self ?? 0} self-transfers joined); ${m.ms}ms`);
   if (details) details.multi = m;
+  const unlisted = dropUnlisted(byHome);
+  console.log(`priced as listed: ${unlisted.dropped} cells hidden with a price their flights weren't listed at (${unlisted.guessed} shown cells' round trips with the return a guess)`);
+  if (details) details.unlisted = unlisted;
   // Stay ranges on every shown trip; lowest-ever marks.
   for (const rows of byHome.values()) {
     for (const r of rows) {

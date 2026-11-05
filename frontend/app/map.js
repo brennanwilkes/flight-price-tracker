@@ -86,7 +86,13 @@ export function tripMap(legs, home, cities, stays = new Map()) {
   const tight = render(legs, home, cities, stays, framed(0)); // what the labels need at the closest crop
   for (let n = far.length; n > 0; n--) {
     const map = render(legs, home, cities, stays, framed(n));
-    if (map.reach <= Math.max(CROWDED_R, tight.reach) && map.clash <= tight.clash) return map.svg;
+    if (!map.hidden && map.reach <= Math.max(CROWDED_R, tight.reach) && map.clash <= tight.clash) return map.svg;
+  }
+  // A city left off can't fall inside the crop the others make (seen: Manila inside the frame,
+  // named as an exit, its flight home not drawn): the closest crop with none inside.
+  for (let n = 0; n <= far.length; n++) {
+    const map = n ? render(legs, home, cities, stays, framed(n)) : tight;
+    if (!map.hidden) return map.svg;
   }
   return tight.svg;
 }
@@ -95,6 +101,7 @@ export function tripMap(legs, home, cities, stays = new Map()) {
 function render(legs, home, cities, stays, framed) {
   const overland = new Set(legs.filter((l) => l.ground).flatMap((l) => [l.from, l.to]));
   const onMap = (c) => framed.has(c);
+  const left = [...new Set(legs.flatMap((l) => [l.from, l.to]))].filter((c) => !onMap(c) && place(c).lon != null);
   legs = legs.filter((l) => onMap(l.from) || onMap(l.to));
   const stops = [...new Set(legs.flatMap((l) => [l.from, l.to]).filter(onMap))];
   // Each flight leaving the frame, from its city on the map toward where it goes ("city>end": an
@@ -285,7 +292,8 @@ function render(legs, home, cities, stays, framed) {
     return `<text class="label home" x="${f(b.x0)}" y="${f(b.y0 + LINE_H / 2)}" dominant-baseline="middle">${text}</text>`;
   }).join('');
 
-  return { reach: furthest, clash: clashes, svg: `<svg class="map" viewBox="0 0 ${W} ${H}" role="img" aria-label="Trip map">
+  const hidden = left.filter((c) => { const [x, y] = pt(c); return x >= 0 && x <= W && y >= 0 && y <= H; }).length;
+  return { reach: furthest, clash: clashes, hidden, svg: `<svg class="map" viewBox="0 0 ${W} ${H}" role="img" aria-label="Trip map">
     <rect class="sea" width="${W}" height="${H}"/>
     <path class="land" d="${land}"/>
     <path class="border" d="${borders}"/>

@@ -357,8 +357,10 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
       f.ticket.flights[f.dir] = pick;
       if (pick.miss) { stats[pick.miss]++; continue; }
       // The listed price is what booking costs; the graph's can be stale (seen: $4,262 graph,
-      // $5,012 cheapest listed).
-      if (f.dir === 'out' && !old) { f.ticket.graph = f.ticket.price; f.ticket.price = pick.price; }
+      // $5,012 cheapest listed; $3,637 graph, flights listed at $3,981 and $5,670). Shown is
+      // always the price its flights were listed at, an earlier day's listing too (searched again
+      // after the rest): never a graph price no listing had.
+      if (f.dir === 'out') { f.ticket.graph ??= f.ticket.price; f.ticket.price = pick.price; }
     }
     if (s.short) stats.stay++;
     trip.connects = s.connects;
@@ -382,12 +384,10 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
           tally.returnHit++;
           f.ticket.flights.back = back;
           // A return row is priced as the whole round trip with it (seen: $3,857 or $4,817 by
-          // return): the cheapest that fits can cost more than the cheapest outbound.
-          if (!STALE.has(list) && back.price > f.ticket.price) {
-            f.ticket.graph ??= f.ticket.price;
-            f.ticket.price = back.price;
-            trip.total = trip.tickets.reduce((sum, t) => sum + t.price, 0);
-          }
+          // return): the ticket costs what that row lists.
+          f.ticket.graph ??= f.ticket.price;
+          f.ticket.price = back.price;
+          trip.total = trip.tickets.reduce((sum, t) => sum + t.price, 0);
         }, () => {});
       } });
     }
@@ -488,13 +488,32 @@ async function capped(trip, cache, maxMin, homes) {
     if (back) s.picks[i] = back;
   }
   const copies = new Map(trip.tickets.map((t) => [t, { ...t, flights: {} }]));
-  for (const [i, f] of flights.entries()) {
-    const t = copies.get(f.ticket);
-    t.flights[f.dir] = s.picks[i];
-    if (f.dir === 'out') { t.graph = f.ticket.graph ?? f.ticket.price; t.price = s.picks[i].price; }
-  }
+  for (const [i, f] of flights.entries()) copies.get(f.ticket).flights[f.dir] = s.picks[i];
+  for (const t of copies.values()) { if (t.kind !== 'multi') { t.graph = t.graph ?? t.price; t.price = listedPrice(t); } }
   const tickets = trip.tickets.map((t) => copies.get(t));
   return { ...trip, tickets, conn: s.conn, connects: true, total: tickets.reduce((sum, t) => sum + t.price, 0) };
 }
 
-module.exports = { addDetails, returnsDone, flightsOf, capped, longestOf, slots, Late, STALE };
+/**
+ * What a one-way or round-trip ticket costs as listed for its shown flights: a round trip's return
+ * row from the search with its outbound chosen (not `likely`) is priced as the whole round trip;
+ * else the outbound row. null when no flights are listed for it.
+ */
+function listedPrice(t) {
+  const { out, back } = t.flights ?? {};
+  if (!out?.legs || out.miss) return null;
+  if (t.kind === 'rt') return back?.legs && !back.miss && !back.likely ? back.price : out.price;
+  return out.price;
+}
+
+/**
+ * Shown trips must cost what their flights were listed at: a ticket priced at anything else (a price
+ * graph's number, a guess) or with no flights listed, and its trip isn't shown. Multi-city tickets
+ * carry their one-ticket search's price.
+ */
+function listedOnly(trip) {
+  return trip.tickets.every((t) => (t.kind === 'multi' ? Object.keys(t.flights ?? {}).length > 0 && t.price > 0 : listedPrice(t) === t.price))
+    && trip.total === trip.tickets.reduce((sum, t) => sum + t.price, 0);
+}
+
+module.exports = { listedPrice, listedOnly, addDetails, returnsDone, flightsOf, capped, longestOf, slots, Late, STALE };
