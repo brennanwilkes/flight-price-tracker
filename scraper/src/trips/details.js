@@ -502,7 +502,9 @@ async function capped(trip, cache, maxMin, homes) {
 function listedPrice(t) {
   const { out, back } = t.flights ?? {};
   if (!out?.legs || out.miss) return null;
-  if (t.kind === 'rt') return back?.legs && !back.miss && !back.likely ? back.price : out.price;
+  // A round trip: only its return row from the search with the outbound chosen proves the price of
+  // the pair shown; a guessed return (`likely`) proves nothing.
+  if (t.kind === 'rt') return back?.legs && !back.miss && !back.likely ? back.price : null;
   return out.price;
 }
 

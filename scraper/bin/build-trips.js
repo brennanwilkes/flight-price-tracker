@@ -177,11 +177,11 @@ async function saveSearches(file, { cache, at }, now) {
 
 /**
  * Every shown cell's trip costs what its flights were listed at (details.js listedOnly): any
- * other, and the cell isn't shown. guessed: shown trips with a round trip's return not searched
+ * other (a round trip's return only guessed among them), and the cell isn't shown.
  * with its outbound chosen (the price is the outbound's listing, the return shown a likely one).
  */
 function dropUnlisted(byHome) {
-  let dropped = 0, guessed = 0;
+  let dropped = 0;
   const ok = (t) => { if (listedOnly(t)) return true; dropped++; return false; };
   for (const rows of byHome.values()) {
     for (const r of rows) {
@@ -191,13 +191,12 @@ function dropUnlisted(byHome) {
           const c = h[cls];
           if (!c) continue;
           if (!ok(c)) { h[cls] = null; continue; }
-          if (c.tickets.some((t) => t.kind === 'rt' && t.flights?.back?.likely)) guessed++;
           for (const [k, t] of Object.entries(c.fast ?? {})) if (t && !ok(t)) c.fast[k] = null;
         }
       }
     }
   }
-  return { dropped, guessed };
+  return { dropped };
 }
 
 function arg(name, def) {
@@ -533,7 +532,7 @@ async function main() {
   console.log(`multi-city: ${m.searched} searched (${m.failed} failed), ${m.merged} trips on one ticket (${m.self ?? 0} self-transfers joined); ${m.ms}ms`);
   if (details) details.multi = m;
   const unlisted = dropUnlisted(byHome);
-  console.log(`priced as listed: ${unlisted.dropped} cells hidden with a price their flights weren't listed at (${unlisted.guessed} shown cells' round trips with the return a guess)`);
+  console.log(`priced as listed: ${unlisted.dropped} cells hidden with a price their flights weren't listed at`);
   if (details) details.unlisted = unlisted;
   // Stay ranges on every shown trip; lowest-ever marks.
   for (const rows of byHome.values()) {

@@ -681,11 +681,11 @@ test('a shown trip costs what its flights were listed at: a graph price, a missi
   const row = (price, likely) => ({ price, min: 60, airlines: ['PR'], stops: [], legs: [{ code: 'PR1', from: 'YVR', to: 'MNL', dep: '08:00', arr: '09:00', depDate: '2027-09-07', arrDate: '2027-09-08', min: 600 }], ...(likely ? { likely } : {}) });
   const rt = (price, back) => ({ kind: 'rt', price, flights: { out: row(3981), back } });
   const trip = (...tickets) => ({ tickets, total: tickets.reduce((s, t) => s + t.price, 0) });
-  assert.strictEqual(listedOnly(trip(rt(3981, row(3981, true)))), true, 'guessed return: the outbound row price');
+  assert.strictEqual(listedOnly(trip(rt(3981, row(3981, true)))), false, 'a guessed return proves no price');
   assert.strictEqual(listedOnly(trip(rt(3637, row(3981, true)))), false, 'the graph $3,637 under a $3,981 listing (seen)');
   assert.strictEqual(listedOnly(trip(rt(4500, row(4500)))), true, 'the return searched with its outbound: its row');
   assert.strictEqual(listedOnly(trip(rt(3981, row(4500)))), false);
   assert.strictEqual(listedOnly(trip({ kind: 'ow', price: 300 })), false, 'no flights listed');
-  assert.strictEqual(listedOnly({ ...trip(rt(3981, row(1, true))), total: 3637 }), false, 'total not the tickets\' sum');
+  assert.strictEqual(listedOnly({ ...trip(rt(4500, row(4500))), total: 3637 }), false, 'total not the tickets\' sum');
   assert.strictEqual(listedPrice({ kind: 'ow', flights: { out: { miss: 'connection' } } }), null);
 });
