@@ -28,8 +28,13 @@ function bytes(field, payload) {
   return Buffer.concat([key(field, 2), varint(b.length), b]);
 }
 
-function segment({ from, to, date, maxStops = null, after = null }) {
+// A chosen flight, {from, date, to, airline, number}: segment field 4 (round trip: the outbound's
+// flights, so the page lists that ticket's returns).
+const flight = (f) => bytes(4, Buffer.concat([bytes(1, f.from), bytes(2, f.date), bytes(3, f.to), bytes(5, f.airline), bytes(6, f.number)]));
+
+function segment({ from, to, date, maxStops = null, after = null, selected = null }) {
   const parts = [bytes(2, date)];
+  for (const f of selected ?? []) parts.push(flight(f));
   if (maxStops != null) parts.push(vfield(5, maxStops));
   if (after) parts.push(vfield(8, after));
   for (const code of [from].flat()) parts.push(bytes(13, Buffer.concat([vfield(1, 1), bytes(2, code)])));
@@ -41,13 +46,13 @@ function segment({ from, to, date, maxStops = null, after = null }) {
  * Round trip if `ret` is given, multi-city (one ticket) if `legs` ([{ from, to, date }]) is, else
  * one-way. Dates are YYYY-MM-DD. `after`: only flights leaving at or after that hour on `out`.
  */
-function buildTfs({ from, to, out, ret = null, legs = null, cabin = 'Y', maxStops = null, after = null }) {
+function buildTfs({ from, to, out, ret = null, legs = null, cabin = 'Y', maxStops = null, after = null, selected = null }) {
   if (!CABIN[cabin]) throw new Error(`unknown cabin ${cabin}`);
   if (legs) {
     return Buffer.concat([vfield(1, 28), vfield(2, 2), ...legs.map((l) => segment({ ...l, maxStops })),
       vfield(8, 1), vfield(9, CABIN[cabin]), vfield(14, 1), vfield(19, 3)]).toString('base64url');
   }
-  const parts = [vfield(1, 28), vfield(2, 2), segment({ from, to, date: out, maxStops, after })];
+  const parts = [vfield(1, 28), vfield(2, 2), segment({ from, to, date: out, maxStops, after, selected })];
   if (ret) parts.push(segment({ from: to, to: from, date: ret, maxStops }));
   parts.push(vfield(8, 1), vfield(9, CABIN[cabin]), vfield(14, 1), vfield(19, ret ? 1 : 2));
   return Buffer.concat(parts).toString('base64url');

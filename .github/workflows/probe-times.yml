@@ -13,6 +13,9 @@ on:
       spa:
         description: One page, several searches (FROM TO DATE N); empty skips
         default: ''
+      ret:
+        description: Round trip return list for a chosen outbound (FROM TO OUT RET CABIN CODES); empty skips
+        default: ''
       quick:
         description: Only the plain search for each (1 = yes)
         default: ''
@@ -49,8 +52,11 @@ jobs:
       - name: Probe one page
         if: inputs.spa != ''
         run: node scraper/bin/probe-spa.js ${{ inputs.spa }}
+      - name: Probe return list
+        if: inputs.ret != ''
+        run: node scraper/bin/probe-return.js ${{ inputs.ret }}
       - name: Probe
-        if: inputs.empty == '' && inputs.spa == ''
+        if: inputs.empty == '' && inputs.spa == '' && inputs.ret == ''
         run: node scraper/bin/probe-times.js ${{ inputs.search }} --browser
       - name: Probe empty pages
         if: inputs.empty != ''
