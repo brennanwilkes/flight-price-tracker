@@ -1,7 +1,31 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-06T12:05:59Z",
+ "lastSuccess": "2026-11-06T13:15:36Z",
  "runs": [
+  {
+   "at": "2026-11-06T13:15:36Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 208,
+   "failed": 1,
+   "cells": 6448,
+   "priced": 6396,
+   "changes": 6448,
+   "errors": [
+    "CXR-PQC-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Nha Trang CXR Phú Quốc PQC Filters All fil"
+   ],
+   "network": {
+    "checked": 200,
+    "kept": 74,
+    "failed": 1,
+    "routes": 1057
+   },
+   "due": 3890,
+   "pages": 6,
+   "skipped": 3681,
+   "seconds": 1349,
+   "success": true
+  },
   {
    "at": "2026-11-06T12:05:59Z",
    "egress": "vpn",
