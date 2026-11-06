@@ -1,7 +1,43 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-06T22:06:12Z",
+ "lastSuccess": "2026-11-06T23:05:54Z",
  "runs": [
+  {
+   "at": "2026-11-06T23:05:54Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 70,
+   "failed": 12,
+   "cells": 1444,
+   "priced": 1300,
+   "changes": 1444,
+   "errors": [
+    "DAD-PQC-Y 8d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Phú Quốc PQC Filters All fi",
+    "DAD-PQC-Y 4d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Phú Quốc PQC Filters All fi",
+    "DAD-PQC-Y 6d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Phú Quốc PQC Filters All fi",
+    "DAD-PQC-Y 7d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Phú Quốc PQC Filters All fi",
+    "DAD-PQC-Y 5d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Phú Quốc PQC Filters All fi",
+    "DAD-PQC-Y 3d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Phú Quốc PQC Filters All fi",
+    "DAD-PQC-Y 9d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Phú Quốc PQC Filters All fi",
+    "DAD-PQC-Y 10d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Phú Quốc PQC Filters All fi",
+    "DAD-PQC-Y 12d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Phú Quốc PQC Filters All fi",
+    "DAD-PQC-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Phú Quốc PQC Filters All fi",
+    "DAD-PQC-Y 13d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Phú Quốc PQC Filters All fi",
+    "DAD-PQC-Y 11d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Phú Quốc PQC Filters All fi"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1178
+   },
+   "due": 2956,
+   "pages": 6,
+   "pauses": 8,
+   "skipped": 2874,
+   "seconds": 1629,
+   "success": true
+  },
   {
    "at": "2026-11-06T22:06:12Z",
    "egress": "vpn",
