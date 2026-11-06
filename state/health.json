@@ -1,7 +1,33 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-06T13:15:36Z",
+ "lastSuccess": "2026-11-06T14:05:50Z",
  "runs": [
+  {
+   "at": "2026-11-06T14:05:50Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 185,
+   "failed": 2,
+   "cells": 5735,
+   "priced": 5605,
+   "changes": 5735,
+   "errors": [
+    "PQC-CXR-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Phú Quốc PQC Nha Trang CXR Filters All fil",
+    "PQC-KBV-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Phú Quốc PQC Krabi KBV Filters All filters"
+   ],
+   "network": {
+    "checked": 200,
+    "kept": 65,
+    "failed": 0,
+    "routes": 1122
+   },
+   "due": 4050,
+   "pages": 6,
+   "skipped": 3863,
+   "secondOk": 3,
+   "seconds": 1426,
+   "success": true
+  },
   {
    "at": "2026-11-06T13:15:36Z",
    "egress": "vpn",
