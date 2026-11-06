@@ -213,6 +213,19 @@ function rows(data) {
     .sort((a, b) => price(a.cells[state.priority]) - price(b.cells[state.priority]) || price(a.cells[otherClass()]) - price(b.cells[otherClass()]));
 }
 
+/** How long ago a time was, short: "40 min", "5 h", "3 d". */
+function ago(iso) {
+  const m = Math.max(0, (Date.now() - Date.parse(iso)) / 60e3);
+  return m < 60 ? `${Math.max(1, Math.round(m))} min` : m < 48 * 60 ? `${Math.round(m / 60)} h` : `${Math.round(m / 1440)} d`;
+}
+/** When the trip's prices were listed by Google, newest to oldest ticket. */
+function seenLine(trip) {
+  const at = trip.tickets.map((t) => t.seen).filter(Boolean).sort();
+  if (!at.length) return '';
+  const [old, now] = [ago(at[0]), ago(at.at(-1))];
+  return `<p class="seen">Prices listed ${old === now ? old : `${now}–${old}`} ago</p>`;
+}
+
 /** ▲/▼ and the change vs 24 h ago (overall cells only: the builder sets `was` there). */
 function trend(trip, after = '') {
   if (trip.was == null || trip.was === trip.total) return '';
@@ -572,7 +585,7 @@ function renderSheet() {
       <div class="stub">
         <div class="sum"><small>Total</small><b>${money(trip.total)}</b></div>
         <div class="meta">${trend(trip, ' <small>24 h</small>')}${trip.alts ? `<span class="similar">+${trip.alts} similar date${trip.alts > 1 ? 's' : ''}</span>` : ''}</div>
-        ${lowLines(trip)}
+        ${lowLines(trip)}${seenLine(trip)}
       </div>
       <div class="span">
         <div class="cal"><small>${weekday(trip.depart)}</small><b>${boardDate(trip.depart)}</b></div>

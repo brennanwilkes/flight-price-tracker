@@ -83,8 +83,17 @@ const keyOf = (g) => `${g.cabin} ${g.legs.map((l) => `${l.from}-${l.to} ${l.date
 const queryOf = (g) => ({ from: airportsOf(g.legs[0].from), to: airportsOf(g.legs[0].to), cabin: g.cabin,
   legs: g.legs.map((l) => ({ from: airportsOf(l.from), to: airportsOf(l.to), date: l.date })) });
 
-/** Replace `g.replace`'s tickets in `trip` with one multi-city ticket at `price`. */
-function merge(trip, g, price) {
+const codes = (o) => o.legs.map((l) => l.code).join(',');
+const selectedOf = (o) => o.legs.map((l) => ({ from: l.from, to: l.to, date: l.depDate, airline: l.code.slice(0, 2), number: l.code.slice(2) }));
+/** The trip's flights on `g`'s tickets in flying order (one per leg), or null when any isn't listed. */
+function shownFlights(trip, g) {
+  const fl = trip.order.filter(([i]) => g.replace.includes(i)).map(([i, dir]) => trip.tickets[i].flights?.[dir]);
+  return fl.length === g.legs.length && fl.every((o) => o?.legs && !o.miss && !o.likely) ? fl : null;
+}
+const proofKey = (g, shown) => `${keyOf(g)} | ${shown.map(codes).join(' ')}`;
+
+/** Replace `g.replace`'s tickets in `trip` with one multi-city ticket at `price` (proven: listed for its flights). */
+function merge(trip, g, price, seen) {
   const keep = trip.tickets.map((_, i) => i).filter((i) => !g.replace.includes(i));
   const at = Math.min(...g.replace);
   const newIndex = new Map();
@@ -95,7 +104,7 @@ function merge(trip, g, price) {
   }
   const mi = newIndex.get(at);
   const multi = { kind: 'multi', from: g.legs[0].from, to: g.legs.at(-1).to, date: g.legs[0].date, legs: g.legs, cabin: g.cabin, price,
-    url: pageUrl(queryOf(g)), flights: {} };
+    url: pageUrl(queryOf(g)), flights: {}, proven: true, ...(seen ? { seen } : {}) };
   let k = 0;
   trip.order = trip.order.map(([i, dir]) => {
     if (!g.replace.includes(i)) return [newIndex.get(i), dir];
@@ -160,13 +169,45 @@ async function applyMulti(dataDir, cells, homes, browser, { budget = 80, selfBud
       } catch { stats.failed++; }
     }
   }));
+  // The cheapest a grouping lists is for Google's choice of flights, not the trip's: a winning
+  // grouping is searched again with the trip's flights chosen on every leg but the last (tfs
+  // segment field 4, as for a round trip's return), and the last leg's rows priced as the whole
+  // ticket. Merged only at the row for the trip's own last flight; else the separate tickets stay.
+  const proofs = [];
   for (const trip of cells) {
-    // Whole trip first: when both win, it's the one that replaces the most.
     for (const g of groupsOf(trip, homes).reverse()) {
       const price = cache[keyOf(g)]?.price;
       if (price == null || g.replace.some((i) => !trip.tickets[i])) continue;
       const sum = g.replace.reduce((s, i) => s + trip.tickets[i].price, 0);
-      if (wins(g, price, sum)) { merge(trip, g, price); stats.merged++; if (g.self) stats.self = (stats.self ?? 0) + 1; break; }
+      const shown = shownFlights(trip, g);
+      if (!wins(g, price, sum) || !shown) continue;
+      const k = proofKey(g, shown);
+      if (!(k in cache) && browser && proofs.length < budget + selfBudget && !proofs.some((p) => p.k === k)) proofs.push({ k, g, shown });
+    }
+  }
+  next = 0;
+  await Promise.all(Array.from({ length: CONCURRENCY }, async () => {
+    while (next < proofs.length) {
+      const { k, g, shown } = proofs[next++];
+      stats.proofs = (stats.proofs ?? 0) + 1;
+      try {
+        const q = queryOf(g);
+        q.legs = q.legs.map((l, i) => (i < shown.length - 1 ? { ...l, selected: selectedOf(shown[i]) } : l));
+        const opts = (await browser(q, { timeout: 60_000 })).flatMap(parseResults);
+        const row = opts.find((o) => codes(o) === codes(shown.at(-1)));
+        cache[k] = { price: row?.price ?? null, at: new Date(now).toISOString() };
+      } catch { stats.failed++; }
+    }
+  }));
+  for (const trip of cells) {
+    // Whole trip first: when both win, it's the one that replaces the most.
+    for (const g of groupsOf(trip, homes).reverse()) {
+      if (g.replace.some((i) => !trip.tickets[i])) continue;
+      const shown = shownFlights(trip, g);
+      const price = shown && cache[proofKey(g, shown)]?.price;
+      if (price == null) continue;
+      const sum = g.replace.reduce((s, i) => s + trip.tickets[i].price, 0);
+      if (wins(g, price, sum)) { merge(trip, g, price, cache[proofKey(g, shown)].at); stats.merged++; if (g.self) stats.self = (stats.self ?? 0) + 1; break; }
     }
   }
   if (browser) writeJson(file, cache);

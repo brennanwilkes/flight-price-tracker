@@ -281,6 +281,8 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
     refresh(f.key, (pp) => plainThenPage(f.query, pp, f.key));
     return true;
   };
+  // When a list was searched: an earlier build's search at its time, else now.
+  const seenOf = (key) => [cache.at?.get(key), cache.at?.get(`full ${key}`)].filter(Boolean).sort()[0] ?? new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   const searchOnce = (q, key = JSON.stringify(q), p = prio) => once(key, (pp) => plainThenPage(q, pp, key), p);
   const hasFull = (key) => cache.has(`full ${key}`) || stale.has(`full ${key}`);
   // A plain search lists only Google's top flights (the cheapest among them); when none of those
@@ -360,7 +362,7 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
       // $5,012 cheapest listed; $3,637 graph, flights listed at $3,981 and $5,670). Shown is
       // always the price its flights were listed at, an earlier day's listing too (searched again
       // after the rest): never a graph price no listing had.
-      if (f.dir === 'out') { f.ticket.graph ??= f.ticket.price; f.ticket.price = pick.price; }
+      if (f.dir === 'out') { f.ticket.graph ??= f.ticket.price; f.ticket.price = pick.price; f.ticket.seen = seenOf(f.key); }
     }
     if (s.short) stats.stay++;
     trip.connects = s.connects;
@@ -387,6 +389,7 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
           // return): the ticket costs what that row lists.
           f.ticket.graph ??= f.ticket.price;
           f.ticket.price = back.price;
+          f.ticket.seen = seenOf(key);
           trip.total = trip.tickets.reduce((sum, t) => sum + t.price, 0);
         }, () => {});
       } });
@@ -485,10 +488,14 @@ async function capped(trip, cache, maxMin, homes) {
     const key = JSON.stringify(returnQuery(f.ticket, out));
     const list = cache.has(key) ? await cache.get(key) : cache.stale?.get(key);
     const back = Array.isArray(list) && chosenReturn(trip, flights, s.picks, i, list);
-    if (back) s.picks[i] = back;
+    if (back) { s.picks[i] = back; s.seen = { ...s.seen, [i]: cache.at?.get(key) }; }
   }
   const copies = new Map(trip.tickets.map((t) => [t, { ...t, flights: {} }]));
-  for (const [i, f] of flights.entries()) copies.get(f.ticket).flights[f.dir] = s.picks[i];
+  for (const [i, f] of flights.entries()) {
+    const t = copies.get(f.ticket);
+    t.flights[f.dir] = s.picks[i];
+    if (s.seen?.[i]) t.seen = s.seen[i];
+  }
   for (const t of copies.values()) { if (t.kind !== 'multi') { t.graph = t.graph ?? t.price; t.price = listedPrice(t); } }
   const tickets = trip.tickets.map((t) => copies.get(t));
   return { ...trip, tickets, conn: s.conn, connects: true, total: tickets.reduce((sum, t) => sum + t.price, 0) };
@@ -510,11 +517,11 @@ function listedPrice(t) {
 
 /**
  * Shown trips must cost what their flights were listed at: a ticket priced at anything else (a price
- * graph's number, a guess) or with no flights listed, and its trip isn't shown. Multi-city tickets
- * carry their one-ticket search's price.
+ * graph's number, a guess) or with no flights listed, and its trip isn't shown. A multi-city ticket
+ * only at the price listed for its own flights (multi.js proof search).
  */
 function listedOnly(trip) {
-  return trip.tickets.every((t) => (t.kind === 'multi' ? Object.keys(t.flights ?? {}).length > 0 && t.price > 0 : listedPrice(t) === t.price))
+  return trip.tickets.every((t) => (t.kind === 'multi' ? t.proven === true && Object.keys(t.flights ?? {}).length === t.legs.length && t.price > 0 : listedPrice(t) === t.price))
     && trip.total === trip.tickets.reduce((sum, t) => sum + t.price, 0);
 }
 

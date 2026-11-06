@@ -183,6 +183,7 @@ option { background: var(--panel); color: var(--text); }
 .fare .lowmarks { display: flex; gap: 2px; font-style: normal; font-size: 11px; line-height: 1; }
 .fare .low.same { font-size: 13px; }
 .ticket .stub .lows { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 4px; margin: 0; padding-top: 10px; border-top: 1px solid color-mix(in srgb, currentColor 14%, transparent); font: 600 11px var(--mono); }
+.ticket .stub .seen { grid-column: 1 / -1; margin: 0; padding-top: 8px; color: var(--muted); font: 600 11px var(--mono); }
 /* A ticket's marks, spelled out under the route line. */
 .leg .price .trend { margin-right: 8px; font-size: 11px; vertical-align: 1px; }
 .leg .lows { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 2px 14px; margin: -2px 0 0; padding: 0 8px 6px; font: 600 11px var(--mono); }

@@ -528,7 +528,7 @@ async function main() {
   const dayAgo = valuesAt(dataDir, new Date(Date.parse(generatedAt) - 864e5).toISOString().replace(/\.\d+Z$/, 'Z'));
   const cells = [];
   const m = await multiPass(dataDir, byHome, fares, !process.argv.includes('--no-details') && Date.now() < deadline - MULTI_RESERVE);
-  console.log(`multi-city: ${m.searched} searched (${m.failed} failed), ${m.merged} trips on one ticket (${m.self ?? 0} self-transfers joined); ${m.ms}ms`);
+  console.log(`multi-city: ${m.searched} searched (${m.failed} failed), ${m.proofs ?? 0} searched again with the trip's flights chosen, ${m.merged} trips on one ticket (${m.self ?? 0} self-transfers joined); ${m.ms}ms`);
   if (details) details.multi = m;
   const unlisted = dropUnlisted(byHome);
   console.log(`priced as listed: ${unlisted.dropped} cells hidden with a price their flights weren't listed at`);

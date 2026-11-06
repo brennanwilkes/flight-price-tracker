@@ -570,14 +570,20 @@ test('self-transfer: two one-ways connecting within 12 h become one ticket at ab
   const run = async (listed) => {
     const t = trip();
     fs.rmSync(path.join(dir, 'state'), { recursive: true, force: true });
-    // One GetShoppingResults row listed at `listed` (flights.js parseResults' layout).
-    await applyMulti(dir, [t], ['YVR'], async () => [{ 2: [[[[null, ['KE'], [[]]], [[listed]]]]] }], { budget: 0 });
-    return { t };
+    // One GetShoppingResults row listed at `listed` (flights.js parseResults' layout), flying KE1.
+    const leg = []; leg[3] = 'ICN'; leg[6] = 'SGN'; leg[22] = ['KE', '1'];
+    const asked = [];
+    await applyMulti(dir, [t], ['YVR'], async (q) => { asked.push(q); return [{ 2: [[[[null, ['KE'], [leg]], [[listed]]]]] }]; }, { budget: 0 });
+    return { t, asked };
   };
   // $1,040 is within economy's 5% of $1,000: one ticket wins; $1,060 isn't.
   const same = await run(1040);
   assert.strictEqual(same.t.tickets.length, 1);
   assert.strictEqual(same.t.total, 1040);
+  assert.strictEqual(same.t.tickets[0].proven, true);
+  // Proved: searched again with the trip's first flight chosen, its last flight's row taken.
+  assert.deepStrictEqual(same.asked[1].legs[0].selected, [{ from: 'YVR', to: 'ICN', date: '2027-09-01', airline: 'KE', number: '1' }]);
+  assert.strictEqual(same.asked[1].legs[1].selected, undefined);
   const dearer = await run(1060);
   assert.strictEqual(dearer.t.tickets.length, 2);
   // The ranking credits the one ticket with the self-transfer's penalty.
