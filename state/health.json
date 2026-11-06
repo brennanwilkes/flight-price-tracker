@@ -1,7 +1,32 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-06T15:05:47Z",
+ "lastSuccess": "2026-11-06T16:05:54Z",
  "runs": [
+  {
+   "at": "2026-11-06T16:05:54Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 219,
+   "failed": 1,
+   "cells": 6410,
+   "priced": 6377,
+   "changes": 6410,
+   "errors": [
+    "BWN-SYX-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Bandar Seri Begawan BWN Sanya SYX · Haikou"
+   ],
+   "network": {
+    "checked": 66,
+    "kept": 12,
+    "failed": 2,
+    "routes": 1178
+   },
+   "due": 3865,
+   "pages": 6,
+   "skipped": 3645,
+   "secondOk": 1,
+   "seconds": 1379,
+   "success": true
+  },
   {
    "at": "2026-11-06T15:05:47Z",
    "egress": "vpn",
