@@ -744,6 +744,12 @@
    "min": 465,
    "price": 4095
   },
+  "BWN-BKI": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 0,
+   "min": 40,
+   "price": 188
+  },
   "BWN-BKK": {
    "at": "2026-11-06T12:05:59Z",
    "stops": 0,
@@ -762,6 +768,14 @@
    "min": 360,
    "price": 529
   },
+  "BWN-CNX": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "BWN-CXR": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "BWN-DAD": {
    "at": "2026-11-06T12:05:59Z",
    "none": true
@@ -772,6 +786,10 @@
    "min": 475,
    "price": 678
   },
+  "BWN-FUK": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "BWN-HAN": {
    "at": "2026-11-06T12:05:59Z",
    "none": true
@@ -781,6 +799,16 @@
    "stops": 0,
    "min": 185,
    "price": 595
+  },
+  "BWN-HKT": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 475,
+   "price": 643
+  },
+  "BWN-HUI": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
   },
   "BWN-ICN": {
    "at": "2026-11-06T12:05:59Z",
@@ -794,11 +822,25 @@
    "min": 140,
    "price": 354
   },
+  "BWN-KBV": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "BWN-KUL": {
    "at": "2026-11-06T12:05:59Z",
    "stops": 0,
    "min": 145,
    "price": 195
+  },
+  "BWN-LGK": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 315,
+   "price": 576
+  },
+  "BWN-LPQ": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
   },
   "BWN-MNL": {
    "at": "2026-11-06T12:05:59Z",
@@ -811,6 +853,24 @@
    "stops": 1,
    "min": 465,
    "price": 1005
+  },
+  "BWN-PEN": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 325,
+   "price": 276
+  },
+  "BWN-PNH": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "BWN-PQC": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "BWN-REP": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
   },
   "BWN-SGN": {
    "at": "2026-11-06T12:05:59Z",
@@ -1370,6 +1430,10 @@
    "at": "2026-11-06T11:05:54Z",
    "none": true
   },
+  "CJU-BWN": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "CJU-CAN": {
    "at": "2026-11-06T11:05:54Z",
    "stops": 1,
@@ -1394,6 +1458,10 @@
   },
   "CJU-DAD": {
    "at": "2026-11-06T11:05:54Z",
+   "none": true
+  },
+  "CJU-DLI": {
+   "at": "2026-11-06T15:05:47Z",
    "none": true
   },
   "CJU-DPS": {
@@ -1422,6 +1490,10 @@
   },
   "CJU-HUI": {
    "at": "2026-11-06T14:05:50Z",
+   "none": true
+  },
+  "CJU-IAO": {
+   "at": "2026-11-06T15:05:47Z",
    "none": true
   },
   "CJU-ICN": {
@@ -1462,6 +1534,10 @@
   },
   "CJU-LPQ": {
    "at": "2026-11-06T14:05:50Z",
+   "none": true
+  },
+  "CJU-MFM": {
+   "at": "2026-11-06T15:05:47Z",
    "none": true
   },
   "CJU-MNL": {
@@ -1523,6 +1599,10 @@
    "stops": 0,
    "min": 380,
    "price": 211
+  },
+  "CJU-SYX": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
   },
   "CJU-TPE": {
    "at": "2026-11-06T11:05:54Z",
@@ -4122,8 +4202,16 @@
    "at": "2026-11-06T12:05:59Z",
    "none": true
   },
+  "IAO-BKI": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "IAO-BKK": {
    "at": "2026-11-06T12:05:59Z",
+   "none": true
+  },
+  "IAO-BWN": {
+   "at": "2026-11-06T15:05:47Z",
    "none": true
   },
   "IAO-CAN": {
@@ -4136,12 +4224,36 @@
    "min": 45,
    "price": 52
   },
+  "IAO-CJU": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "IAO-CNX": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "IAO-CTS": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "IAO-CXR": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "IAO-DAD": {
    "at": "2026-11-06T12:05:59Z",
    "none": true
   },
+  "IAO-DLI": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "IAO-DPS": {
    "at": "2026-11-06T12:05:59Z",
+   "none": true
+  },
+  "IAO-FUK": {
+   "at": "2026-11-06T15:05:47Z",
    "none": true
   },
   "IAO-HAN": {
@@ -4154,6 +4266,14 @@
    "min": 320,
    "price": 191
   },
+  "IAO-HKT": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "IAO-HUI": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "IAO-ICN": {
    "at": "2026-11-06T12:05:59Z",
    "stops": 1,
@@ -4164,8 +4284,36 @@
    "at": "2026-11-06T12:05:59Z",
    "none": true
   },
+  "IAO-JOG": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "IAO-KBV": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "IAO-KHH": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "IAO-KUL": {
    "at": "2026-11-06T12:05:59Z",
+   "none": true
+  },
+  "IAO-LGK": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "IAO-LOP": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "IAO-LPQ": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "IAO-MFM": {
+   "at": "2026-11-06T15:05:47Z",
    "none": true
   },
   "IAO-MNL": {
@@ -4174,8 +4322,44 @@
    "min": 175,
    "price": 102
   },
+  "IAO-MPH": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 175,
+   "price": 115
+  },
+  "IAO-OKA": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "IAO-OSA": {
    "at": "2026-11-06T12:05:59Z",
+   "none": true
+  },
+  "IAO-PEN": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "IAO-PNH": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "IAO-PPS": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 195,
+   "price": 145
+  },
+  "IAO-PQC": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "IAO-PUS": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "IAO-REP": {
+   "at": "2026-11-06T15:05:47Z",
    "none": true
   },
   "IAO-SGN": {
@@ -4191,6 +4375,10 @@
    "stops": 1,
    "min": 445,
    "price": 595
+  },
+  "IAO-SYX": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
   },
   "IAO-TPE": {
    "at": "2026-11-06T12:05:59Z",
@@ -4712,11 +4900,21 @@
    "at": "2026-11-06T11:05:54Z",
    "none": true
   },
+  "JOG-BKI": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 450,
+   "price": 181
+  },
   "JOG-BKK": {
    "at": "2026-11-06T11:05:54Z",
    "stops": 1,
    "min": 380,
    "price": 260
+  },
+  "JOG-BWN": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
   },
   "JOG-CAN": {
    "at": "2026-11-06T11:05:54Z",
@@ -4726,11 +4924,31 @@
    "at": "2026-11-06T11:05:54Z",
    "none": true
   },
+  "JOG-CJU": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "JOG-CNX": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "JOG-CTS": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "JOG-CXR": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "JOG-DAD": {
    "at": "2026-11-06T11:05:54Z",
    "stops": 1,
    "min": 380,
    "price": 565
+  },
+  "JOG-DLI": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
   },
   "JOG-DPS": {
    "at": "2026-11-06T11:05:54Z",
@@ -4738,12 +4956,28 @@
    "min": 85,
    "price": 97
   },
+  "JOG-FUK": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "JOG-HAN": {
    "at": "2026-11-06T11:05:54Z",
    "none": true
   },
   "JOG-HKG": {
    "at": "2026-11-06T11:05:54Z",
+   "none": true
+  },
+  "JOG-HKT": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "JOG-HUI": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "JOG-IAO": {
+   "at": "2026-11-06T15:05:47Z",
    "none": true
   },
   "JOG-ICN": {
@@ -4756,18 +4990,78 @@
    "min": 70,
    "price": 82
   },
+  "JOG-KBV": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "JOG-KHH": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "JOG-KUL": {
    "at": "2026-11-06T11:05:54Z",
    "stops": 0,
    "min": 155,
    "price": 131
   },
+  "JOG-LGK": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "JOG-LOP": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 0,
+   "min": 90,
+   "price": 135
+  },
+  "JOG-LPQ": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "JOG-MFM": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "JOG-MNL": {
    "at": "2026-11-06T11:05:54Z",
    "none": true
   },
+  "JOG-MPH": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "JOG-OKA": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "JOG-OSA": {
    "at": "2026-11-06T11:05:54Z",
+   "none": true
+  },
+  "JOG-PEN": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 285,
+   "price": 155
+  },
+  "JOG-PNH": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "JOG-PPS": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "JOG-PQC": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "JOG-PUS": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "JOG-REP": {
+   "at": "2026-11-06T15:05:47Z",
    "none": true
   },
   "JOG-SGN": {
@@ -4785,6 +5079,10 @@
    "stops": 0,
    "min": 140,
    "price": 189
+  },
+  "JOG-SYX": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
   },
   "JOG-TPE": {
    "at": "2026-11-06T11:05:54Z",
@@ -5024,11 +5322,19 @@
    "min": 375,
    "price": 451
   },
+  "KHH-BKI": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "KHH-BKK": {
    "at": "2026-11-06T11:05:54Z",
    "stops": 0,
    "min": 205,
    "price": 150
+  },
+  "KHH-BWN": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
   },
   "KHH-CAN": {
    "at": "2026-11-06T11:05:54Z",
@@ -5042,15 +5348,47 @@
    "min": 295,
    "price": 329
   },
+  "KHH-CJU": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 0,
+   "min": 150,
+   "price": 172
+  },
+  "KHH-CNX": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 400,
+   "price": 507
+  },
+  "KHH-CTS": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 0,
+   "min": 235,
+   "price": 630
+  },
+  "KHH-CXR": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "KHH-DAD": {
    "at": "2026-11-06T11:05:54Z",
    "stops": 1,
    "min": 330,
    "price": 415
   },
+  "KHH-DLI": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "KHH-DPS": {
    "at": "2026-11-06T11:05:54Z",
    "none": true
+  },
+  "KHH-FUK": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 0,
+   "min": 145,
+   "price": 190
   },
   "KHH-HAN": {
    "at": "2026-11-06T11:05:54Z",
@@ -5064,6 +5402,20 @@
    "min": 100,
    "price": 84
   },
+  "KHH-HKT": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 440,
+   "price": 574
+  },
+  "KHH-HUI": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "KHH-IAO": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "KHH-ICN": {
    "at": "2026-11-06T11:05:54Z",
    "stops": 0,
@@ -5076,11 +5428,39 @@
    "min": 455,
    "price": 407
   },
+  "KHH-JOG": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "KHH-KBV": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 450,
+   "price": 579
+  },
   "KHH-KUL": {
    "at": "2026-11-06T11:05:54Z",
    "stops": 0,
    "min": 265,
    "price": 261
+  },
+  "KHH-LGK": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "KHH-LOP": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "KHH-LPQ": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "KHH-MFM": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 0,
+   "min": 85,
+   "price": 212
   },
   "KHH-MNL": {
    "at": "2026-11-06T11:05:54Z",
@@ -5088,11 +5468,53 @@
    "min": 110,
    "price": 176
   },
+  "KHH-MPH": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "KHH-OKA": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 0,
+   "min": 100,
+   "price": 145
+  },
   "KHH-OSA": {
    "at": "2026-11-06T11:05:54Z",
    "stops": 0,
    "min": 165,
    "price": 170
+  },
+  "KHH-PEN": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 460,
+   "price": 1826
+  },
+  "KHH-PNH": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 330,
+   "price": 356
+  },
+  "KHH-PPS": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "KHH-PQC": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 350,
+   "price": 415
+  },
+  "KHH-PUS": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 0,
+   "min": 145,
+   "price": 202
+  },
+  "KHH-REP": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
   },
   "KHH-SGN": {
    "at": "2026-11-06T11:05:54Z",
@@ -5111,6 +5533,12 @@
    "stops": 1,
    "min": 410,
    "price": 1134
+  },
+  "KHH-SYX": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 300,
+   "price": 310
   },
   "KHH-TPE": {
    "at": "2026-11-06T11:05:54Z",
@@ -5606,11 +6034,19 @@
    "at": "2026-11-06T11:05:54Z",
    "none": true
   },
+  "LOP-BKI": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "LOP-BKK": {
    "at": "2026-11-06T11:05:54Z",
    "stops": 1,
    "min": 460,
    "price": 310
+  },
+  "LOP-BWN": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
   },
   "LOP-CAN": {
    "at": "2026-11-06T11:05:54Z",
@@ -5620,8 +6056,28 @@
    "at": "2026-11-06T11:05:54Z",
    "none": true
   },
+  "LOP-CJU": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "LOP-CNX": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "LOP-CTS": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "LOP-CXR": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "LOP-DAD": {
    "at": "2026-11-06T11:05:54Z",
+   "none": true
+  },
+  "LOP-DLI": {
+   "at": "2026-11-06T15:05:47Z",
    "none": true
   },
   "LOP-DPS": {
@@ -5630,12 +6086,28 @@
    "min": 45,
    "price": 79
   },
+  "LOP-FUK": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "LOP-HAN": {
    "at": "2026-11-06T11:05:54Z",
    "none": true
   },
   "LOP-HKG": {
    "at": "2026-11-06T11:05:54Z",
+   "none": true
+  },
+  "LOP-HKT": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "LOP-HUI": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "LOP-IAO": {
+   "at": "2026-11-06T15:05:47Z",
    "none": true
   },
   "LOP-ICN": {
@@ -5648,18 +6120,78 @@
    "min": 115,
    "price": 116
   },
+  "LOP-JOG": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 0,
+   "min": 90,
+   "price": 134
+  },
+  "LOP-KBV": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "LOP-KHH": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "LOP-KUL": {
    "at": "2026-11-06T11:05:54Z",
    "stops": 0,
    "min": 185,
    "price": 141
   },
+  "LOP-LGK": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "LOP-LPQ": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "LOP-MFM": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "LOP-MNL": {
    "at": "2026-11-06T11:05:54Z",
    "none": true
   },
+  "LOP-MPH": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "LOP-OKA": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "LOP-OSA": {
    "at": "2026-11-06T11:05:54Z",
+   "none": true
+  },
+  "LOP-PEN": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 365,
+   "price": 233
+  },
+  "LOP-PNH": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "LOP-PPS": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "LOP-PQC": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "LOP-PUS": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "LOP-REP": {
+   "at": "2026-11-06T15:05:47Z",
    "none": true
   },
   "LOP-SGN": {
@@ -5677,6 +6209,10 @@
    "stops": 0,
    "min": 175,
    "price": 198
+  },
+  "LOP-SYX": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
   },
   "LOP-TPE": {
    "at": "2026-11-06T11:05:54Z",
@@ -5898,11 +6434,21 @@
    "min": 195,
    "price": 172
   },
+  "MFM-BKI": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 350,
+   "price": 466
+  },
   "MFM-BKK": {
    "at": "2026-11-06T12:05:59Z",
    "stops": 0,
    "min": 175,
    "price": 152
+  },
+  "MFM-BWN": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
   },
   "MFM-CAN": {
    "at": "2026-11-06T12:05:59Z",
@@ -5916,15 +6462,41 @@
    "min": 420,
    "price": 261
   },
+  "MFM-CJU": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "MFM-CNX": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "MFM-CTS": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "MFM-CXR": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "MFM-DAD": {
    "at": "2026-11-06T12:05:59Z",
    "stops": 0,
    "min": 100,
    "price": 2771
   },
+  "MFM-DLI": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "MFM-DPS": {
    "at": "2026-11-06T12:05:59Z",
    "none": true
+  },
+  "MFM-FUK": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 330,
+   "price": 428
   },
   "MFM-HAN": {
    "at": "2026-11-06T12:05:59Z",
@@ -5938,6 +6510,16 @@
    "min": 315,
    "price": 348
   },
+  "MFM-HKT": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 380,
+   "price": 277
+  },
+  "MFM-HUI": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "MFM-ICN": {
    "at": "2026-11-06T12:05:59Z",
    "stops": 0,
@@ -5948,11 +6530,37 @@
    "at": "2026-11-06T12:05:59Z",
    "none": true
   },
+  "MFM-JOG": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "MFM-KBV": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "MFM-KHH": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 0,
+   "min": 85,
+   "price": 182
+  },
   "MFM-KUL": {
    "at": "2026-11-06T12:05:59Z",
    "stops": 0,
    "min": 240,
    "price": 254
+  },
+  "MFM-LGK": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "MFM-LOP": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "MFM-LPQ": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
   },
   "MFM-MNL": {
    "at": "2026-11-06T12:05:59Z",
@@ -5960,11 +6568,49 @@
    "min": 140,
    "price": 214
   },
+  "MFM-MPH": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "MFM-OKA": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 295,
+   "price": 1049
+  },
   "MFM-OSA": {
    "at": "2026-11-06T12:05:59Z",
    "stops": 1,
    "min": 350,
    "price": 383
+  },
+  "MFM-PEN": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 470,
+   "price": 344
+  },
+  "MFM-PNH": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 350,
+   "price": 344
+  },
+  "MFM-PPS": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "MFM-PQC": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "MFM-PUS": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "MFM-REP": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
   },
   "MFM-SGN": {
    "at": "2026-11-06T12:05:59Z",
@@ -5983,6 +6629,12 @@
    "stops": 1,
    "min": 400,
    "price": 402
+  },
+  "MFM-SYX": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 315,
+   "price": 222
   },
   "MFM-TPE": {
    "at": "2026-11-06T12:05:59Z",
@@ -6266,11 +6918,21 @@
    "at": "2026-11-06T12:05:59Z",
    "none": true
   },
+  "MPH-BKI": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "MPH-BKK": {
    "at": "2026-11-06T12:05:59Z",
    "stops": 1,
    "min": 410,
    "price": 208
+  },
+  "MPH-BWN": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 340,
+   "price": 666
   },
   "MPH-CAN": {
    "at": "2026-11-06T12:05:59Z",
@@ -6284,17 +6946,43 @@
    "min": 60,
    "price": 57
   },
+  "MPH-CJU": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "MPH-CNX": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "MPH-CTS": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "MPH-CXR": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "MPH-DAD": {
    "at": "2026-11-06T12:05:59Z",
    "stops": 1,
    "min": 340,
    "price": 235
   },
+  "MPH-DLI": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "MPH-DPS": {
    "at": "2026-11-06T12:05:59Z",
    "stops": 1,
    "min": 430,
    "price": 295
+  },
+  "MPH-FUK": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 435,
+   "price": 315
   },
   "MPH-HAN": {
    "at": "2026-11-06T12:05:59Z",
@@ -6308,6 +6996,20 @@
    "min": 310,
    "price": 167
   },
+  "MPH-HKT": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "MPH-HUI": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "MPH-IAO": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 210,
+   "price": 134
+  },
   "MPH-ICN": {
    "at": "2026-11-06T12:05:59Z",
    "stops": 0,
@@ -6318,11 +7020,43 @@
    "at": "2026-11-06T12:05:59Z",
    "none": true
   },
+  "MPH-JOG": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "MPH-KBV": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "MPH-KHH": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 320,
+   "price": 161
+  },
   "MPH-KUL": {
    "at": "2026-11-06T12:05:59Z",
    "stops": 1,
    "min": 425,
    "price": 333
+  },
+  "MPH-LGK": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "MPH-LOP": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "MPH-LPQ": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "MPH-MFM": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 325,
+   "price": 191
   },
   "MPH-MNL": {
    "at": "2026-11-06T12:05:59Z",
@@ -6330,11 +7064,43 @@
    "min": 60,
    "price": 52
   },
+  "MPH-OKA": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "MPH-OSA": {
    "at": "2026-11-06T12:05:59Z",
    "stops": 1,
    "min": 445,
    "price": 317
+  },
+  "MPH-PEN": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "MPH-PNH": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "MPH-PPS": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 175,
+   "price": 128
+  },
+  "MPH-PQC": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "MPH-PUS": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 435,
+   "price": 737
+  },
+  "MPH-REP": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
   },
   "MPH-SGN": {
    "at": "2026-11-06T12:05:59Z",
@@ -6353,6 +7119,10 @@
    "stops": 1,
    "min": 410,
    "price": 725
+  },
+  "MPH-SYX": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
   },
   "MPH-TPE": {
    "at": "2026-11-06T12:05:59Z",
@@ -7292,11 +8062,19 @@
    "at": "2026-11-06T12:05:59Z",
    "none": true
   },
+  "PPS-BKI": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "PPS-BKK": {
    "at": "2026-11-06T12:05:59Z",
    "stops": 1,
    "min": 385,
    "price": 284
+  },
+  "PPS-BWN": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
   },
   "PPS-CAN": {
    "at": "2026-11-06T12:05:59Z",
@@ -7310,15 +8088,41 @@
    "min": 75,
    "price": 58
   },
+  "PPS-CJU": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "PPS-CNX": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "PPS-CTS": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "PPS-CXR": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "PPS-DAD": {
    "at": "2026-11-06T11:05:54Z",
    "stops": 1,
    "min": 400,
    "price": 260
   },
+  "PPS-DLI": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "PPS-DPS": {
    "at": "2026-11-06T12:05:59Z",
    "none": true
+  },
+  "PPS-FUK": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 465,
+   "price": 330
   },
   "PPS-HAN": {
    "at": "2026-11-06T11:05:54Z",
@@ -7332,6 +8136,20 @@
    "min": 375,
    "price": 184
   },
+  "PPS-HKT": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "PPS-HUI": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "PPS-IAO": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 215,
+   "price": 166
+  },
   "PPS-ICN": {
    "at": "2026-11-06T11:05:54Z",
    "stops": 1,
@@ -7342,11 +8160,43 @@
    "at": "2026-11-06T12:05:59Z",
    "none": true
   },
+  "PPS-JOG": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "PPS-KBV": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "PPS-KHH": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 365,
+   "price": 173
+  },
   "PPS-KUL": {
    "at": "2026-11-06T12:05:59Z",
    "stops": 1,
    "min": 470,
    "price": 1034
+  },
+  "PPS-LGK": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "PPS-LOP": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "PPS-LPQ": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "PPS-MFM": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 405,
+   "price": 193
   },
   "PPS-MNL": {
    "at": "2026-11-06T12:05:59Z",
@@ -7354,11 +8204,41 @@
    "min": 80,
    "price": 58
   },
+  "PPS-MPH": {
+   "at": "2026-11-06T15:05:47Z",
+   "stops": 1,
+   "min": 245,
+   "price": 164
+  },
+  "PPS-OKA": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
   "PPS-OSA": {
    "at": "2026-11-06T12:05:59Z",
    "stops": 1,
    "min": 460,
    "price": 332
+  },
+  "PPS-PEN": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "PPS-PNH": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "PPS-PQC": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "PPS-PUS": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
+  },
+  "PPS-REP": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
   },
   "PPS-SGN": {
    "at": "2026-11-06T11:05:54Z",
@@ -7375,6 +8255,10 @@
    "stops": 1,
    "min": 400,
    "price": 590
+  },
+  "PPS-SYX": {
+   "at": "2026-11-06T15:05:47Z",
+   "none": true
   },
   "PPS-TPE": {
    "at": "2026-11-06T11:05:54Z",
