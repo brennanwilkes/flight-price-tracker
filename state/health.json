@@ -1,7 +1,44 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-07T01:05:58Z",
+ "lastSuccess": "2026-11-07T02:06:08Z",
  "runs": [
+  {
+   "at": "2026-11-07T02:06:08Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 53,
+   "failed": 12,
+   "cells": 1146,
+   "priced": 1146,
+   "changes": 290,
+   "errors": [
+    "YVR-DAD-Y 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Da Nang DAD Filters All f",
+    "YVR-DAD-J 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Da Nang DAD Filters All ",
+    "YVR-HAN-J 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Hanoi HAN Filters All fi",
+    "YVR-DAD-J 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Da Nang DAD Filters All ",
+    "YVR-DAD-J 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Da Nang DAD Filters All ",
+    "DAD-YVR-J-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Business Da Nang DAD Vancouver YVR Filters All fil",
+    "YVR-SGN-Y 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Ho Chi Minh City SGN Filt",
+    "YVR-TPE-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Vancouver YVR Taipei City TPE Filters All ",
+    "YVR-SGN-J 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Ho Chi Minh City SGN Fil",
+    "YVR-TPE-Y 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Taipei City TPE Filters A",
+    "YVR-TPE-J 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Taipei City TPE Filters ",
+    "YVR-HKG-Y 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Hong Kong HKG Filters All"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1178
+   },
+   "due": 2621,
+   "pages": 6,
+   "pauses": 5,
+   "skipped": 2556,
+   "secondOk": 3,
+   "seconds": 1610,
+   "success": true
+  },
   {
    "at": "2026-11-07T01:05:58Z",
    "egress": "vpn",
