@@ -1,7 +1,33 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-07T03:06:15Z",
+ "lastSuccess": "2026-11-07T04:06:05Z",
  "runs": [
+  {
+   "at": "2026-11-07T04:06:05Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 112,
+   "failed": 1,
+   "cells": 3472,
+   "priced": 3425,
+   "changes": 1756,
+   "errors": [
+    "HUI-SGN-Y-OW: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1178
+   },
+   "due": 2804,
+   "pages": 6,
+   "pauses": 6,
+   "skipped": 2691,
+   "secondOk": 19,
+   "seconds": 1564,
+   "success": true
+  },
   {
    "at": "2026-11-07T03:06:15Z",
    "egress": "vpn",
