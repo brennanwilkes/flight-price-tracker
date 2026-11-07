@@ -682,6 +682,33 @@ test("a round trip's return is from the search with its outbound chosen, not the
   assert.ok(again.tickets[0].flights.back.likely);
 });
 
+test("a kept trip's return is searched when its cell keeps it, before the deadline; after it, counted as skipped", async () => {
+  const { addDetails, returnsFor, returnsDone, flightsOf } = require('../scraper/src/trips/details');
+  const leg = (code, from, to, d) => ({ code, airline: code.slice(0, 2), from, to, dep: '08:00', arr: '12:00', depDate: d, arrDate: d, min: 0 });
+  const opt = (price, l) => ({ price, min: 0, airlines: [l.airline], stops: [], legs: [l] });
+  const mk = () => ({ order: [[0, 'out'], [0, 'back']], tickets: [{ kind: 'rt', cabin: 'J', from: 'YVR', to: 'ICN', date: '2027-09-01', ret: '2027-09-22', price: 3900 }] });
+  const run = async (wait, start) => {
+    const trip = mk();
+    const [fo, fb] = flightsOf(trip);
+    const cache = new Map([[JSON.stringify(fo.query), Promise.resolve([opt(3857, leg('KE72', 'YVR', 'ICN', '2027-09-01'))])],
+      [JSON.stringify(fb.query), Promise.resolve([opt(2000, leg('KE71', 'ICN', 'YVR', '2027-09-22'))])]]);
+    const asked = [];
+    const browser = async (q) => { asked.push(q); return []; };
+    await addDetails([trip], cache, browser, null, Date.now() + 40);
+    await new Promise((r) => setTimeout(r, wait));
+    await start(cache, trip);
+    return { asked, tally: cache.tally };
+  };
+  const now = await run(0, (cache, trip) => returnsFor(cache, trip, 5));
+  assert.strictEqual(now.asked.length, 1);
+  assert.ok(now.asked[0].selected);
+  assert.strictEqual(now.tally.returns, 1);
+  const late = await run(80, (cache) => returnsDone(cache));
+  assert.strictEqual(late.asked.length, 0);
+  assert.strictEqual(late.tally.returns, 0);
+  assert.strictEqual(late.tally.returnLate, 1);
+});
+
 test('a shown trip costs what its flights were listed at: a graph price, a missing listing or a stale total is refused', () => {
   const { listedOnly, listedPrice } = require('../scraper/src/trips/details');
   const row = (price, likely) => ({ price, min: 60, airlines: ['PR'], stops: [], legs: [{ code: 'PR1', from: 'YVR', to: 'MNL', dep: '08:00', arr: '09:00', depDate: '2027-09-07', arrDate: '2027-09-08', min: 600 }], ...(likely ? { likely } : {}) });

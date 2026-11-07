@@ -195,7 +195,7 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
   const LATE = { error: 'out of time', late: true }; // not cached
   const plain = slots(cache, 'plain', CONCURRENCY);
   const page = browser && slots(cache, 'pages', pages);
-  const tally = (cache.tally ??= { returns: 0, returnHit: 0, empty: 0, pages: 0, full: 0, far: 0, window: 0, windowTry: 0, windowHit: 0, refreshed: 0, blocked: 0, plain: 0, plainEmpty: 0, timeouts: 0, errors: 0, plainMs: [], pageMs: [] });
+  const tally = (cache.tally ??= { returns: 0, returnHit: 0, returnLate: 0, empty: 0, pages: 0, full: 0, far: 0, window: 0, windowTry: 0, windowHit: 0, refreshed: 0, blocked: 0, plain: 0, plainEmpty: 0, timeouts: 0, errors: 0, plainMs: [], pageMs: [] });
   const stale = cache.stale ?? new Map(); // key → result, from earlier builds past their fresh hours
   const stats = { searches: 0, failed: 0, late: 0, full: 0, connection: 0, none: 0, stay: 0 };
   // A result into the cache as it comes; out of time: out again, not a result.
@@ -370,16 +370,19 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
     trip.total = trip.tickets.reduce((sum, t) => sum + t.price, 0);
     // Each round trip's return from the list with its outbound chosen (a browser page: plain pages
     // inline nothing that far out), applied when it comes; whether the trip connects doesn't wait
-    // on it. Out of time or failed: the guess stands, marked likely. Searched by returnsDone, for
-    // the trips kept only (a check walks past most of the trips it checks).
+    // on it. Out of time or failed: the guess stands, marked likely (the build gate hides it).
+    // Searched by returnsFor as a cell keeps the trip (a check walks past most of the trips it
+    // checks); returnsDone runs or drops the rest.
     for (const [i, f] of flights.entries()) {
       const out = f.dir === 'back' && s.picks[i]?.likely && outPick(flights, s.picks, f.ticket);
       if (!out?.legs) continue;
       const q = returnQuery(f.ticket, out);
       const key = JSON.stringify(q);
-      (cache.returns ??= []).push({ trip, run: () => {
-        if (!cache.has(key) && !stale.has(key)) tally.returns++;
-        return once(key, (pp) => inPage(pp, q, { timeout: SLOW_PAGE_MS }), RETURN_PRIO + prio).then((list) => {
+      const jobs = (cache.returns ??= new Map()).get(trip) ?? [];
+      cache.returns.set(trip, jobs);
+      jobs.push((p = RETURN_PRIO + prio) => {
+        if (!cache.has(key) && !stale.has(key) && Date.now() > deadline) tally.returnLate++;
+        return once(key, (pp) => { tally.returns++; return inPage(pp, q, { timeout: SLOW_PAGE_MS }); }, p).then((list) => {
           if (!Array.isArray(list) || !list.length || f.ticket.flights.back !== s.picks[i]) return;
           const back = chosenReturn(trip, flights, s.picks, i, list);
           if (!back) return;
@@ -392,7 +395,7 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
           f.ticket.seen = seenOf(key);
           trip.total = trip.tickets.reduce((sum, t) => sum + t.price, 0);
         }, () => {});
-      } });
+      });
     }
   }
 }
@@ -402,8 +405,19 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
  * the trips in `keep` (a Set; all when omitted), and wait for them. The rest are dropped.
  */
 async function returnsDone(cache, keep = null) {
-  const jobs = (cache.returns ?? []).splice(0).filter((j) => !keep || keep.has(j.trip));
-  await Promise.all(jobs.map((j) => j.run()));
+  const jobs = [...(cache.returns ?? [])].filter(([trip]) => !keep || keep.has(trip)).flatMap(([, js]) => js);
+  cache.returns?.clear();
+  await Promise.all(jobs.map((run) => run()));
+}
+
+/**
+ * Start `trip`'s return searches now (a cell kept it), at `prio`: a check's turn, not after every
+ * check (by then the search deadline is past, and none would run). Resolves when they're done.
+ */
+function returnsFor(cache, trip, prio) {
+  const jobs = cache.returns?.get(trip) ?? [];
+  cache.returns?.delete(trip);
+  return Promise.all(jobs.map((run) => run(prio)));
 }
 
 /** Each flight's pick (plan), the Hoi An stay kept when any pick can, else as many connections as can be. */
@@ -525,4 +539,4 @@ function listedOnly(trip) {
     && trip.total === trip.tickets.reduce((sum, t) => sum + t.price, 0);
 }
 
-module.exports = { listedPrice, listedOnly, addDetails, returnsDone, flightsOf, capped, longestOf, slots, Late, STALE };
+module.exports = { listedPrice, listedOnly, addDetails, returnsDone, returnsFor, flightsOf, capped, longestOf, slots, Late, STALE };

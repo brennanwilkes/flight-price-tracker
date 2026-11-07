@@ -59,7 +59,7 @@ const { loadFares, bundleOf, fareOf } = require('../src/trips/fares');
 const { similarCount, scoreOf, rowId, bandOf } = require('../../frontend/app/build.js');
 const { CITIES, airportsOf, isPacific } = require('../../frontend/app/cities.js');
 const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
-const { addDetails, returnsDone, capped, longestOf, listedOnly } = require('../src/trips/details');
+const { addDetails, returnsDone, returnsFor, capped, longestOf, listedOnly } = require('../src/trips/details');
 const { openBrowserThread } = require('../src/gflights/browser-thread');
 const { monitorEventLoopDelay } = require('node:perf_hooks');
 const alertConfig = require('../config/alerts.json');
@@ -314,6 +314,7 @@ async function verify(byHome, trips, { cache, browser, listed, deadline, pages, 
   st.cells = cells.length;
   // Every cell walks its candidates at once; the searches go by rank then try (details.js slots):
   // a dashboard cell's later candidates before any via cell's first.
+  const backs = [];
   const step = (p) => {
     p.first ??= p.cand;
     if (p.cand.connects) (p.checked ??= []).push(p.cand);
@@ -326,6 +327,9 @@ async function verify(byHome, trips, { cache, browser, listed, deadline, pages, 
       return true;
     }
     if (p.best) p.best.tier = tierOf(alertConfig, p.cls, p.best.total);
+    // Its round trips' returns searched now, after this rank's checks and before the next rank's:
+    // a return proves the cell's price as much as a check finds its flights.
+    if (p.best) backs.push(returnsFor(cache, p.best, p.rank * TRIES + TRIES - 0.5));
     p.put(p.best);
     if (!p.best) st[p.unknown ? 'unknown' : 'unresolved']++;
     else if (p.best !== p.first) st.replaced++;
@@ -350,7 +354,8 @@ async function verify(byHome, trips, { cache, browser, listed, deadline, pages, 
       st.stay += s.stay;
     } while (step(p));
   } }));
-  await returnsDone(cache, new Set(cells.map((p) => p.best).filter(Boolean))); // the kept round trips' returns, after the checks
+  await Promise.all(backs);
+  await returnsDone(cache, new Set()); // none left a cell kept: dropped
   st.detailsMs = Date.now() - td;
   lag.disable();
   st.lag = `${(lag.percentile(99) / 1e6).toFixed(0)} ms 99%, ${(lag.max / 1e6).toFixed(0)} ms max`;
@@ -511,7 +516,7 @@ async function main() {
       await chrome.close();
     }
     const t = searches.cache.tally ?? {};
-    const why = `${t.far ?? 0} past the inline horizon (straight to a browser), ${t.empty ?? 0} pages with none inlined, ${t.window ?? 0} searched again after the connection (connected ${t.windowHit ?? 0} of ${t.windowTry ?? 0} trips' misses), ${t.full ?? 0} full lists, ${t.pages ?? 0} browser pages, ${t.refreshed ?? 0} stale searches refreshed, ${t.returns ?? 0} round trips' returns searched with the outbound chosen (${t.returnHit ?? 0} returns shown from one), ${t.blocked ?? 0} refused by Google`;
+    const why = `${t.far ?? 0} past the inline horizon (straight to a browser), ${t.empty ?? 0} pages with none inlined, ${t.window ?? 0} searched again after the connection (connected ${t.windowHit ?? 0} of ${t.windowTry ?? 0} trips' misses), ${t.full ?? 0} full lists, ${t.pages ?? 0} browser pages, ${t.refreshed ?? 0} stale searches refreshed, ${t.returns ?? 0} round trips' returns searched with the outbound chosen, ${t.returnLate ?? 0} skipped out of time (${t.returnHit ?? 0} returns shown from one), ${t.blocked ?? 0} refused by Google`;
     const pct = (a, q) => (a.length ? `${(a.toSorted((x, y) => x - y)[Math.floor(q * (a.length - 1))] / 1000).toFixed(1)} s` : '-');
     console.log(`search mix: ${why}`);
     console.log(`search timing: ${t.plain ?? 0} plain fetches (median ${pct(t.plainMs ?? [], 0.5)}, 90% ${pct(t.plainMs ?? [], 0.9)}; ${t.plainEmpty ?? 0} with no results inlined, ${t.timeouts ?? 0} timed out, ${t.errors ?? 0} other errors), browser pages median ${pct(t.pageMs ?? [], 0.5)}, 90% ${pct(t.pageMs ?? [], 0.9)}`);
