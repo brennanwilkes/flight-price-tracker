@@ -2,7 +2,8 @@
 // a cell's total changes). Business and economy sit an order of magnitude apart, so each class
 // gets its own chart (one axis each); in each, the MAX_SERIES routes with the lowest prices ever
 // recorded, one stepped line per route (a price holds until the next change). History is kept per
-// route overall, so the month and via filters pick the routes, not the values.
+// route overall (the board's own cells), so the month filter picks the routes, not the values;
+// under a via filter, only the routes whose overall trip is the via view's (the line is its price).
 // Chart.js is loaded from cdnjs the first time the tab opens.
 import { rowName } from './cities.js';
 
@@ -74,7 +75,8 @@ const charts = [];
 
 /**
  * Render the tab into `el`; the priority class's chart first. view: { rows: the board's rows in its
- * current view (month, via), all: every row on the board, via: a via filter is on }. A route on the
+ * current view (month, via), all: every row on the board, via: a via filter is on, main: the
+ * unfiltered board's rows }. A route on the
  * board shows when it has a trip in the view; one no longer on the board, unless a via filter is on.
  */
 export async function renderHistory(el, base, home, view, priority = 'hybrid') {
@@ -87,13 +89,17 @@ export async function renderHistory(el, base, home, view, priority = 'hybrid') {
   const picks = CLASSES.slice().sort(([a]) => (a === priority ? -1 : 1)).map(([cls, name]) => {
     const shown = new Map(view.rows.map((r) => [routeOf(r), r.cells[cls]]));
     const onBoard = new Set(view.all.map(routeOf));
+    // Via filter: the route's history is its overall cheapest trip's; shown only where that trip is
+    // the one in the via view (seen: a route's overall $6,440 beside its via cell's other price).
+    const overall = new Map((view.main ?? []).map((r) => [routeOf(r), r[cls]]));
+    const same = (route) => !view.via || overall.get(route)?.total === shown.get(route)?.total;
     const top = [...series].flatMap(([key, pts]) => {
       const [h, c, inn, ends] = key.split(',');
       const route = `${inn},${ends}`;
       const [out, ...set] = ends.split('+');
       const low = Math.min(...pts.map(([, y]) => y ?? Infinity));
       if (h !== home || c !== cls || low === Infinity) return [];
-      if ((onBoard.has(route) || view.via) && !shown.get(route)) return [];
+      if ((onBoard.has(route) || view.via) && (!shown.get(route) || !same(route))) return [];
       return [{ r: { in: inn, out, set: set.join('+') }, trip: shown.get(route), pts, low }];
     }).sort((a, b) => a.low - b.low).slice(0, MAX_SERIES);
     return { cls, name, top };
@@ -104,7 +110,7 @@ export async function renderHistory(el, base, home, view, priority = 'hybrid') {
       ${top.length ? `<div class="chart-box"><canvas data-cls="${cls}" role="img" aria-label="${name}: cheapest trip over time, top ${top.length} routes"></canvas></div>
       <ol class="legend">${top.map(({ r, low }, i) => `
         <li><button type="button" data-cls="${cls}" data-i="${i}" aria-pressed="true"><i style="background: var(--s${i + 1})"></i><span>${esc(rowName(r))}</span><b>${money(low)}</b></button></li>`).join('')}
-      </ol>` : '<p class="note">No history yet.</p>'}
+      </ol>` : `<p class="note">${view.via ? 'No history for these via cities.' : 'No history yet.'}</p>`}
     </section>`).join('');
 
   for (const c of charts.splice(0)) c.destroy();

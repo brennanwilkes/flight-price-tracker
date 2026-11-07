@@ -39,8 +39,8 @@ const COLUMNS = [['hybrid', 'Business'], ['economy', 'Economy']];
 // (#trip=IN-OUT[+SET]~class), so the back gesture closes it and an alert can link straight to one.
 // ?home= (from an alert) picks the home airport, else the last one used.
 // vias: the via filter's cities (up to MAX_VIAS), trips staying in every one.
-// data: "HOME" (all trips) or "HOME-CITY" (one via city) → trips file; "HOME-CITY+CITY…" → built
-// in the page (multiVia).
+// data: "HOME" (all trips) or "HOME-CITY" (one via city) → trips file; "HOME-CITY+CITY…" → from
+// those cities' files (allVias).
 const HOMES = ['YVR', 'YYJ'];
 const MAX_VIAS = 3;
 // Board rows drawn at first (cheapest first); the rest on asking. Each crossing has a few rows,
@@ -117,16 +117,16 @@ async function load() {
   if (state.vias.length === 1) state.data[key] ??= await fetchTrips(state.sha, key);
   if (state.vias.length > 1 && !state.data[key]) {
     for (const c of state.vias) state.data[`${state.home}-${c}`] ??= await fetchTrips(state.sha, `${state.home}-${c}`);
-    state.data[key] = approxOf(state.vias.map((c) => state.data[`${state.home}-${c}`]), state.vias);
-    multiVia(key, state.vias);
+    state.data[key] = allVias(state.vias.map((c) => state.data[`${state.home}-${c}`]), state.vias);
   }
 }
 
 /**
  * Several via cities, at once: from each city's own (flight-checked) file, the trips that also
- * stay in the others; the cheapest per cell. Misses any trip that's no city's cheapest.
+ * stay in the others; the cheapest per cell. Only checked trips: a trip built in the page from the
+ * price graphs (once a worker here) has no listed flights, so no proven price.
  */
-function approxOf(files, need) {
+function allVias(files, need) {
   const stays = (t) => t?.order && need.every((c) => tripStays(t, HOMES).stays.includes(c));
   const better = (a, b) => (stays(b) && !(a?.total <= b.total) ? b : a);
   const rows = new Map();
@@ -142,41 +142,7 @@ function approxOf(files, need) {
       }
     }
   }
-  return { approx: true, rows: [...rows.values()] };
-}
-
-/**
- * Then exactly: the builder over the fare bundle in a worker (via-worker.js), every trip that
- * stays in all of `need`. Its cells replace the approximation's, but where both found the same
- * trip the checked one stays (it has the flights).
- */
-let worker = null, asked = 0;
-const waiting = new Map(); // request id → { key, sha }
-function multiVia(key, need) {
-  if (!worker) {
-    worker = new Worker(new URL('./via-worker.js', import.meta.url), { type: 'module' });
-    worker.onmessage = ({ data: { id, rows, error } }) => {
-      const w = waiting.get(id);
-      waiting.delete(id);
-      const approx = state.data[w.key];
-      if (w.sha !== state.sha || !approx) return; // newer data since
-      state.data[w.key] = error ? { ...approx, approx: false } : { rows: rows.map((r) => keepChecked(r, approx.rows.find((a) => rowId(a) === rowId(r)))) };
-      if (viewKey() === w.key) render();
-    };
-  }
-  waiting.set(++asked, { key, sha: state.sha });
-  worker.postMessage({ id: asked, url: `${dataBase(state.sha)}/derived/fares.json`, home: state.home, need });
-}
-const sameTrip = (a, b) => a && b && a.depart === b.depart && a.ret === b.ret
-  && a.tickets.length === b.tickets.length && a.tickets.every((t, i) => t.from === b.tickets[i].from && t.to === b.tickets[i].to && t.date === b.tickets[i].date && t.ret === b.tickets[i].ret);
-function keepChecked(row, approx) {
-  if (!approx) return row;
-  const pick = (built, checked) => (sameTrip(built, checked) ? checked : built);
-  for (const [cls] of COLUMNS) {
-    row[cls] = pick(row[cls], approx[cls]);
-    for (const m of Object.keys(row.months)) row.months[m][cls] = pick(row.months[m][cls], approx.months[m]?.[cls]);
-  }
-  return row;
+  return { rows: [...rows.values()] };
 }
 
 /** The longest single flight on a trip's long-haul tickets, minutes (0 when its flights aren't known). */
@@ -308,7 +274,6 @@ function fillFilters(data) {
   $('#via').innerHTML = `<option value="">${state.vias.length ? '+' : 'Any city'}</option>${[...groups].sort(([a], [b]) => a.localeCompare(b))
     .map(([country, cs]) => `<optgroup label="${esc(country || 'Other')}">${cs.map((c) => `<option value="${c}">${esc(cityName(c))}</option>`).join('')}</optgroup>`).join('')}`;
   $('#vias').innerHTML = state.vias.map((c) => `<button type="button" data-city="${c}" aria-label="Remove ${esc(cityName(c))}">${esc(cityName(c))}<span aria-hidden="true">×</span></button>`).join('');
-  $('#vias').classList.toggle('pending', !!state.data[viewKey()]?.approx); // exact rows still building
   shade();
 }
 
@@ -328,7 +293,7 @@ function render() {
   if (tab === 'history') {
     renderSheet();
     const data = state.data[viewKey()];
-    if (data) { fillFilters(data); renderHistory($('#view'), dataBase(state.sha), state.home, { rows: rows(data), all: data.rows, via: state.vias.length > 0 }, state.priority); }
+    if (data) { fillFilters(data); renderHistory($('#view'), dataBase(state.sha), state.home, { rows: rows(data), all: data.rows, via: state.vias.length > 0, main: state.data[state.home]?.rows ?? [] }, state.priority); }
     return;
   }
   const data = state.data[viewKey()];

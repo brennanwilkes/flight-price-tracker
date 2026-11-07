@@ -85,8 +85,7 @@ select, .toggle button {
   padding: 7px 8px;
 }
 /* Via cities: one field like a select, the chosen cities as chips inside it (tap to remove), then
-   the select to add one ("+" once there are chips). Pulsing while the exact rows build
-   (main.js multiVia). */
+   the select to add one ("+" once there are chips). */
 header { flex-wrap: wrap; }
 .cityfield { flex: 1.3; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
   background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 3px; }
@@ -106,9 +105,6 @@ option { background: var(--panel); color: var(--text); }
   .cityfield { order: 9; flex-basis: 100%; padding: 2px; }
   .ranges { flex-direction: column; } /* each slider the full width */
 }
-#vias.pending button { border-style: dashed; animation: pending 1.2s ease-in-out infinite alternate; }
-@keyframes pending { to { border-color: var(--muted); } }
-@media (prefers-reduced-motion: reduce) { #vias.pending button { animation: none; } }
 /* The length and long-haul filters: a row of their own under the selects (phones: under the city field). */
 .ranges { order: 10; flex-basis: 100%; display: flex; gap: 8px; }
 .range { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding: 5px 10px 2px;
