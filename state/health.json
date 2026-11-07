@@ -1,7 +1,33 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-07T06:06:36Z",
+ "lastSuccess": "2026-11-07T07:06:10Z",
  "runs": [
+  {
+   "at": "2026-11-07T07:06:10Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 149,
+   "failed": 1,
+   "cells": 2686,
+   "priced": 2685,
+   "changes": 945,
+   "errors": [
+    "YVR-OSA-J 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Osaka KIX ITM Filters Al"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1178
+   },
+   "due": 2628,
+   "pages": 6,
+   "pauses": 3,
+   "skipped": 2478,
+   "secondOk": 19,
+   "seconds": 1479,
+   "success": true
+  },
   {
    "at": "2026-11-07T06:06:36Z",
    "egress": "vpn",
