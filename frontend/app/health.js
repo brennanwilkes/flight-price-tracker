@@ -17,6 +17,7 @@ const ago = (iso) => {
   return h < 1 ? `${Math.max(1, Math.round(h * 60))}m ago` : h < 48 ? `${Math.round(h)}h ago` : `${Math.round(h / 24)}d ago`;
 };
 const when = (iso) => new Date(iso).toLocaleString('en-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', '');
+const day = (iso) => new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 const box = (label, value, cls = '') => `<div class="box ${cls}"><small>${label}</small><b>${value}</b></div>`;
 
 async function get(base, file) {
@@ -34,7 +35,7 @@ export async function renderHealth(el, base) {
   const [health, ledger, status, alerts] = await Promise.all([
     get(base, 'state/health.json'), get(base, 'state/alerts.json'), get(base, 'derived/status.json'), alertState(),
   ]);
-  const runs = health?.runs ?? [];
+  const runs = (health?.runs ?? []).filter((r, i) => !i || hours(r.at) <= 24);
   const last = runs[0];
   const failing = health?.consecutiveFailures ?? 0;
   const routes = status?.routes ?? [];
@@ -50,7 +51,7 @@ export async function renderHealth(el, base) {
       ${box('Status', failing ? `Failing ×${failing}` : last ? 'OK' : '—', failing ? 'bad' : 'good')}
       ${box('Combos', last ? `${last.ok}/${last.ok + last.failed}` : '—')}
       ${box('Stale routes', `${stale.length}/${routes.length}`, stale.length ? 'bad' : '')}
-      ${box('Hop routes', last?.network ? num(last.network.routes) : '—')}
+      ${box('Fares to', status?.frontier ? day(status.frontier) : '—')}
       ${box('Backlog', last ? num(last.skipped ?? 0) : '—', last?.skipped ? 'bad' : '')}
     </div>
 

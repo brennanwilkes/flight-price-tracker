@@ -36,7 +36,7 @@
  *   derived/fares.json   the fares the trips were built from (fares.js bundleOf), for the page's
  *                        own builds: the via filter with several cities
  *
- *   derived/status.json   for the Health tab: this build's detail-check stats, each route's
+ *   derived/status.json   for the Health tab: this build's detail-check stats, the newest departure day with fares (frontier), each route's
  *                         freshness (cells, oldest and newest sighting), the alert thresholds
  *
  *   node scraper/bin/build-trips.js --data <dataDir> [--no-details] [--deadline <epoch seconds>] [--search-cache <file.json.gz>]
@@ -591,7 +591,7 @@ async function main() {
   }
   const changed = recordHistory(dataDir, generatedAt, cells);
   fs.writeFileSync(path.join(dataDir, 'derived', 'fares.json'), JSON.stringify({ ...bundleOf(fares), tiers: alertConfig.tiers }));
-  fs.writeFileSync(path.join(dataDir, 'derived', 'status.json'), JSON.stringify({ generatedAt, details, routes: freshness(dataDir), alerts: alertConfig }));
+  fs.writeFileSync(path.join(dataDir, 'derived', 'status.json'), JSON.stringify({ generatedAt, details, frontier: fares.departures.at(-1) ?? null, routes: freshness(dataDir), alerts: alertConfig }));
   console.log(`built ${trips.length} trips, ${changed} cells changed, from ${fares.departures.length} departure days in ${Date.now() - t0}ms`);
 }
 main().catch((e) => { console.error(e); process.exit(1); });

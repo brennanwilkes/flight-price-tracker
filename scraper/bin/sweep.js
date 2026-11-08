@@ -24,7 +24,7 @@ const { planNetwork, checkPairs, routesOf } = require('../src/network');
 const { airportsOf } = require('../../frontend/app/cities.js');
 
 const MAX_FAILED_SHARE = 0.25; // more failed combos than this = failed run
-const HEALTH_RUNS_KEPT = 200;
+const HEALTH_RUNS_HOURS = 24; // sweeps kept in state/health.json (the newest always)
 const CONCURRENCY = Number(process.env.SWEEP_CONCURRENCY || 3); // pages open at once
 // While a big backlog builds up (new graphs' first scrapes), more pages at once and a bigger hop
 // network slice until every pair has been checked once; both back to normal by themselves.
@@ -178,7 +178,7 @@ async function main() {
   const health = readJson(healthFile, { consecutiveFailures: 0, lastSuccess: null, runs: [] });
   health.consecutiveFailures = success ? 0 : health.consecutiveFailures + 1;
   if (success) health.lastSuccess = observedAt;
-  health.runs = [{ ...run, success }, ...health.runs].slice(0, HEALTH_RUNS_KEPT);
+  health.runs = [{ ...run, success }, ...health.runs.filter((r) => Date.now() - Date.parse(r.at) <= HEALTH_RUNS_HOURS * 36e5)];
   writeJson(healthFile, health);
 
   const summary = `sweep ${observedAt} | ${success ? 'OK' : 'FAILED'} | ${run.ok}/${total} combos${run.skipped ? ` (${run.skipped} left for next sweep)` : ''} | ${run.priced} priced, ${run.changes} changed | control ${run.control}${run.controlTries ? ` (try ${run.controlTries})` : ''} |${run.secondOk || run.pauses ? ` ${run.secondOk ?? 0} ok on second try, ${run.pauses ?? 0} pauses |` : ''} ${egress} | ${run.seconds}s`;
