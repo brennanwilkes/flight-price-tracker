@@ -59,7 +59,7 @@ const { loadFares, bundleOf, fareOf } = require('../src/trips/fares');
 const { similarCount, scoreOf, rowId, bandOf } = require('../../frontend/app/build.js');
 const { CITIES, airportsOf, isPacific } = require('../../frontend/app/cities.js');
 const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
-const { addDetails, returnsDone, returnsFor, capped, longestOf, listedOnly } = require('../src/trips/details');
+const { addDetails, returnsDone, returnsFor, capped, longestOf, listedOnly, unlistedWhy } = require('../src/trips/details');
 const { openBrowserThread } = require('../src/gflights/browser-thread');
 const { monitorEventLoopDelay } = require('node:perf_hooks');
 const alertConfig = require('../config/alerts.json');
@@ -181,7 +181,8 @@ async function saveSearches(file, { cache, at }, now) {
  */
 function dropUnlisted(byHome) {
   let dropped = 0;
-  const ok = (t) => { if (listedOnly(t)) return true; dropped++; return false; };
+  const why = {};
+  const ok = (t) => { const w = unlistedWhy(t); if (!w) return true; dropped++; why[w] = (why[w] ?? 0) + 1; return false; };
   for (const rows of byHome.values()) {
     for (const r of rows) {
       const holders = [r, ...Object.values(r.months ?? {}), ...Object.values(r.bands ?? {})];
@@ -195,7 +196,7 @@ function dropUnlisted(byHome) {
       }
     }
   }
-  return { dropped };
+  return { dropped, why };
 }
 
 function arg(name, def) {
@@ -536,7 +537,7 @@ async function main() {
   console.log(`multi-city: ${m.searched} searched (${m.failed} failed), ${m.proofs ?? 0} searched again with the trip's flights chosen, ${m.merged} trips on one ticket (${m.self ?? 0} self-transfers joined); ${m.ms}ms`);
   if (details) details.multi = m;
   const unlisted = dropUnlisted(byHome);
-  console.log(`priced as listed: ${unlisted.dropped} cells hidden with a price their flights weren't listed at`);
+  console.log(`priced as listed: ${unlisted.dropped} cells hidden with a price their flights weren't listed at (${Object.entries(unlisted.why).sort((a, b) => b[1] - a[1]).map(([w, n]) => `${n} ${w}`).join(', ') || 'none'})`);
   if (details) details.unlisted = unlisted;
   // Stay ranges on every shown trip; lowest-ever marks.
   for (const rows of byHome.values()) {

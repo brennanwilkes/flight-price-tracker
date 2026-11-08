@@ -538,8 +538,23 @@ function listedPrice(t) {
  * only at the price listed for its own flights (multi.js proof search).
  */
 function listedOnly(trip) {
-  return trip.tickets.every((t) => (t.kind === 'multi' ? t.proven === true && Object.keys(t.flights ?? {}).length === t.legs.length && t.price > 0 : listedPrice(t) === t.price))
-    && trip.total === trip.tickets.reduce((sum, t) => sum + t.price, 0);
+  return !unlistedWhy(trip);
+}
+/** Why a trip isn't priced as listed (the first ticket that fails), or null when it is. */
+function unlistedWhy(trip) {
+  for (const t of trip.tickets) {
+    if (t.kind === 'multi') {
+      if (t.proven !== true) return 'one ticket unproven';
+      if (Object.keys(t.flights ?? {}).length !== t.legs.length || !(t.price > 0)) return 'one ticket missing flights';
+      continue;
+    }
+    const { out, back } = t.flights ?? {};
+    if (!out?.legs || out.miss) return 'no flights listed';
+    if (t.kind === 'rt' && (!back?.legs || back.miss)) return 'return not listed';
+    if (t.kind === 'rt' && back.likely) return 'return not searched';
+    if (listedPrice(t) !== t.price) return 'price not the listed one';
+  }
+  return trip.total === trip.tickets.reduce((sum, t) => sum + t.price, 0) ? null : 'total not the tickets\' sum';
 }
 
-module.exports = { listedPrice, listedOnly, addDetails, returnsDone, returnsFor, flightsOf, capped, longestOf, slots, Late, STALE };
+module.exports = { listedPrice, listedOnly, unlistedWhy, addDetails, returnsDone, returnsFor, flightsOf, capped, longestOf, slots, Late, STALE };
