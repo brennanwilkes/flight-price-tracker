@@ -55,6 +55,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const zlib = require('node:zlib');
 const config = require('../config/sweep.json');
+const { staleAfterHours } = require('../src/sweep/plan');
 const { loadFares, bundleOf, fareOf } = require('../src/trips/fares');
 const { similarCount, scoreOf, rowId, bandOf } = require('../../frontend/app/build.js');
 const { CITIES, airportsOf, isPacific } = require('../../frontend/app/cities.js');
@@ -443,10 +444,16 @@ async function multiPass(dataDir, byHome, fares, search) {
 function freshness(dataDir) {
   const dir = path.join(dataDir, 'routes');
   if (!fs.existsSync(dir)) return [];
+  const network = fs.existsSync(path.join(dataDir, 'state', 'network.json')) ? JSON.parse(fs.readFileSync(path.join(dataDir, 'state', 'network.json'), 'utf8')) : { pairs: {} };
+  const staleAfter = staleAfterHours(config, network);
+  const now = Date.now();
   return fs.readdirSync(dir).sort().map((route) => {
     const f = path.join(dir, route, 'current.json');
-    const seen = fs.existsSync(f) ? Object.values(JSON.parse(fs.readFileSync(f, 'utf8'))).map((c) => c.seen).filter(Boolean).sort() : [];
-    return { route, cells: seen.length, oldest: seen[0] ?? null, newest: seen.at(-1) ?? null };
+    const cells = fs.existsSync(f) ? Object.entries(JSON.parse(fs.readFileSync(f, 'utf8'))).filter(([, c]) => c.seen) : [];
+    const seen = cells.map(([, c]) => c.seen).sort();
+    // Cells past their cutoff (twice the graph's max age): loadFares drops them from the board.
+    const expired = cells.filter(([key, c]) => now - Date.parse(c.seen) > staleAfter(route, Number(key.split('|')[1])) * 3600e3).length;
+    return { route, cells: seen.length, oldest: seen[0] ?? null, newest: seen.at(-1) ?? null, expired };
   });
 }
 

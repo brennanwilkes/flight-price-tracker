@@ -4,7 +4,6 @@
 import { alertState, subscribe, requestSweep } from './alerts.js';
 import { cityName } from './cities.js';
 
-const STALE_H = 48; // a route with cells older than this is falling behind (fares.js drops them)
 const ALERT_WORD = { on: 'On', off: 'Off', failing: 'Failing', install: 'Install first', unsupported: 'Not supported', unreachable: 'Unreachable' };
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -39,9 +38,10 @@ export async function renderHealth(el, base) {
   const last = runs[0];
   const failing = health?.consecutiveFailures ?? 0;
   const routes = status?.routes ?? [];
-  const stale = routes.filter((r) => !r.newest || hours(r.newest) > STALE_H);
+  // Behind: cells past their cutoff (twice the graph's max age; the board drops them). Older status: 48 h.
+  const behind = (r) => (r.expired ?? (!r.newest || hours(r.newest) > 48 ? 1 : 0)) > 0;
+  const stale = routes.filter(behind);
   const d = status?.details;
-  const a = status?.alerts;
   const deals = Object.entries(ledger?.deals ?? {}).sort((x, y) => y[1].at.localeCompare(x[1].at)).slice(0, 6);
 
   el.innerHTML = `
@@ -70,16 +70,6 @@ export async function renderHealth(el, base) {
       return `<li><span>${when(x.at)}</span><span>${esc(inn === out ? cityName(inn) : `${cityName(inn)} / ${cityName(out)}`)}${cls === 'hybrid' ? ' · J' : ''}${home !== 'YVR' ? ` · ${home}` : ''}</span><b>${money(x.total)}</b></li>`;
     }).join('')}</ol>` : ''}
 
-    ${a ? `<h3>Alert when</h3>
-    <div class="grid">
-      ${box('Business ≤', money(a.tiers.hybrid[0][0]))}
-      ${box('Economy ≤', money(a.tiers.economy[0][0]))}
-      ${box('J long flights <', money(a.cheapBusinessLongLegs))}
-      ${box('New low after', `${a.newLowWarmupDays} days`)}
-      ${box('Again after', `−${money(a.realertDrop.cad)} / ${a.realertDrop.share * 100}%`)}
-      ${box('Max per sweep', a.maxPushesPerRun)}
-    </div>` : ''}
-
     <h3>Sweeps</h3>
     <div class="runs">${runs.map((r) => {
       const cells = `<span>${when(r.at)}</span><span>${r.ok}/${r.ok + r.failed}</span><span>${Math.round(r.seconds / 60)}m</span><b>${r.errors?.length ? `<i>${r.errors.length}</i>` : ''}${r.success ? 'OK' : 'FAIL'}</b>`;
@@ -100,7 +90,7 @@ export async function renderHealth(el, base) {
     <h3>Routes</h3>
     <details class="rows-fold"><summary><span>${routes.length} routes</span><b>${ago(routes.map((r) => r.newest).filter(Boolean).sort().at(-1))}</b></summary>
       <ol class="rows">${routes.slice().sort((x, y) => (x.newest ?? '').localeCompare(y.newest ?? '')).map((r) => `
-        <li class="${!r.newest || hours(r.newest) > STALE_H ? 'bad' : ''}"><span>${r.route}</span><span>${r.cells}</span><b>${ago(r.newest)}</b></li>`).join('')}
+        <li class="${behind(r) ? 'bad' : ''}"><span>${r.route}</span><span>${r.cells}</span><b>${ago(r.newest)}</b></li>`).join('')}
       </ol>
     </details>`;
 
