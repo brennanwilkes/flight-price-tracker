@@ -709,6 +709,26 @@ test("a kept trip's return is searched when its cell keeps it, before the deadli
   assert.strictEqual(late.tally.returnLate, 1);
 });
 
+test('a round trip shows its cheapest return with long stops counted as price, not the shortest stops at any price', async () => {
+  const { addDetails, returnsFor, flightsOf } = require('../scraper/src/trips/details');
+  const leg = (code, from, to, d) => ({ code, airline: code.slice(0, 2), from, to, dep: '08:00', arr: '12:00', depDate: d, arrDate: d, min: 0 });
+  const opt = (price, l, stopMin) => ({ price, min: 0, airlines: [l.airline], stops: stopMin ? [{ at: 'MNL', min: stopMin }] : [], legs: [l] });
+  const trip = { order: [[0, 'out'], [0, 'back']], tickets: [{ kind: 'rt', cabin: 'J', from: 'YVR', to: 'HAN', date: '2027-09-01', ret: '2027-09-15', price: 4309 }] };
+  const [fo, fb] = flightsOf(trip);
+  const cache = new Map([[JSON.stringify(fo.query), Promise.resolve([opt(4309, leg('PR117', 'YVR', 'HAN', '2027-09-01'))])],
+    [JSON.stringify(fb.query), Promise.resolve([opt(2000, leg('PR592', 'HAN', 'YVR', '2027-09-15'))])]]);
+  const backs = [opt(11327, leg('CZ372', 'HAN', 'YVR', '2027-09-15')), opt(4309, leg('PR592', 'HAN', 'YVR', '2027-09-15'), 20 * 60), opt(4800, leg('PR594', 'HAN', 'YVR', '2027-09-15'), 4 * 60)];
+  // The return search (its outbound chosen), already made: its rows.
+  const { airportsOf } = require('../frontend/app/cities.js');
+  const selected = [{ from: 'YVR', to: 'HAN', date: '2027-09-01', airline: 'PR', number: '117' }];
+  cache.set(JSON.stringify({ from: airportsOf('YVR'), to: airportsOf('HAN'), out: '2027-09-01', ret: '2027-09-15', cabin: 'J', selected }), Promise.resolve(backs));
+  await addDetails([trip], cache, async () => { throw new Error('searched again'); }, null, Date.now() + 5000);
+  await returnsFor(cache, trip, 5);
+  assert.strictEqual(cache.tally.returnHit, 1);
+  assert.strictEqual(trip.tickets[0].price, 4309);
+  assert.strictEqual(trip.tickets[0].flights.back.legs[0].code, 'PR592');
+});
+
 test('a shown trip costs what its flights were listed at: a graph price, a missing listing or a stale total is refused', () => {
   const { listedOnly, listedPrice } = require('../scraper/src/trips/details');
   const row = (price, likely) => ({ price, min: 60, airlines: ['PR'], stops: [], legs: [{ code: 'PR1', from: 'YVR', to: 'MNL', dep: '08:00', arr: '09:00', depDate: '2027-09-07', arrDate: '2027-09-08', min: 600 }], ...(likely ? { likely } : {}) });

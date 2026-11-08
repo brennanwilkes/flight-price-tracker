@@ -162,7 +162,9 @@ function returnQuery(t, out) {
 }
 /**
  * The return to show from `list` (returnQuery's rows) for flights[i], fitting the picks either
- * side: the least connection penalty, then the cheapest. null when none is a return that fits.
+ * side: the cheapest with its long connections counted as price (connPen), as the planner weighs
+ * them; not the shortest connections at any price (HAN: a $11,327 return over $4,309 with a long
+ * stop). null when none is a return that fits.
  */
 function chosenReturn(trip, flights, picks, i, list) {
   const f = flights[i];
@@ -170,7 +172,8 @@ function chosenReturn(trip, flights, picks, i, list) {
   const [prev, next] = [picks[i - 1], picks[i + 1]].map((p) => (p?.legs ? p : null));
   const ok = list.filter((o) => from.includes(o.legs[0].from) && o.legs[0].depDate === f.query.out
     && (!prev || fits(trip.stay, i, prev, o)) && (!next || fits(trip.stay, i + 1, o, next)));
-  return ok.sort((a, b) => connPen(f, a) - connPen(f, b) || a.price - b.price)[0] ?? null;
+  const cost = (o) => o.price + connPen(f, o);
+  return ok.sort((a, b) => cost(a) - cost(b) || a.price - b.price)[0] ?? null;
 }
 const outPick = (flights, picks, t) => picks[flights.findIndex((g) => g.ticket === t && g.dir === 'out')];
 
