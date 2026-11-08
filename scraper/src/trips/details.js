@@ -542,6 +542,7 @@ function listedOnly(trip) {
 }
 /** Why a trip isn't priced as listed (the first ticket that fails), or null when it is. */
 function unlistedWhy(trip) {
+  if (!trip.tickets?.length || !(trip.total > 0)) return 'no listed price';
   for (const t of trip.tickets) {
     if (t.kind === 'multi') {
       if (t.proven !== true) return 'one ticket unproven';
@@ -552,6 +553,7 @@ function unlistedWhy(trip) {
     if (!out?.legs || out.miss) return 'no flights listed';
     if (t.kind === 'rt' && (!back?.legs || back.miss)) return 'return not listed';
     if (t.kind === 'rt' && back.likely) return 'return not searched';
+    if (!(t.price > 0)) return 'no listed price'; // null === null is no proof ($0 cells, 2026-11-08)
     if (listedPrice(t) !== t.price) return 'price not the listed one';
   }
   return trip.total === trip.tickets.reduce((sum, t) => sum + t.price, 0) ? null : 'total not the tickets\' sum';

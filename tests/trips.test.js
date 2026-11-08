@@ -741,4 +741,6 @@ test('a shown trip costs what its flights were listed at: a graph price, a missi
   assert.strictEqual(listedOnly(trip({ kind: 'ow', price: 300 })), false, 'no flights listed');
   assert.strictEqual(listedOnly({ ...trip(rt(4500, row(4500))), total: 3637 }), false, 'total not the tickets\' sum');
   assert.strictEqual(listedPrice({ kind: 'ow', flights: { out: { miss: 'connection' } } }), null);
+  assert.strictEqual(listedOnly(trip({ kind: 'rt', price: null, flights: { out: row(6786), back: { ...row(11639), likely: undefined } } })), false, 'no price: $0, not proven');
+  assert.strictEqual(listedOnly({ tickets: [], total: 0 }), false, 'no tickets: $0');
 });
