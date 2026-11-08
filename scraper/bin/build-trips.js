@@ -101,6 +101,7 @@ const MAX_LAND_DAYS = 3;
 // no single flight (connections apart) on its long-haul tickets longer, re-picked from its checked
 // candidates' searches.
 const CAPS = [18, 16, 15, 14, 13, 12, 11, 10];
+const SEARCH_PER_CAP = 2; // round trips' returns searched per long-haul cap per cell
 
 /**
  * Search results from earlier builds, under SEARCH_HOURS old: { cache: key → result, at: key → ISO
@@ -332,6 +333,8 @@ async function verify(byHome, trips, { cache, browser, listed, deadline, pages, 
     // Its round trips' returns searched now, after this rank's checks and before the next rank's:
     // a return proves the cell's price as much as a check finds its flights.
     if (p.best) backs.push(returnsFor(cache, p.best, p.rank * TRIES + TRIES - 0.5));
+    // Its long-haul filter cells (dashboard only), their returns searched after the cell's own.
+    if (p.best && p.rank < 5 && !warm) { const best = p.best; backs.push(backs.at(-1).then(() => fastOf({ ...p, best }, cache, p.rank * TRIES + TRIES - 0.25))); }
     p.put(p.best);
     if (!p.best) st[p.unknown ? 'unknown' : 'unresolved']++;
     else if (p.best !== p.first) st.replaced++;
@@ -356,15 +359,13 @@ async function verify(byHome, trips, { cache, browser, listed, deadline, pages, 
       st.stay += s.stay;
     } while (step(p));
   } }));
-  await Promise.all(backs);
+  const t1 = Date.now();
+  await Promise.all(backs); // the cells' returns and long-haul filter cells
+  st.fastMs = Date.now() - t1;
   await returnsDone(cache, new Set()); // none left a cell kept: dropped
   st.detailsMs = Date.now() - td;
   lag.disable();
   st.lag = `${(lag.percentile(99) / 1e6).toFixed(0)} ms 99%, ${(lag.max / 1e6).toFixed(0)} ms max`;
-  // The long-haul filter's cells, on the dashboard's (no searches: what the checks found).
-  const t1 = Date.now();
-  if (!warm) for (const p of cells) if (p.rank < 5 && p.best) { await breathe(); await fastOf(p, cache); }
-  st.fastMs = Date.now() - t1;
   for (const [view, rows] of byHome) {
     for (const r of rows) { delete r.cands; delete r.top; delete r.city; }
     byHome.set(view, sortRows(rows.filter((r) => r.hybrid || r.economy)));
@@ -377,20 +378,31 @@ async function verify(byHome, trips, { cache, browser, listed, deadline, pages, 
  * "<cap>": trip | null } where the cell's trip changes, loosest first (a cap its trip already
  * keeps to needs nothing; none under a cap: null, and every tighter cap is none too).
  */
-async function fastOf(p, cache) {
+async function fastOf(p, cache, prio = Infinity) {
   const homes = config.origins;
   const fast = {};
   let cur = p.best;
   for (const cap of CAPS) {
     if (longestOf(cur, homes) <= cap * 60) continue;
-    let best = null;
+    // Each checked trip under the cap, best first; the first priced as listed wins. One whose
+    // round trip's return isn't searched yet has no price: searched (SEARCH_PER_CAP at most).
+    const under = [];
     for (const c of p.checked ?? []) {
+      await breathe();
       const t = await capped(c, cache, cap * 60, homes);
-      if (t && !(best && rankOf(best) <= rankOf(t))) best = t;
+      if (t) under.push([c, t]);
+    }
+    if (!under.length) { fast[cap] = null; break; } // none under it: none under a tighter one either
+    under.sort(([, a], [, b]) => rankOf(a) - rankOf(b));
+    let best = null;
+    let tries = SEARCH_PER_CAP;
+    for (let [c, t] of under) {
+      if (best && rankOf(t) >= rankOf(best)) break; // an unpriced trip ranks at its best case
+      if (!listedOnly(t) && tries-- > 0) t = await capped(c, cache, cap * 60, homes, { search: (q) => cache.searchReturn?.(q, prio) });
+      if (t && listedOnly(t) && !(best && rankOf(best) <= rankOf(t))) best = t;
     }
     fast[cap] = best && { ...best, tier: tierOf(alertConfig, p.cls, best.total) };
-    cur = best;
-    if (!cur) break;
+    if (best) cur = best;
   }
   if (Object.keys(fast).length) p.best.fast = fast;
 }

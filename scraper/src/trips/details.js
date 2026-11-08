@@ -286,6 +286,12 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
   };
   // When a list was searched: an earlier build's search at its time, else now.
   const seenOf = (key) => [cache.at?.get(key), cache.at?.get(`full ${key}`)].filter(Boolean).sort()[0] ?? new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+  // A round trip's return with its outbound chosen, for capped (the long-haul filter's trips).
+  cache.searchReturn = (q, p = RETURN_PRIO + prio) => {
+    const key = JSON.stringify(q);
+    if (!cache.has(key) && !stale.has(key) && Date.now() > deadline) tally.returnLate++;
+    return once(key, (pp) => { tally.returns++; return inPage(pp, q, { timeout: SLOW_PAGE_MS }); }, p);
+  };
   const searchOnce = (q, key = JSON.stringify(q), p = prio) => once(key, (pp) => plainThenPage(q, pp, key), p);
   const hasFull = (key) => cache.has(`full ${key}`) || stale.has(`full ${key}`);
   // A plain search lists only Google's top flights (the cheapest among them); when none of those
@@ -480,10 +486,11 @@ function longestOf(trip, homes) {
 /**
  * The trip with no single flight on its long-haul tickets (cities.js isLong) over `maxMin`, from searches
  * already in `cache` (the full list where there is one): its own copy with those flights and
- * their listed prices, or null when the searches aren't there or no such flights connect. No search
- * is made: the board's long-haul filter, from what the checks found.
+ * their listed prices, or null when the searches aren't there or no such flights connect. The board's
+ * long-haul filter, from what the checks found; a round trip's return not searched yet leaves its
+ * ticket unpriced, unless `search` (returnQuery → promise of its rows) is given: then searched.
  */
-async function capped(trip, cache, maxMin, homes) {
+async function capped(trip, cache, maxMin, homes, { search = null } = {}) {
   const flights = flightsOf(trip);
   const lists = [];
   for (const f of flights) {
@@ -503,7 +510,8 @@ async function capped(trip, cache, maxMin, homes) {
     const out = f.dir === 'back' && s.picks[i].likely && outPick(flights, s.picks, f.ticket);
     if (!out) continue;
     const key = JSON.stringify(returnQuery(f.ticket, out));
-    const list = cache.has(key) ? await cache.get(key) : cache.stale?.get(key);
+    let list = cache.has(key) ? await cache.get(key) : cache.stale?.get(key);
+    if (!list && search) list = await search(returnQuery(f.ticket, out)).catch(() => null);
     const back = Array.isArray(list) && chosenReturn(trip, flights, s.picks, i, list);
     if (back) { s.picks[i] = back; s.seen = { ...s.seen, [i]: cache.at?.get(key) }; }
   }

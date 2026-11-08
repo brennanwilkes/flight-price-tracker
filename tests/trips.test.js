@@ -729,6 +729,25 @@ test('a round trip shows its cheapest return with long stops counted as price, n
   assert.strictEqual(trip.tickets[0].flights.back.legs[0].code, 'PR592');
 });
 
+test('a long-haul capped trip whose return was never searched has no price; with search, its return is searched and priced', async () => {
+  const { capped, flightsOf, listedOnly } = require('../scraper/src/trips/details');
+  const leg = (code, from, to, d) => ({ code, airline: code.slice(0, 2), from, to, dep: '08:00', arr: '12:00', depDate: d, arrDate: d, min: 600 });
+  const opt = (price, l) => ({ price, min: 600, airlines: [l.airline], stops: [], legs: [l] });
+  const trip = { order: [[0, 'out'], [0, 'back']], tickets: [{ kind: 'rt', cabin: 'Y', from: 'YVR', to: 'ICN', date: '2027-09-01', ret: '2027-09-22', price: 1500 }] };
+  const [fo, fb] = flightsOf(trip);
+  const cache = new Map([[JSON.stringify(fo.query), Promise.resolve([opt(1565, leg('KE72', 'YVR', 'ICN', '2027-09-01'))])],
+    [JSON.stringify(fb.query), Promise.resolve([opt(900, leg('KE71', 'ICN', 'YVR', '2027-09-22'))])]]);
+  const none = await capped(trip, cache, 11 * 60, ['YVR']);
+  assert.strictEqual(none.tickets[0].price, null);
+  assert.strictEqual(listedOnly(none), false);
+  const asked = [];
+  const got = await capped(trip, cache, 11 * 60, ['YVR'], { search: async (q) => { asked.push(q); return [opt(1565, leg('KE71', 'ICN', 'YVR', '2027-09-22'))]; } });
+  assert.strictEqual(asked.length, 1);
+  assert.ok(asked[0].selected);
+  assert.strictEqual(got.tickets[0].price, 1565);
+  assert.strictEqual(listedOnly(got), true);
+});
+
 test('a shown trip costs what its flights were listed at: a graph price, a missing listing or a stale total is refused', () => {
   const { listedOnly, listedPrice } = require('../scraper/src/trips/details');
   const row = (price, likely) => ({ price, min: 60, airlines: ['PR'], stops: [], legs: [{ code: 'PR1', from: 'YVR', to: 'MNL', dep: '08:00', arr: '09:00', depDate: '2027-09-07', arrDate: '2027-09-08', min: 600 }], ...(likely ? { likely } : {}) });
