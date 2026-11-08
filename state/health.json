@@ -1,7 +1,32 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-08T07:06:25Z",
+ "lastSuccess": "2026-11-08T08:06:24Z",
  "runs": [
+  {
+   "at": "2026-11-08T08:06:24Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 217,
+   "failed": 1,
+   "cells": 5184,
+   "priced": 5174,
+   "changes": 533,
+   "errors": [
+    "GUM-YYJ-J-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Business Guam GUM Victoria YYJ Filters All filters"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1178
+   },
+   "due": 649,
+   "pages": 6,
+   "skipped": 431,
+   "secondOk": 1,
+   "seconds": 1476,
+   "success": true
+  },
   {
    "at": "2026-11-08T07:06:25Z",
    "egress": "vpn",
