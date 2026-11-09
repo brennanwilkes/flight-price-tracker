@@ -1,7 +1,40 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-09T14:06:48Z",
+ "lastSuccess": "2026-11-09T15:07:05Z",
  "runs": [
+  {
+   "at": "2026-11-09T15:07:05Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 39,
+   "failed": 7,
+   "cells": 796,
+   "priced": 790,
+   "changes": 301,
+   "errors": [
+    "YYJ-ICN-J 19d: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)",
+    "YYJ-ICN-J-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Business Victoria YYJ Seoul ICN Filters All filter",
+    "YYJ-ICN-J 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Seoul ICN Filters All fil",
+    "YYJ-ICN-Y 16d: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)",
+    "YYJ-TPE-J 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Taipei City TPE Filters A",
+    "YYJ-TPE-Y 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Taipei City TPE Filters Al",
+    "YYJ-TPE-Y 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Taipei City TPE Filters Al"
+   ],
+   "controlTries": 2,
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1178
+   },
+   "due": 1825,
+   "pages": 6,
+   "pauses": 4,
+   "skipped": 1779,
+   "secondOk": 7,
+   "seconds": 1661,
+   "success": true
+  },
   {
    "at": "2026-11-09T14:06:48Z",
    "egress": "vpn",
@@ -564,28 +597,6 @@
    "skipped": 72,
    "secondOk": 3,
    "seconds": 1428,
-   "success": true
-  },
-  {
-   "at": "2026-11-08T15:15:01Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 198,
-   "failed": 0,
-   "cells": 3953,
-   "priced": 3946,
-   "changes": 149,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1178
-   },
-   "due": 198,
-   "pages": 3,
-   "secondOk": 1,
-   "seconds": 1332,
    "success": true
   }
  ]
