@@ -1,7 +1,31 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-09T00:06:19Z",
+ "lastSuccess": "2026-11-09T01:06:22Z",
  "runs": [
+  {
+   "at": "2026-11-09T01:06:22Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 100,
+   "failed": 0,
+   "cells": 2190,
+   "priced": 2186,
+   "changes": 313,
+   "errors": [],
+   "controlTries": 3,
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1178
+   },
+   "due": 919,
+   "pages": 6,
+   "skipped": 819,
+   "secondOk": 3,
+   "seconds": 1299,
+   "success": true
+  },
   {
    "at": "2026-11-09T00:06:19Z",
    "egress": "vpn",
@@ -519,32 +543,6 @@
    "skipped": 1647,
    "secondOk": 12,
    "seconds": 1373,
-   "success": true
-  },
-  {
-   "at": "2026-11-08T01:13:11Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 236,
-   "failed": 1,
-   "cells": 6796,
-   "priced": 6647,
-   "changes": 3399,
-   "errors": [
-    "ICN-CJU-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Seoul ICN Jeju-si CJU Filters All filters "
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1178
-   },
-   "due": 1988,
-   "pages": 6,
-   "pauses": 1,
-   "skipped": 1751,
-   "secondOk": 8,
-   "seconds": 1409,
    "success": true
   }
  ]
