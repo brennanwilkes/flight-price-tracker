@@ -1,7 +1,39 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-09T02:06:51Z",
+ "lastSuccess": "2026-11-09T03:06:46Z",
  "runs": [
+  {
+   "at": "2026-11-09T03:06:46Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 98,
+   "failed": 7,
+   "cells": 2054,
+   "priced": 2052,
+   "changes": 461,
+   "errors": [
+    "YYJ-ICN-J 20d: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)",
+    "YYJ-TPE-Y 16d: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)",
+    "YYJ-TPE-Y 17d: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)",
+    "YYJ-TPE-J-OW: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)",
+    "YYJ-TPE-J 14d: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)",
+    "YYJ-HKG-J 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Hong Kong HKG Filters All",
+    "YYJ-TPE-Y 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Taipei City TPE Filters Al"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1178
+   },
+   "due": 1569,
+   "pages": 6,
+   "pauses": 3,
+   "skipped": 1464,
+   "secondOk": 10,
+   "seconds": 1632,
+   "success": true
+  },
   {
    "at": "2026-11-09T02:06:51Z",
    "egress": "vpn",
@@ -521,28 +553,6 @@
    "skipped": 1399,
    "secondOk": 1,
    "seconds": 1252,
-   "success": true
-  },
-  {
-   "at": "2026-11-08T03:06:09Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 345,
-   "failed": 0,
-   "cells": 10576,
-   "priced": 10333,
-   "changes": 5410,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1178
-   },
-   "due": 1647,
-   "pages": 6,
-   "skipped": 1302,
-   "seconds": 1218,
    "success": true
   }
  ]
