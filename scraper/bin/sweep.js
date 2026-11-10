@@ -46,6 +46,9 @@ function arg(name, def) {
 
 // Scraping stops starting combos after this, leaving the trip build and push inside the job limit.
 const BUDGET_MS = config.budgetMinutes * 60_000;
+// SCRAPE_UNTIL (epoch s, CI): the budget ends there at the latest, counted from the job's start, so a
+// late start (data fetches of 11-24 min over the VPN, 2026-11-09) costs scrape time, not the build.
+const budgetFrom = (t0) => Math.min(BUDGET_MS, process.env.SCRAPE_UNTIL ? Number(process.env.SCRAPE_UNTIL) * 1000 - t0 : Infinity);
 
 // Google refuses graphs in bursts of a few minutes, daytime UTC (error 13 / "Loading results"
 // forever; every refused request carried the bgr header: 58 of 58, 2026-11-04 17-00 UTC). A refused
@@ -87,6 +90,8 @@ async function main() {
   const fails = readJson(failsFile, {});
   const observedAt = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   const t0 = Date.now();
+  const budget = budgetFrom(t0);
+  if (budget < BUDGET_MS) console.log(`started late: scrape budget ${Math.max(0, Math.round(budget / 60_000))} of ${config.budgetMinutes} min`);
   const run = { at: observedAt, egress, control: null, ok: 0, failed: 0, cells: 0, priced: 0, changes: 0, errors: [] };
 
   const { browser, ctx } = await openBrowser();
@@ -99,7 +104,7 @@ async function main() {
         run.control = cells.filter((x) => x.price != null).length;
       } catch (e) {
         run.control = 0;
-        if (i >= CONTROL_PAUSES_MS.length || Date.now() - t0 > BUDGET_MS / 2) { run.errors.push(`control: ${e.message}`); break; }
+        if (i >= CONTROL_PAUSES_MS.length || Date.now() - t0 > budget / 2) { run.errors.push(`control: ${e.message}`); break; }
         console.log(`  control: asked again in ${CONTROL_PAUSES_MS[i] / 1000} s after ${e.message.slice(0, 120)}`);
         run.controlTries = i + 2;
         await sleep(CONTROL_PAUSES_MS[i]);
@@ -129,7 +134,7 @@ async function main() {
       const graph = async (q, second) => {
         const label = q.tripLen == null ? q.routeId : `${q.routeId} ${q.tripLen}d`;
         for (let w; (w = pausedUntil - Date.now()) > 0;) await sleep(w);
-        if (Date.now() - t0 > BUDGET_MS - (second ? 0 : SECOND_TRY_MS)) { run.skipped = (run.skipped ?? 0) + 1; return; } // next sweep
+        if (Date.now() - t0 > budget - (second ? 0 : SECOND_TRY_MS)) { run.skipped = (run.skipped ?? 0) + 1; return; } // next sweep
         try {
           const cells = await withRetry(() => priceGraph(ctx, { ...q, from: airportsOf(q.from), to: airportsOf(q.to), start: wStart, end: wEnd }), label);
           const changes = recordCells(dataDir, q.routeId, q.tripLen ?? 0, cells, { observedAt, egress });

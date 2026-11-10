@@ -68,6 +68,7 @@ jobs:
           EGRESS: ${{ steps.vpn.outputs.vpn_ok == 'true' && 'vpn' || 'direct' }}
         run: |
           echo "BUILD_DEADLINE=$(( $(date +%s) + 49 * 60 ))" >> "$GITHUB_ENV"  # this step starts ~1 min in: leaves ~8 min to commit, push, alert
+          export SCRAPE_UNTIL=$(( $(date +%s) + 26 * 60 ))  # the scrape budget ends here even if it starts late
           args=()
           [[ -n "${{ inputs.routes }}" ]] && args+=(--routes "${{ inputs.routes }}")
           # Flight checks beside the scrape (on the fares as they were), into the search cache the

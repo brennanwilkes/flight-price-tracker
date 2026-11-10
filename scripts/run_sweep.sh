@@ -23,7 +23,11 @@ WARM_DIR="$REPO_ROOT/.worktrees/warm"
 
 if [[ "${1:-}" == snapshot ]]; then
 	rm -rf "$WARM_DIR" && mkdir -p "$WARM_DIR"
-	if git fetch -q origin "$DATA_BRANCH" 2>/dev/null; then git archive "origin/$DATA_BRANCH" | tar -x -C "$WARM_DIR"; fi
+	# Shallow: the data branch's history grows every hour, and a full fetch over the VPN took up
+	# to 24 min of the hour (2026-11-09: builds cut off at the job limit). Nothing reads its history.
+	t=$SECONDS
+	if git fetch -q --depth 1 origin "$DATA_BRANCH" 2>/dev/null; then git archive "origin/$DATA_BRANCH" | tar -x -C "$WARM_DIR"; fi
+	echo "data snapshot: $((SECONDS - t)) s"
 	exit 0
 fi
 if [[ "${1:-}" == warm ]]; then
@@ -34,13 +38,15 @@ fi
 git worktree prune
 if [[ ! -d "$DATA_DIR/.git" && ! -f "$DATA_DIR/.git" ]]; then
 	rm -rf "$DATA_DIR"
-	if git fetch -q origin "$DATA_BRANCH" 2>/dev/null; then
+	t=$SECONDS
+	if git fetch -q --depth 1 origin "$DATA_BRANCH" 2>/dev/null; then
 		git worktree add -f -q -B "$DATA_BRANCH" "$DATA_DIR" "origin/$DATA_BRANCH"
 	else
 		echo "no remote $DATA_BRANCH branch; creating it as an orphan" >&2
 		git worktree add -f -q --detach "$DATA_DIR"
 		git -C "$DATA_DIR" switch -q --orphan "$DATA_BRANCH"
 	fi
+	echo "data checkout: $((SECONDS - t)) s"
 else
 	git -C "$DATA_DIR" pull -q --rebase origin "$DATA_BRANCH" 2>/dev/null || true
 fi
@@ -54,7 +60,7 @@ commit_push() { # message
 	git -C "$DATA_DIR" -c user.name="flight-tracker-bot" -c user.email="flight-tracker-bot@users.noreply.github.com" commit -q -m "$1"
 	if ! git -C "$DATA_DIR" push -q origin "$DATA_BRANCH"; then
 		echo "push rejected; rebasing on origin/$DATA_BRANCH and retrying once" >&2
-		git -C "$DATA_DIR" pull -q --rebase origin "$DATA_BRANCH"
+		git -C "$DATA_DIR" pull -q --rebase --depth 20 origin "$DATA_BRANCH"  # deep enough to reach our base
 		git -C "$DATA_DIR" push -q origin "$DATA_BRANCH"
 	fi
 }
@@ -83,6 +89,20 @@ set +e
 node scraper/bin/build-trips.js --data "$DATA_DIR" ${BUILD_DEADLINE:+--deadline "$BUILD_DEADLINE"} --search-cache "$REPO_ROOT/.search-cache.json.gz" || rc=1
 set -e
 commit_push "build $(date -u +%FT%TZ)"
+# Once a day (11 UTC, ~3 am Pacific) the data branch becomes one commit of its current files: each
+# build rewrites ~240 MB of derived files and the history grew ~190 MB a day compressed (690 MB by
+# 2026-11-09, 3.5 days after a reset). Nothing reads its history; a page loaded on an older commit
+# keeps working until GitHub collects it.
+if [[ -n "${CI:-}" && "$(date -u +%H)" == 11 ]]; then
+	old="$(git -C "$DATA_DIR" rev-parse HEAD)"
+	new="$(git -C "$DATA_DIR" -c user.name="flight-tracker-bot" -c user.email="flight-tracker-bot@users.noreply.github.com" commit-tree "$old^{tree}" -m "squash $(date -u +%FT%TZ): history before this dropped")"
+	if git -C "$DATA_DIR" push -q --force-with-lease="$DATA_BRANCH:$old" origin "$new:refs/heads/$DATA_BRANCH"; then
+		git -C "$DATA_DIR" reset -q --hard "$new"
+		echo "data branch squashed to $new"
+	else
+		echo "data branch squash refused (moved since $old); next day" >&2
+	fi
+fi
 fi
 
 if [[ $step == all || $step == alerts ]]; then
@@ -92,7 +112,7 @@ if node "$REPO_ROOT/scraper/bin/alerts.js" --data "$DATA_DIR" --sha "$(git rev-p
 	git add -A state/alerts.json
 	if ! git diff --cached --quiet; then
 		git -c user.name="flight-tracker-bot" -c user.email="flight-tracker-bot@users.noreply.github.com" commit -q -m "alerts $(date -u +%FT%TZ)"
-		git push -q origin "$DATA_BRANCH" || { git pull -q --rebase origin "$DATA_BRANCH" && git push -q origin "$DATA_BRANCH"; }
+		git push -q origin "$DATA_BRANCH" || { git pull -q --rebase --depth 20 origin "$DATA_BRANCH" && git push -q origin "$DATA_BRANCH"; }
 	fi
 else
 	echo "alerts failed" >&2
