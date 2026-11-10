@@ -22,6 +22,9 @@ const REJECT_GRACE_MS = 4_000;
 // Google computes uncached graphs on demand: YYJ ones take 2-22s+ where YVR's come back in 0.1s.
 // So wait long for a reply once the request is out, but re-click quickly if none went out.
 const GRAPH_TIMEOUT_MS = 60_000;
+// A rejected graph reply is never asked again by the page: 179 of 179 graph timeouts in six sweeps
+// (2026-11-10) had exactly 1 rejected reply and sat out the full 60 s, ~1/5 of the slots' time.
+const GRAPH_REJECT_GRACE_MS = REJECT_GRACE_MS;
 const SENT_TIMEOUT_MS = 6_000;
 // A frozen tab can hang page.evaluate forever (seen: a sweep stuck 47 min). Each page gets a hard
 // deadline; closing it fails whatever is pending.
@@ -151,8 +154,10 @@ async function priceGraph(ctx, { from, to, cabin, tripLen = null, start, end }) 
     const url = pageUrl({ from, to, out: start, ret: tripLen == null ? null : addDays(start, tripLen), cabin });
     const graphBtn = page.getByRole('button', { name: 'Price graph' }).first();
     for (let n = 1; ; n++) {
-      await page.goto(url, { waitUntil: 'networkidle' });
+      // Not 'networkidle': Google's pages often never go quiet, so the load hit its 30 s timeout and
+      // failed the graph (112 in six sweeps, 2026-11-10). The button wait is the real readiness test.
       try {
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: PAGE_TIMEOUT_MS });
         await graphBtn.waitFor({ timeout: PAGE_TIMEOUT_MS });
         break;
       } catch (e) {
@@ -169,7 +174,7 @@ async function priceGraph(ctx, { from, to, cabin, tripLen = null, start, end }) 
       if (await clickAndSend(page, graphBtn, 'GetCalendarGraph')) return;
       await page.keyboard.press('Escape').catch(() => {});
       if (!(await clickAndSend(page, graphBtn, 'GetCalendarGraph'))) throw new Error('open graph: two clicks sent no request');
-    }, 'open graph', GRAPH_TIMEOUT_MS));
+    }, 'open graph', GRAPH_TIMEOUT_MS, GRAPH_REJECT_GRACE_MS));
     const fwd = page.getByRole('button', { name: 'Scroll forward' });
     let last = [...cells.keys()].at(-1) ?? start;
     for (let i = 0; i < 12 && last < end; i++) {
@@ -177,7 +182,7 @@ async function priceGraph(ctx, { from, to, cabin, tripLen = null, start, end }) 
       try {
         add(await capture(page, 'GetCalendarGraph', parseCalendar, async () => {
           if (!(await clickAndSend(page, fwd, 'GetCalendarGraph'))) throw new NothingSent();
-        }, `scroll ${i + 1}`, GRAPH_TIMEOUT_MS));
+        }, `scroll ${i + 1}`, GRAPH_TIMEOUT_MS, GRAPH_REJECT_GRACE_MS));
       } catch (e) {
         if (e instanceof NothingSent) break; // end of the graph
         throw e;
