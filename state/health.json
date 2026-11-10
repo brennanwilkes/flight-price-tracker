@@ -1,7 +1,30 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-10T21:06:30Z",
+ "lastSuccess": "2026-11-10T22:06:17Z",
  "runs": [
+  {
+   "at": "2026-11-10T22:06:17Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 209,
+   "failed": 0,
+   "cells": 5217,
+   "priced": 5171,
+   "changes": 2753,
+   "errors": [],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1178
+   },
+   "due": 2571,
+   "pages": 6,
+   "skipped": 2362,
+   "secondOk": 2,
+   "seconds": 1263,
+   "success": true
+  },
   {
    "at": "2026-11-10T21:06:30Z",
    "egress": "vpn",
@@ -579,62 +602,6 @@
    "skipped": 2260,
    "secondOk": 15,
    "seconds": 1495,
-   "success": true
-  },
-  {
-   "at": "2026-11-09T22:22:10Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 70,
-   "failed": 3,
-   "cells": 1253,
-   "priced": 1238,
-   "changes": 457,
-   "errors": [
-    "YYJ-BKK-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Bangkok BKK DMK Filters Al",
-    "YYJ-BKK-Y 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Bangkok BKK DMK Filters Al",
-    "YYJ-KUL-Y 14d: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1178
-   },
-   "due": 2400,
-   "pages": 6,
-   "skipped": 2327,
-   "secondOk": 3,
-   "pauses": 1,
-   "seconds": 1660,
-   "success": true
-  },
-  {
-   "at": "2026-11-09T21:29:53Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 112,
-   "failed": 3,
-   "cells": 2814,
-   "priced": 2804,
-   "changes": 1285,
-   "errors": [
-    "YVR-HNL-J 18d: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)",
-    "TYO-OSA-Y-OW: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)",
-    "YVR-HNL-J 20d: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1178
-   },
-   "due": 2362,
-   "pages": 6,
-   "pauses": 4,
-   "skipped": 2247,
-   "secondOk": 9,
-   "seconds": 1616,
    "success": true
   }
  ]
