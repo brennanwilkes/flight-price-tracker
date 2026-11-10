@@ -1,7 +1,39 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-10T22:06:17Z",
+ "lastSuccess": "2026-11-10T23:06:04Z",
  "runs": [
+  {
+   "at": "2026-11-10T23:06:04Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 238,
+   "failed": 7,
+   "cells": 6677,
+   "priced": 6579,
+   "changes": 5354,
+   "errors": [
+    "HKG-LGK-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "HKG-HKT-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "OSA-SGN-Y 7d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "HKG-KHH-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "OSA-SGN-Y 5d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "SHA-SGN-Y 13d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-OSA-J 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1178
+   },
+   "due": 2402,
+   "pages": 6,
+   "pauses": 1,
+   "skipped": 2157,
+   "secondOk": 25,
+   "seconds": 1452,
+   "success": true
+  },
   {
    "at": "2026-11-10T22:06:17Z",
    "egress": "vpn",
@@ -578,30 +610,6 @@
    "skipped": 2351,
    "secondOk": 29,
    "seconds": 1432,
-   "success": true
-  },
-  {
-   "at": "2026-11-09T23:26:07Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 107,
-   "failed": 0,
-   "cells": 3115,
-   "priced": 3056,
-   "changes": 1221,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1178
-   },
-   "due": 2367,
-   "pages": 6,
-   "pauses": 1,
-   "skipped": 2260,
-   "secondOk": 15,
-   "seconds": 1495,
    "success": true
   }
  ]
