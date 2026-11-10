@@ -1,7 +1,30 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-10T04:06:21Z",
+ "lastSuccess": "2026-11-10T05:07:17Z",
  "runs": [
+  {
+   "at": "2026-11-10T05:07:17Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 173,
+   "failed": 0,
+   "cells": 4051,
+   "priced": 4042,
+   "changes": 2515,
+   "errors": [],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1178
+   },
+   "due": 2320,
+   "pages": 6,
+   "skipped": 2147,
+   "secondOk": 6,
+   "seconds": 1267,
+   "success": true
+  },
   {
    "at": "2026-11-10T04:06:21Z",
    "egress": "vpn",
@@ -595,36 +618,6 @@
    "skipped": 1642,
    "secondOk": 2,
    "seconds": 1247,
-   "success": true
-  },
-  {
-   "at": "2026-11-09T05:22:41Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 102,
-   "failed": 5,
-   "cells": 2704,
-   "priced": 2662,
-   "changes": 1030,
-   "errors": [
-    "YVR-DAD-Y 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Da Nang DAD Filters All f",
-    "YYJ-BJS-Y 17d: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)",
-    "YYJ-BJS-Y-OW: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)",
-    "CEB-PUS-Y-OW: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)",
-    "CEB-PNH-Y-OW: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1178
-   },
-   "due": 1754,
-   "pages": 6,
-   "pauses": 2,
-   "skipped": 1647,
-   "secondOk": 8,
-   "seconds": 1549,
    "success": true
   }
  ]
