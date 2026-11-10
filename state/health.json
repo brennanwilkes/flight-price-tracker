@@ -1,7 +1,30 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-10T07:06:10Z",
+ "lastSuccess": "2026-11-10T08:07:45Z",
  "runs": [
+  {
+   "at": "2026-11-10T08:07:45Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 156,
+   "failed": 0,
+   "cells": 3691,
+   "priced": 3670,
+   "changes": 2093,
+   "errors": [],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1178
+   },
+   "due": 2350,
+   "pages": 6,
+   "skipped": 2194,
+   "secondOk": 6,
+   "seconds": 1311,
+   "success": true
+  },
   {
    "at": "2026-11-10T07:06:10Z",
    "egress": "vpn",
@@ -584,33 +607,6 @@
    "skipped": 1726,
    "secondOk": 5,
    "seconds": 1648,
-   "success": true
-  },
-  {
-   "at": "2026-11-09T08:06:50Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 26,
-   "failed": 1,
-   "cells": 504,
-   "priced": 494,
-   "changes": 164,
-   "errors": [
-    "YYJ-KUL-J 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Federal Territory of Kual"
-   ],
-   "controlTries": 3,
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1178
-   },
-   "due": 1738,
-   "pages": 6,
-   "pauses": 3,
-   "skipped": 1711,
-   "secondOk": 15,
-   "seconds": 1596,
    "success": true
   }
  ]
