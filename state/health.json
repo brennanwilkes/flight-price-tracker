@@ -1,7 +1,33 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-09T23:26:07Z",
+ "lastSuccess": "2026-11-10T00:28:09Z",
  "runs": [
+  {
+   "at": "2026-11-10T00:28:09Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 97,
+   "failed": 1,
+   "cells": 2311,
+   "priced": 2311,
+   "changes": 745,
+   "errors": [
+    "HAN-PEN-Y-OW: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1178
+   },
+   "due": 2449,
+   "pages": 6,
+   "pauses": 4,
+   "skipped": 2351,
+   "secondOk": 29,
+   "seconds": 1432,
+   "success": true
+  },
   {
    "at": "2026-11-09T23:26:07Z",
    "egress": "vpn",
@@ -594,29 +620,6 @@
    "skipped": 819,
    "secondOk": 3,
    "seconds": 1299,
-   "success": true
-  },
-  {
-   "at": "2026-11-09T00:06:19Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 348,
-   "failed": 0,
-   "cells": 8606,
-   "priced": 8437,
-   "changes": 1644,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1178
-   },
-   "due": 469,
-   "pages": 6,
-   "skipped": 121,
-   "secondOk": 1,
-   "seconds": 1221,
    "success": true
   }
  ]
