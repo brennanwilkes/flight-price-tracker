@@ -1,7 +1,37 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-10T01:23:58Z",
+ "lastSuccess": "2026-11-10T02:06:55Z",
  "runs": [
+  {
+   "at": "2026-11-10T02:06:55Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 120,
+   "failed": 4,
+   "cells": 2399,
+   "priced": 2399,
+   "changes": 562,
+   "errors": [
+    "YVR-BJS-J 14d: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)",
+    "YVR-OSA-Y 15d: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)",
+    "YVR-JKT-Y 19d: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)",
+    "YVR-DPS-J 17d: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)"
+   ],
+   "controlTries": 2,
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1178
+   },
+   "due": 2142,
+   "pages": 6,
+   "pauses": 3,
+   "skipped": 2018,
+   "secondOk": 16,
+   "seconds": 1486,
+   "success": true
+  },
   {
    "at": "2026-11-10T01:23:58Z",
    "egress": "vpn",
@@ -601,30 +631,6 @@
    "skipped": 1464,
    "secondOk": 10,
    "seconds": 1632,
-   "success": true
-  },
-  {
-   "at": "2026-11-09T02:06:51Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 164,
-   "failed": 0,
-   "cells": 4939,
-   "priced": 4889,
-   "changes": 747,
-   "errors": [],
-   "controlTries": 2,
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1178
-   },
-   "due": 1158,
-   "pages": 6,
-   "skipped": 994,
-   "secondOk": 4,
-   "seconds": 1317,
    "success": true
   }
  ]
