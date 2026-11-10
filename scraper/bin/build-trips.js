@@ -73,6 +73,7 @@ const { buildTripsThreaded } = require('../src/trips/threads');
 
 const CLASSES = ['hybrid', 'economy'];
 const TRIES = 10;
+const FAST_PRIO = 100 * TRIES; // after every rank's searches (ranks 0-9)
 const MAX_FILE_BYTES = 95e6; // GitHub refuses a pushed file over 100 MB
 const THROW_INS = 4; // rows per crossing and class besides the one with its cheapest
 const MULTI_BUDGET = 80; // multi-city searches per build (trips/multi.js)
@@ -333,8 +334,9 @@ async function verify(byHome, trips, { cache, browser, listed, deadline, pages, 
     // Its round trips' returns searched now, after this rank's checks and before the next rank's:
     // a return proves the cell's price as much as a check finds its flights.
     if (p.best) backs.push(returnsFor(cache, p.best, p.rank * TRIES + TRIES - 0.5));
-    // Its long-haul filter cells (dashboard only), their returns searched after the cell's own.
-    if (p.best && p.rank < 5 && !warm) { const best = p.best; backs.push(backs.at(-1).then(() => fastOf({ ...p, best }, cache, p.rank * TRIES + TRIES - 0.25))); }
+    // Its long-haul filter cells (dashboard only), their returns searched after every cell's own
+    // (interleaved, they took ~1,000 returns a build from via cells: 2026-11-09, hidden 1.4k → 2.1k).
+    if (p.best && p.rank < 5 && !warm) { const best = p.best; backs.push(backs.at(-1).then(() => fastOf({ ...p, best }, cache, FAST_PRIO + p.rank))); }
     p.put(p.best);
     if (!p.best) st[p.unknown ? 'unknown' : 'unresolved']++;
     else if (p.best !== p.first) st.replaced++;
