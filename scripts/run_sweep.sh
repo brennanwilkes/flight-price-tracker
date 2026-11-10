@@ -89,20 +89,6 @@ set +e
 node scraper/bin/build-trips.js --data "$DATA_DIR" ${BUILD_DEADLINE:+--deadline "$BUILD_DEADLINE"} --search-cache "$REPO_ROOT/.search-cache.json.gz" || rc=1
 set -e
 commit_push "build $(date -u +%FT%TZ)"
-# Once a day (11 UTC, ~3 am Pacific) the data branch becomes one commit of its current files: each
-# build rewrites ~240 MB of derived files and the history grew ~190 MB a day compressed (690 MB by
-# 2026-11-09, 3.5 days after a reset). Nothing reads its history; a page loaded on an older commit
-# keeps working until GitHub collects it.
-if [[ -n "${CI:-}" && "$(date -u +%H)" == 11 ]]; then
-	old="$(git -C "$DATA_DIR" rev-parse HEAD)"
-	new="$(git -C "$DATA_DIR" -c user.name="flight-tracker-bot" -c user.email="flight-tracker-bot@users.noreply.github.com" commit-tree "$old^{tree}" -m "squash $(date -u +%FT%TZ): history before this dropped")"
-	if git -C "$DATA_DIR" push -q --force-with-lease="$DATA_BRANCH:$old" origin "$new:refs/heads/$DATA_BRANCH"; then
-		git -C "$DATA_DIR" reset -q --hard "$new"
-		echo "data branch squashed to $new"
-	else
-		echo "data branch squash refused (moved since $old); next day" >&2
-	fi
-fi
 fi
 
 if [[ $step == all || $step == alerts ]]; then
