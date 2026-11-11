@@ -89,9 +89,9 @@ const DETAILS_RESERVE = 13 * 60e3;
 const MULTI_RESERVE = 5 * 60e3;
 // Booking pages (bookings.js): beside the scrape (warm) up to BOOKING_WARM_MS, in the build what
 // time the checks leave before the multi-city pass, at most BOOKING_BUILD_MS. Pages at once: ~3-4 s each.
-const BOOKING_WARM_MS = 8 * 60e3;
+const BOOKING_WARM_MS = 16 * 60e3; // 20:05 sweep 2026-11-11: 283 pages in 8 min at 3 pages, the scrape unhurt (319 graphs)
 const BOOKING_BUILD_MS = 3 * 60e3;
-const BOOKING_PAGES = { warm: 3, build: 6 };
+const BOOKING_PAGES = { warm: 4, build: 6 };
 // A day's flights and times hold for a day; their listed prices are trusted as long (CHECKED_HOURS)
 // and the fares behind them are 2-48 h old already. Every shown cell needs ~6,200 searches, a build
 // makes ~800: under SEARCH_HOURS = 3 they could never all be fresh at once.

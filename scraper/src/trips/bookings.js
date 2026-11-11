@@ -73,8 +73,8 @@ function applyBookings(map, key, rows) {
 const stripBookings = (rows) => rows.map((o) => (o.listedPrice == null ? o : (({ listedPrice, seller, ...r }) => ({ ...r, price: listedPrice }))(o)));
 
 /**
- * Itineraries to check, best first: each shown ticket's own flights (long-haul tickets first, in
- * board order), then for a long-haul round trip up to ALTS other outbounds from its search with
+ * Itineraries to check, best first: each shown ticket's own flights (long-haul business, then
+ * long-haul economy, in board order), then for a long-haul round trip up to ALTS other outbounds from its search with
  * the same return (Trip.com's $2,785 YVR⇄HKG was on the outbound one row over from the board's).
  * `tickets`: ticketTable form; `rowsOf(query key)`: that search's rows or null. Booked within
  * BOOKING_HOURS: skipped.
@@ -84,18 +84,23 @@ function bookingCandidates(tickets, rowsOf, map, homes) {
   const add = (t) => { if (!t.flights?.out?.legs?.length || (t.ret && !t.flights.back?.legs?.length)) return; const k = keyOf(t); if (!seen.has(k)) { seen.add(k); out.push(t); } };
   const long = (t) => homes.includes(t.from) || homes.includes(t.to);
   const ok = tickets.filter((t) => (t.kind === 'rt' || t.kind === 'ow') && CABIN[t.cabin]);
-  for (const t of ok.filter(long)) add(t);
-  for (const t of ok.filter(long)) {
-    if (!t.ret) continue;
-    const q = { from: airportsOf(t.from), to: airportsOf(t.to), out: t.date, cabin: t.cabin, ret: t.ret };
-    const rows = rowsOf(JSON.stringify(q)) ?? rowsOf(`full ${JSON.stringify(q)}`) ?? [];
-    const mine = legsKey(t.flights.out.legs);
-    const alts = [...new Map(rows.filter((o) => o.legs?.length && legsKey(o.legs) !== mine && (o.listedPrice ?? o.price) <= t.price * ALT_WITHIN)
-      .map((o) => [legsKey(o.legs), o])).values()].sort((a, b) => (a.listedPrice ?? a.price) - (b.listedPrice ?? b.price)).slice(0, ALTS);
-    for (const o of alts) add({ ...t, flights: { out: { legs: o.legs }, back: t.flights.back } });
-  }
+  // Business first (what the board is for), each cabin's own tickets before their other outbounds.
+  for (const cabin of ['J', 'Y']) addLong(ok.filter((t) => long(t) && t.cabin === cabin));
   for (const t of ok.filter((x) => !long(x))) add(t);
   return out;
+
+  function addLong(tickets) {
+    for (const t of tickets) add(t);
+    for (const t of tickets) {
+      if (!t.ret) continue;
+      const q = { from: airportsOf(t.from), to: airportsOf(t.to), out: t.date, cabin: t.cabin, ret: t.ret };
+      const rows = rowsOf(JSON.stringify(q)) ?? rowsOf(`full ${JSON.stringify(q)}`) ?? [];
+      const mine = legsKey(t.flights.out.legs);
+      const alts = [...new Map(rows.filter((o) => o.legs?.length && legsKey(o.legs) !== mine && (o.listedPrice ?? o.price) <= t.price * ALT_WITHIN)
+        .map((o) => [legsKey(o.legs), o])).values()].sort((a, b) => (a.listedPrice ?? a.price) - (b.listedPrice ?? b.price)).slice(0, ALTS);
+      for (const o of alts) add({ ...t, flights: { out: { legs: o.legs }, back: t.flights.back } });
+    }
+  }
 }
 
 /**
