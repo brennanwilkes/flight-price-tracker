@@ -1,3 +1,14 @@
 {
- "deals": {}
+ "deals": {
+  "YVR,hybrid,SIN,SIN": {
+   "total": 3397,
+   "tier": "buy",
+   "at": "2026-11-11T21:31:39Z"
+  },
+  "YVR,hybrid,KUL,KUL+BKI": {
+   "total": 3475,
+   "tier": "buy",
+   "at": "2026-11-11T21:31:39Z"
+  }
+ }
 }
