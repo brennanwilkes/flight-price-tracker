@@ -8,6 +8,9 @@ on:
       search:
         description: from to out ret cabin (ret "-" for one-way)
         default: YVR HKG 2027-09-10 2027-09-25 J
+      tests:
+        description: which tests (probe, triggers, booking)
+        default: probe,triggers,booking
 
 permissions:
   contents: read
@@ -52,6 +55,7 @@ jobs:
           grep -q '^vpn_ok=true' "$GITHUB_OUTPUT" || { echo "::error::VPN did not come up"; exit 1; }
 
       - name: Probe
+        if: contains(inputs.tests, 'probe')
         env:
           SEARCH: ${{ inputs.search }}
         run: |
@@ -60,9 +64,15 @@ jobs:
           { echo '```'; cat probe.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
       - name: What triggers an agency's lower price
-        if: always()
+        if: always() && contains(inputs.tests, 'triggers')
         env:
           SEARCH: ${{ inputs.search }}
         run: |
           node scraper/bin/fare-trigger-probe.js $SEARCH | tee triggers.txt
           { echo '```'; cat triggers.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Booking page after an agency's checkout page
+        if: always() && contains(inputs.tests, 'booking')
+        run: |
+          node scraper/bin/booking-trigger-probe.js | tee booking.txt
+          { echo '```'; cat booking.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
