@@ -1,7 +1,36 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-10T23:06:04Z",
+ "lastSuccess": "2026-11-11T00:06:32Z",
  "runs": [
+  {
+   "at": "2026-11-11T00:06:32Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 252,
+   "failed": 5,
+   "cells": 8193,
+   "priced": 8122,
+   "changes": 5516,
+   "errors": [
+    "IAO-HKG-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "ICN-BWN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-BKK-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "KUL-HKT-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "ICN-SYX-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Seoul ICN Sanya SYX · Haikou HAK Filters A"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1178
+   },
+   "due": 2623,
+   "pages": 6,
+   "skipped": 2366,
+   "secondOk": 17,
+   "seconds": 1381,
+   "success": true
+  },
   {
    "at": "2026-11-10T23:06:04Z",
    "egress": "vpn",
@@ -584,32 +613,6 @@
    "pauses": 2,
    "secondOk": 5,
    "seconds": 1642,
-   "success": true
-  },
-  {
-   "at": "2026-11-10T00:28:09Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 97,
-   "failed": 1,
-   "cells": 2311,
-   "priced": 2311,
-   "changes": 745,
-   "errors": [
-    "HAN-PEN-Y-OW: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1178
-   },
-   "due": 2449,
-   "pages": 6,
-   "pauses": 4,
-   "skipped": 2351,
-   "secondOk": 29,
-   "seconds": 1432,
    "success": true
   }
  ]
