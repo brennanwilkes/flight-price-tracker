@@ -1,7 +1,31 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-11T09:06:20Z",
+ "lastSuccess": "2026-11-11T10:06:17Z",
  "runs": [
+  {
+   "at": "2026-11-11T10:06:17Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 106,
+   "failed": 0,
+   "cells": 2626,
+   "priced": 2614,
+   "changes": 1013,
+   "errors": [],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1178
+   },
+   "due": 1349,
+   "pages": 6,
+   "pauses": 2,
+   "skipped": 1243,
+   "secondOk": 43,
+   "seconds": 1498,
+   "success": true
+  },
   {
    "at": "2026-11-11T09:06:20Z",
    "egress": "vpn",
@@ -621,32 +645,6 @@
    "skipped": 2363,
    "secondOk": 8,
    "seconds": 1512,
-   "success": true
-  },
-  {
-   "at": "2026-11-10T10:06:15Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 92,
-   "failed": 1,
-   "cells": 1911,
-   "priced": 1898,
-   "changes": 1384,
-   "errors": [
-    "YYJ-BKK-Y 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Bangkok BKK DMK Filters Al"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1178
-   },
-   "due": 2380,
-   "pages": 6,
-   "pauses": 1,
-   "skipped": 2287,
-   "secondOk": 15,
-   "seconds": 1608,
    "success": true
   }
  ]
