@@ -1,7 +1,40 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-11T17:06:36Z",
+ "lastSuccess": "2026-11-11T18:06:22Z",
  "runs": [
+  {
+   "at": "2026-11-11T18:06:22Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 125,
+   "failed": 7,
+   "cells": 3708,
+   "priced": 3508,
+   "changes": 1790,
+   "errors": [
+    "KHH-DAD-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "LPQ-DAD-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "PUS-SGN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "PNH-SGN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "REP-SGN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-HAN-Y 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-GUM-Y 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "controlTries": 2,
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1178
+   },
+   "due": 1234,
+   "pages": 6,
+   "pauses": 1,
+   "skipped": 1102,
+   "secondOk": 8,
+   "seconds": 1365,
+   "success": true
+  },
   {
    "at": "2026-11-11T17:06:36Z",
    "egress": "vpn",
@@ -541,33 +574,6 @@
    "skipped": 2506,
    "secondOk": 1,
    "seconds": 1226,
-   "success": true
-  },
-  {
-   "at": "2026-11-10T18:06:26Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 282,
-   "failed": 3,
-   "cells": 7864,
-   "priced": 7795,
-   "changes": 5907,
-   "errors": [
-    "HAN-JKT-Y 2d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "PNH-HAN-Y 6d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "HAN-PNH-Y 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1178
-   },
-   "due": 3042,
-   "pages": 6,
-   "skipped": 2757,
-   "secondOk": 37,
-   "seconds": 1431,
    "success": true
   }
  ]
