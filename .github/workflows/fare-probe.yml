@@ -19,7 +19,7 @@ defaults:
 jobs:
   probe:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -58,3 +58,11 @@ jobs:
           echo "egress ${{ matrix.egress }}: $(curl -fsS --max-time 8 https://ipinfo.io/json | tr -d '\n ')"
           node scraper/bin/fare-probe.js $SEARCH | tee probe.txt
           { echo '```'; cat probe.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: What triggers an agency's lower price
+        if: always()
+        env:
+          SEARCH: ${{ inputs.search }}
+        run: |
+          node scraper/bin/fare-trigger-probe.js $SEARCH | tee triggers.txt
+          { echo '```'; cat triggers.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
