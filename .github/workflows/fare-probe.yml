@@ -1,0 +1,60 @@
+# One search read every way the scraper can (scraper/bin/fare-probe.js), from the runner's own IP
+# and through the VPN, for "Google showed a lower price than ours". Manual dispatch only.
+name: Fare probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      search:
+        description: from to out ret cabin (ret "-" for one-way)
+        default: YVR HKG 2027-09-10 2027-09-25 J
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        egress: [direct, vpn]
+    # The VPN leg shares the sweep's WireGuard key: queued behind a running sweep, not beside it.
+    concurrency:
+      group: ${{ matrix.egress == 'vpn' && 'sweep' || 'fare-probe-direct' }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: scraper/package-lock.json
+
+      - name: Install
+        working-directory: scraper
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: VPN up
+        if: matrix.egress == 'vpn'
+        env:
+          WG_CONF: ${{ secrets.PROTONVPN_WG_CONF }}
+        run: |
+          scripts/vpn_up.sh
+          grep -q '^vpn_ok=true' "$GITHUB_OUTPUT" || { echo "::error::VPN did not come up"; exit 1; }
+
+      - name: Probe
+        env:
+          SEARCH: ${{ inputs.search }}
+        run: |
+          echo "egress ${{ matrix.egress }}: $(curl -fsS --max-time 8 https://ipinfo.io/json | tr -d '\n ')"
+          node scraper/bin/fare-probe.js $SEARCH | tee probe.txt
+          { echo '```'; cat probe.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
