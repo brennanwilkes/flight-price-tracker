@@ -101,7 +101,8 @@ test('sendPush POSTs an aes128gcm body with VAPID auth and a tag-derived Topic',
   const h = s.init.headers as Record<string, string>;
   assert.strictEqual(s.url, 'https://web.push.apple.com/abc');
   assert.strictEqual(h['Content-Encoding'], 'aes128gcm');
-  assert.strictEqual(h['Topic'], 'YVR-ICNbusiness');
+  // Apple takes 32 base64url characters at most: the tag's SHA-256, cut to 32.
+  assert.match(h['Topic'], /^[A-Za-z0-9_-]{32}$/);
   assert.match(h['Authorization'], /^vapid t=.+, k=/);
   assert.ok((s.init.body as Uint8Array).length > 86);
 });
