@@ -15,7 +15,7 @@ const fs = require('node:fs');
 const { airportsOf } = require('../../../frontend/app/cities.js');
 const { CABIN } = require('../gflights/tfs');
 
-const BOOKING_HOURS = 6; // agencies reprice often; a booked price older than this isn't used
+const BOOKING_HOURS = 12; // as old as the graph prices it stands in for (2-48 h); at 6 a ticket not checked again in time fell back to its cached price
 const ALTS = 2; // a long-haul ticket's other outbounds checked with its return, cheapest first
 const ALT_WITHIN = 1.4; // ... up to this many times its price
 
