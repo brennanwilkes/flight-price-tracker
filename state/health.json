@@ -1,7 +1,36 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-11T01:06:18Z",
+ "lastSuccess": "2026-11-11T02:06:12Z",
  "runs": [
+  {
+   "at": "2026-11-11T02:06:12Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 158,
+   "failed": 4,
+   "cells": 3799,
+   "priced": 3786,
+   "changes": 2500,
+   "errors": [
+    "YVR-OSA-J 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-HKG-J 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-OSA-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "SGN-KUL-Y 5d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1178
+   },
+   "due": 2296,
+   "pages": 6,
+   "pauses": 3,
+   "skipped": 2134,
+   "secondOk": 42,
+   "seconds": 1465,
+   "success": true
+  },
   {
    "at": "2026-11-11T01:06:18Z",
    "egress": "vpn",
@@ -577,36 +606,6 @@
    "skipped": 1994,
    "secondOk": 16,
    "seconds": 1504,
-   "success": true
-  },
-  {
-   "at": "2026-11-10T02:06:55Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 120,
-   "failed": 4,
-   "cells": 2399,
-   "priced": 2399,
-   "changes": 562,
-   "errors": [
-    "YVR-BJS-J 14d: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)",
-    "YVR-OSA-Y 15d: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)",
-    "YVR-JKT-Y 19d: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)",
-    "YVR-DPS-J 17d: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)"
-   ],
-   "controlTries": 2,
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1178
-   },
-   "due": 2142,
-   "pages": 6,
-   "pauses": 3,
-   "skipped": 2018,
-   "secondOk": 16,
-   "seconds": 1486,
    "success": true
   }
  ]
