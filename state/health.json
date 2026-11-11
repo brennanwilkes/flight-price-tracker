@@ -1,7 +1,34 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-11T10:06:17Z",
+ "lastSuccess": "2026-11-11T11:06:27Z",
  "runs": [
+  {
+   "at": "2026-11-11T11:06:27Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 122,
+   "failed": 2,
+   "cells": 2781,
+   "priced": 2234,
+   "changes": 1922,
+   "errors": [
+    "YYJ-GUM-J 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-GUM-Y 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1178
+   },
+   "due": 1432,
+   "pages": 6,
+   "pauses": 1,
+   "skipped": 1308,
+   "secondOk": 17,
+   "seconds": 1355,
+   "success": true
+  },
   {
    "at": "2026-11-11T10:06:17Z",
    "egress": "vpn",
@@ -619,32 +646,6 @@
    "skipped": 2472,
    "secondOk": 9,
    "seconds": 1386,
-   "success": true
-  },
-  {
-   "at": "2026-11-10T11:07:08Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 214,
-   "failed": 2,
-   "cells": 5983,
-   "priced": 5969,
-   "changes": 3390,
-   "errors": [
-    "YVR-SIN-J 21d: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)",
-    "BKI-BKK-Y-OW: open graph: no usable GetCalendarGraph response within 60000ms (1 rejected, 1 of them with bgr header, 0 unreadable)"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1178
-   },
-   "due": 2579,
-   "pages": 6,
-   "skipped": 2363,
-   "secondOk": 8,
-   "seconds": 1512,
    "success": true
   }
  ]
