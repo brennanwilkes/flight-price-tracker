@@ -1,7 +1,46 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-11T05:06:19Z",
+ "lastSuccess": "2026-11-11T06:06:15Z",
  "runs": [
+  {
+   "at": "2026-11-11T06:06:15Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 219,
+   "failed": 14,
+   "cells": 6310,
+   "priced": 6188,
+   "changes": 3273,
+   "errors": [
+    "PQC-BKK-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "PUS-CEB-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "PUS-CJU-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "PUS-BKK-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "REP-BJS-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "REP-BKK-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "PUS-SHA-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "PUS-SYX-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "CNX-SGN-Y 9d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-DAD-Y 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "SGN-HKT-Y 12d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-BKK-Y 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "HKT-SGN-Y 9d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "HKT-SGN-Y 7d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1178
+   },
+   "due": 1774,
+   "pages": 6,
+   "pauses": 3,
+   "skipped": 1541,
+   "secondOk": 22,
+   "seconds": 1420,
+   "success": true
+  },
   {
    "at": "2026-11-11T05:06:19Z",
    "egress": "vpn",
@@ -598,28 +637,6 @@
    "pauses": 1,
    "secondOk": 7,
    "seconds": 1445,
-   "success": true
-  },
-  {
-   "at": "2026-11-10T06:06:06Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 213,
-   "failed": 0,
-   "cells": 4860,
-   "priced": 4844,
-   "changes": 4163,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1178
-   },
-   "due": 2177,
-   "pages": 6,
-   "skipped": 1964,
-   "seconds": 1222,
    "success": true
   }
  ]
