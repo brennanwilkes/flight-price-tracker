@@ -23,6 +23,8 @@ jobs:
   probe:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    env:
+      PW_CHANNEL: chrome
     strategy:
       fail-fast: false
       matrix:
@@ -75,4 +77,5 @@ jobs:
         if: always() && contains(inputs.tests, 'booking')
         run: |
           node scraper/bin/booking-trigger-probe.js | tee booking.txt
+          BROWSER_FLAGGED=1 node scraper/bin/booking-trigger-probe.js | sed 's/^##/## flagged:/' | tee -a booking.txt
           { echo '```'; cat booking.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"

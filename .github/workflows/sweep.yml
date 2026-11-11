@@ -31,6 +31,10 @@ jobs:
       # Trip planning holds every candidate trip (2.7 GB at 26 departure days, growing with each
       # day Google opens); Node's default cap is ~4 GB of the runner's 16.
       NODE_OPTIONS: --max-old-space-size=11264
+      # Real Chrome (the runner image has it), not Playwright's bundled Chromium: only a real Chrome
+      # that doesn't say it's automated is shown every seller's price (2026-11-11: Trip.com $2,785
+      # vs $4,612 on the same booking page; browser.js openBrowser, gflights/booking.js).
+      PW_CHANNEL: chrome
     steps:
       - uses: actions/checkout@v4
 
@@ -44,7 +48,9 @@ jobs:
         working-directory: scraper
         run: |
           npm ci --no-audit --no-fund
-          npx playwright install --with-deps chromium
+          # The image's Chrome is what runs; the package servers being down (2026-11-11, 14-16 UTC:
+          # three sweeps lost at this step) needn't stop the sweep while it's there.
+          google-chrome --version || npx playwright install --with-deps chrome
 
       - name: Tests
         run: npm --prefix scraper test

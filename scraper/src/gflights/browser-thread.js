@@ -21,6 +21,11 @@ if (isMainThread || !workerData?.browserThread) { // required anywhere but the b
           waiting.set(id, { ok, fail });
           worker.postMessage({ id, query, opts: o });
         }),
+        bookingSellers: (ticket) => new Promise((ok, fail) => {
+          const id = next++;
+          waiting.set(id, { ok, fail });
+          worker.postMessage({ id, booking: ticket });
+        }),
         close: async () => { worker.postMessage({ close: true }); await new Promise((r) => worker.once('exit', r)); },
       });
       if (m.fatal) return reject(new Error(m.fatal));
@@ -33,12 +38,13 @@ if (isMainThread || !workerData?.browserThread) { // required anywhere but the b
   });
 } else {
   const { openBrowser, shoppingResults } = require('./browser');
+  const { bookingSellers } = require('./booking');
   const { browserThread, ...opts } = workerData;
   openBrowser(opts).then(({ browser, ctx }) => {
     parentPort.on('message', async (m) => {
       if (m.close) { await browser.close().catch(() => {}); parentPort.close(); return; }
       try {
-        parentPort.postMessage({ id: m.id, payloads: await shoppingResults(ctx, m.query, m.opts) });
+        parentPort.postMessage({ id: m.id, payloads: m.booking ? await bookingSellers(ctx, m.booking) : await shoppingResults(ctx, m.query, m.opts) });
       } catch (e) {
         parentPort.postMessage({ id: m.id, error: e.message });
       }

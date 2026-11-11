@@ -29,6 +29,10 @@ const REFRESH_PRIO = 1e6;
 const RETURN_PRIO = 5e5;
 // Lists served from cache.stale: their flights and times hold, their prices are only a hint.
 const STALE = new WeakSet();
+// Booking-page prices (bookings.js), applied to every search's rows as they come in (useBookings).
+const { applyBookings } = require('./bookings');
+let bookings = null;
+const useBookings = (map) => { bookings = map; };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const SLOW_PAGE_MS = 60_000; // retries and full lists: some searches (YYJ business returns) take Google > 30 s
 
@@ -204,7 +208,7 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
   // A result into the cache as it comes; out of time: out again, not a result.
   const settle0 = (key, p) => {
     const r = p.catch((e) => (e instanceof Late ? LATE : { error: e.message }))
-      .then((v) => { if (v === LATE && cache.get(key) === r) cache.delete(key); return v; });
+      .then((v) => { if (v === LATE && cache.get(key) === r) cache.delete(key); return applyBookings(bookings, key, v); });
     cache.set(key, r);
     return r;
   };
@@ -567,4 +571,4 @@ function unlistedWhy(trip) {
   return trip.total === trip.tickets.reduce((sum, t) => sum + t.price, 0) ? null : 'total not the tickets\' sum';
 }
 
-module.exports = { listedPrice, listedOnly, unlistedWhy, addDetails, returnsDone, returnsFor, flightsOf, capped, longestOf, slots, Late, STALE };
+module.exports = { useBookings, listedPrice, listedOnly, unlistedWhy, addDetails, returnsDone, returnsFor, flightsOf, capped, longestOf, slots, Late, STALE };

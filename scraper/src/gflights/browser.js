@@ -78,9 +78,16 @@ async function newPage(ctx, ms = PAGE_DEADLINE_MS) {
 }
 
 // lean: images, fonts and media not loaded (the flight checks read the RPC replies, not the page's looks).
-async function openBrowser({ channel = process.env.PW_CHANNEL || undefined, lean = false } = {}) {
-  const browser = await chromium.launch({ channel, headless: true });
-  const ctx = await browser.newContext({ locale: 'en-CA', timezoneId: 'America/Vancouver', viewport: { width: 1280, height: 900 } });
+// flagged: the browser says it's automated (navigator.webdriver, "HeadlessChrome"). Google then
+// lists fewer sellers and drops the cheapest agency fares: same IP and booking page 2026-11-11,
+// flagged $4,612 (5 sellers), unflagged Trip.com $2,785 (11 sellers), as a person's Chrome sees it.
+async function openBrowser({ channel = process.env.PW_CHANNEL || undefined, lean = false, flagged = process.env.BROWSER_FLAGGED === '1' } = {}) {
+  const browser = await chromium.launch({ channel, headless: true, args: flagged ? [] : ['--disable-blink-features=AutomationControlled'] });
+  const major = browser.version().split('.')[0];
+  const ctx = await browser.newContext({
+    locale: 'en-CA', timezoneId: 'America/Vancouver', viewport: { width: 1280, height: 900 },
+    userAgent: flagged ? undefined : `Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${major}.0.0.0 Safari/537.36`,
+  });
   if (lean) await ctx.route('**/*', (r) => (['image', 'font', 'media'].includes(r.request().resourceType()) ? r.abort() : r.continue()));
   const socs = /SOCS=([^;]+)/.exec(HEADERS.cookie)[1];
   await ctx.addCookies([{ name: 'SOCS', value: socs, domain: '.google.com', path: '/' }]);

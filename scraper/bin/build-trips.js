@@ -60,7 +60,9 @@ const { loadFares, bundleOf, fareOf } = require('../src/trips/fares');
 const { similarCount, scoreOf, rowId, bandOf } = require('../../frontend/app/build.js');
 const { CITIES, airportsOf, isPacific } = require('../../frontend/app/cities.js');
 const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
-const { addDetails, returnsDone, returnsFor, capped, longestOf, listedOnly, unlistedWhy } = require('../src/trips/details');
+const { addDetails, returnsDone, returnsFor, capped, longestOf, listedOnly, unlistedWhy, useBookings } = require('../src/trips/details');
+const { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass } = require('../src/trips/bookings');
+const { inCabin, bookingUrl } = require('../src/gflights/booking');
 const { openBrowserThread } = require('../src/gflights/browser-thread');
 const { monitorEventLoopDelay } = require('node:perf_hooks');
 const alertConfig = require('../config/alerts.json');
@@ -85,6 +87,11 @@ const CHECKED_HOURS = 24;
 // MULTI_RESERVE; at 8 min it never ran.
 const DETAILS_RESERVE = 13 * 60e3;
 const MULTI_RESERVE = 5 * 60e3;
+// Booking pages (bookings.js): beside the scrape (warm) up to BOOKING_WARM_MS, in the build what
+// time the checks leave before the multi-city pass, at most BOOKING_BUILD_MS. Pages at once: ~3-4 s each.
+const BOOKING_WARM_MS = 8 * 60e3;
+const BOOKING_BUILD_MS = 3 * 60e3;
+const BOOKING_PAGES = { warm: 3, build: 6 };
 // A day's flights and times hold for a day; their listed prices are trusted as long (CHECKED_HOURS)
 // and the fares behind them are 2-48 h old already. Every shown cell needs ~6,200 searches, a build
 // makes ~800: under SEARCH_HOURS = 3 they could never all be fresh at once.
@@ -164,10 +171,10 @@ async function saveSearches(file, { cache, at }, now) {
   const rows = [];
   for (const [k, p] of cache) {
     const v = await p;
-    if (Array.isArray(v) && v.length) rows.push([k, at.get(k) ?? now, v]);
+    if (Array.isArray(v) && v.length) rows.push([k, at.get(k) ?? now, stripBookings(v)]);
   }
   const fresh = rows.length;
-  for (const [k, v] of cache.stale ?? []) if (!cache.has(k)) rows.push([k, at.get(k), v]);
+  for (const [k, v] of cache.stale ?? []) if (!cache.has(k)) rows.push([k, at.get(k), stripBookings(v)]);
   // A row per line: the whole cache as one string is past V8's string limit (seen: RangeError:
   // Invalid string length, every other build from 03:05 UTC Nov 5).
   const gz = zlib.createGzip();
@@ -497,6 +504,28 @@ async function main() {
   const lap = (what) => console.log(`${what}: ${Math.round((Date.now() - t0) / 1000)} s in, heap ${Math.round(process.memoryUsage().heapUsed / 2 ** 20)} MB`);
   const details0 = !process.argv.includes('--no-details');
   const searches = loadSearches(arg('search-cache'), Date.parse(generatedAt));
+  // Booking-page prices: the last build's (state/booking.json) and the ones checked beside this
+  // scrape (--booking-cache), applied to every search's rows (details.js useBookings).
+  const bookingFile = path.join(dataDir, 'state', 'booking.json');
+  const bookings = loadBookings([bookingFile, arg('booking-cache')], Date.parse(generatedAt));
+  useBookings(bookings);
+  for (const [k, p] of searches.cache) applyBookings(bookings, k, await p);
+  for (const [k, v] of searches.stale) applyBookings(bookings, k, v);
+  console.log(`booking prices: ${bookings.size} under the age limit`);
+  const homes = config.origins;
+  const rowsOf = async () => { const m = new Map(searches.stale); for (const [k, p] of searches.cache) { const v = await p; if (Array.isArray(v)) m.set(k, v); } return (k) => m.get(k) ?? null; };
+  // Beside the scrape: the last build's shown tickets (its trips files) on their booking pages,
+  // while this run plans. In the build: this build's, after the checks.
+  const warmBooking = warm && (async () => {
+    const tickets = homes.flatMap((h) => { try { return JSON.parse(fs.readFileSync(path.join(dataDir, 'derived', `trips-${h}.json`), 'utf8')).ticketTable ?? []; } catch { return []; } });
+    const itins = bookingCandidates(tickets, await rowsOf(), bookings, homes);
+    const b = await openBrowserThread({ lean: true });
+    try {
+      const s = await bookingPass(itins, (t) => b.bookingSellers(t), bookings, { until: Math.min(warm, Date.now() + BOOKING_WARM_MS), pages: BOOKING_PAGES.warm, inCabin });
+      console.log(`booking pages beside the scrape: ${s.checked} of ${itins.length} checked, ${s.cheaper} cheaper than listed, ${s.failed} failed, ${s.left} left; ${Math.round(s.ms / 1000)} s`);
+    } finally { await b.close(); }
+    if (arg('booking-cache')) saveBookings(arg('booking-cache'), bookings);
+  })().catch((e) => console.log(`booking pages beside the scrape: ${e.message}`));
   console.log(`search cache: ${searches.cache.size} under ${SEARCH_HOURS} h old, ${searches.stale.size} up to ${STALE_DAYS} days, ${[...searches.lands.values()].filter((d) => d > 0).length} flights landing a day or more on`);
   const now = Date.now();
   const load = () => ({ dataDir, now, checked: checked(), lands: searches.lands });
@@ -534,6 +563,13 @@ async function main() {
         ({ vias, byHome } = viewsOf(trips));
         lap('planned again');
       }
+      if (!warm) {
+        const until = Math.min(Date.now() + BOOKING_BUILD_MS, deadline - MULTI_RESERVE - 60e3);
+        const tickets = [...byHome].filter(([v]) => v.endsWith('|')).flatMap(([, rows]) => rows.flatMap((r) => CLASSES.flatMap((cls) => cellTrips(r, cls)).flatMap((t) => t.tickets)));
+        const itins = bookingCandidates(tickets, await rowsOf(), bookings, homes);
+        const s = await bookingPass(itins, (t) => chrome.bookingSellers(t), bookings, { until, pages: BOOKING_PAGES.build, inCabin });
+        console.log(`booking pages: ${s.checked} of ${itins.length} checked, ${s.cheaper} cheaper than listed, ${s.failed} failed, ${s.left} left (used from the next build); ${Math.round(s.ms / 1000)} s`);
+      }
     } finally {
       await chrome.close();
     }
@@ -545,9 +581,11 @@ async function main() {
     const emptyBy = Object.entries(t.emptyBy ?? {}).sort((a, b) => b[1] - a[1]);
     if (emptyBy.length) console.log(`search pages with none inlined, by route: ${emptyBy.slice(0, 12).map(([r, n]) => `${r} ${n}`).join(', ')} (${emptyBy.length} routes)`);
     await saveSearches(arg('search-cache'), searches, generatedAt);
+    await warmBooking;
     if (warm) { console.log(`checks beside the scrape: ${details.searches} searches (${details.browser} in a browser, ${details.failed} failed, ${details.late} left)`); return; }
     fs.mkdirSync(path.dirname(checkedFile), { recursive: true });
     fs.writeFileSync(checkedFile, JSON.stringify(checkedLog));
+    saveBookings(bookingFile, bookings);
     console.log(`details: ${details.searches} searches (${details.browser} in a browser, ${details.failed} failed, ${details.late} skipped out of time${details.error ? `, e.g. ${details.error}` : ''}) over ${details.rounds} rounds`);
   } else {
     for (const rows of byHome.values()) for (const r of rows) { delete r.cands; delete r.top; delete r.city; }
@@ -564,6 +602,11 @@ async function main() {
   for (const rows of byHome.values()) {
     for (const r of rows) {
       for (const trip of CLASSES.flatMap((cls) => cellTrips(r, cls))) {
+        // A ticket priced on its booking page (bookings.js): who sells it, and that page.
+        for (const t of trip.tickets) {
+          const row = t.flights?.back?.seller ? t.flights.back : t.flights?.out;
+          if (row?.seller && row.price === t.price) { t.seller = row.seller; t.bookingUrl = bookingUrl(t); }
+        }
         const flex = flexOf(trip, fares);
         if (flex?.length) trip.flex = flex;
       }

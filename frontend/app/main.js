@@ -327,6 +327,7 @@ function render() {
 /** Google Flights search for one ticket: the exact search it was priced from. */
 function flightsLink(t) {
   if (t.url) return t.url; // a multi-city ticket: that exact search (builder: multi.js)
+  if (t.bookingUrl) return t.bookingUrl; // priced on its booking page: that page, its sellers listed
   const air = (c) => CITIES[c]?.airports ?? c;
   const tfs = buildTfs({ from: air(t.from), to: air(t.to), out: t.date, ret: t.kind === 'rt' ? t.ret : null, cabin: t.cabin === 'J' ? 'J' : 'Y' });
   return `https://www.google.com/travel/flights?tfs=${tfs}&hl=en&gl=CA&curr=CAD`;
@@ -432,6 +433,7 @@ function legItem(l, ticketOf) {
         <b class="route"><span>${esc(cityName(l.from))}<span class="arrow">→</span></span> <span>${esc(cityName(l.to))}</span></b>
         <b class="price">${first ? trend({ total: l.t.price, was: l.t.was }) : ''}${price || '<span class="incl">incl.</span>'}</b>
       </span>
+      ${first && l.t.seller ? `<p class="lows"><span class="low seller">via ${esc(l.t.seller)}</span></p>` : ''}
       ${lowLines(vsLows)}
       ${segments(l)}
     </a>

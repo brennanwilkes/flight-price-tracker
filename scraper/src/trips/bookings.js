@@ -1,0 +1,128 @@
+'use strict';
+/* Booking-page prices: what the sellers ask for a ticket's exact flights (gflights/booking.js).
+ *
+ * The results list and the price graph carry Google's cached price; the booking page asks every
+ * seller, and in an unflagged browser lists agencies the list never shows. 2026-11-11, 39 board
+ * tickets: 20 cheaper there (YVR⇄SIN J -29% Trip.com, YVR⇄ICN J -12%, long-haul economy -4 to
+ * -7%, hops -4 to -6%), ~3-4 s a page.
+ *
+ * A booked price is a listing of that itinerary: a search row with the same flights takes it when
+ * cheaper (apply), so the listed price, the planner and "priced as listed" all see it. Rows keep
+ * their own price in `listedPrice` (the search cache saves that, unapplied: stripped).
+ *   key: cabin|outbound flights|return flights, flights "PR117@2027-09-10,PR318@2027-09-12".
+ */
+const fs = require('node:fs');
+const { airportsOf } = require('../../../frontend/app/cities.js');
+const { CABIN } = require('../gflights/tfs');
+
+const BOOKING_HOURS = 6; // agencies reprice often; a booked price older than this isn't used
+const ALTS = 2; // a long-haul ticket's other outbounds checked with its return, cheapest first
+const ALT_WITHIN = 1.4; // ... up to this many times its price
+
+const legsKey = (legs) => legs.map((l) => `${l.code}@${l.depDate}`).join(',');
+const selKey = (sel) => sel.map((s) => `${s.airline}${s.number}@${s.date}`).join(',');
+const keyOf = (t) => `${t.cabin}|${legsKey(t.flights.out.legs)}|${t.ret ? legsKey(t.flights.back?.legs ?? []) : ''}`;
+
+/** Fresh entries from each file (state/booking.json form: key → { price, seller, at, listed }), newest kept. */
+function loadBookings(files, now = Date.now()) {
+  const map = new Map();
+  for (const f of files) {
+    if (!f || !fs.existsSync(f)) continue;
+    let o;
+    try { o = JSON.parse(fs.readFileSync(f, 'utf8')); } catch { continue; }
+    for (const [k, b] of Object.entries(o)) {
+      if (now - Date.parse(b.at) >= BOOKING_HOURS * 3600e3) continue;
+      if (!map.has(k) || map.get(k).at < b.at) map.set(k, b);
+    }
+  }
+  return index(map);
+}
+
+// By outbound too: a round trip's outbound row (no return chosen) is priced as its cheapest round trip.
+function index(map) {
+  map.byOut = new Map();
+  for (const [k, b] of map) {
+    const [cabin, out, back] = k.split('|');
+    if (!back) continue;
+    const ok = `${cabin}|${out}`;
+    if (!map.byOut.has(ok) || map.byOut.get(ok).price > b.price) map.byOut.set(ok, b);
+  }
+  return map;
+}
+
+function saveBookings(file, map) {
+  fs.writeFileSync(file, JSON.stringify(Object.fromEntries([...map].sort())));
+}
+
+/** Rows of the search with key `key` (details.js: JSON of the query, "full " first for a full list), cheaper where booked. In place. */
+function applyBookings(map, key, rows) {
+  if (!map?.size || !Array.isArray(rows)) return rows;
+  const q = JSON.parse(key.replace(/^full /, ''));
+  for (const o of rows) {
+    if (!o?.legs?.length) continue;
+    const b = q.selected ? map.get(`${q.cabin}|${selKey(q.selected)}|${legsKey(o.legs)}`)
+      : q.ret ? map.byOut.get(`${q.cabin}|${legsKey(o.legs)}`)
+        : map.get(`${q.cabin}|${legsKey(o.legs)}|`);
+    const own = o.listedPrice ?? o.price;
+    if (b && b.price < own) { o.listedPrice = own; o.price = b.price; o.seller = b.seller; }
+  }
+  return rows;
+}
+
+/** Rows as searched (for saving): booked prices taken off. Copies. */
+const stripBookings = (rows) => rows.map((o) => (o.listedPrice == null ? o : (({ listedPrice, seller, ...r }) => ({ ...r, price: listedPrice }))(o)));
+
+/**
+ * Itineraries to check, best first: each shown ticket's own flights (long-haul tickets first, in
+ * board order), then for a long-haul round trip up to ALTS other outbounds from its search with
+ * the same return (Trip.com's $2,785 YVR⇄HKG was on the outbound one row over from the board's).
+ * `tickets`: ticketTable form; `rowsOf(query key)`: that search's rows or null. Booked within
+ * BOOKING_HOURS: skipped.
+ */
+function bookingCandidates(tickets, rowsOf, map, homes) {
+  const out = []; const seen = new Set(map.keys());
+  const add = (t) => { if (!t.flights?.out?.legs?.length || (t.ret && !t.flights.back?.legs?.length)) return; const k = keyOf(t); if (!seen.has(k)) { seen.add(k); out.push(t); } };
+  const long = (t) => homes.includes(t.from) || homes.includes(t.to);
+  const ok = tickets.filter((t) => (t.kind === 'rt' || t.kind === 'ow') && CABIN[t.cabin]);
+  for (const t of ok.filter(long)) add(t);
+  for (const t of ok.filter(long)) {
+    if (!t.ret) continue;
+    const q = { from: airportsOf(t.from), to: airportsOf(t.to), out: t.date, cabin: t.cabin, ret: t.ret };
+    const rows = rowsOf(JSON.stringify(q)) ?? rowsOf(`full ${JSON.stringify(q)}`) ?? [];
+    const mine = legsKey(t.flights.out.legs);
+    const alts = [...new Map(rows.filter((o) => o.legs?.length && legsKey(o.legs) !== mine && (o.listedPrice ?? o.price) <= t.price * ALT_WITHIN)
+      .map((o) => [legsKey(o.legs), o])).values()].sort((a, b) => (a.listedPrice ?? a.price) - (b.listedPrice ?? b.price)).slice(0, ALTS);
+    for (const o of alts) add({ ...t, flights: { out: { legs: o.legs }, back: t.flights.back } });
+  }
+  for (const t of ok.filter((x) => !long(x))) add(t);
+  return out;
+}
+
+/**
+ * Check `itins` on their booking pages until `until` (ms), `pages` at once; `sellers(ticket)` →
+ * the booking page's sellers (gflights/booking.js bookingSellers). Each result into `map` (the
+ * cheapest seller in the ticket's cabin). Returns { checked, cheaper, failed, ms }.
+ */
+async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, now = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z') }) {
+  const t0 = Date.now(); const s = { checked: 0, cheaper: 0, failed: 0, left: 0, ms: 0 };
+  let i = 0;
+  await Promise.all(Array.from({ length: pages }, async () => {
+    while (i < itins.length && Date.now() < until) {
+      const t = itins[i++];
+      let got = null;
+      for (let n = 0; n < 2 && !got && Date.now() < until; n++) got = await sellers(t).catch(() => null);
+      if (!got) { s.failed++; continue; }
+      s.checked++;
+      const best = got.filter((o) => inCabin(o, t.cabin))[0];
+      if (!best) continue;
+      map.set(keyOf(t), { price: best.price, seller: best.sellerName, at: now(), listed: t.price });
+      if (best.price < t.price) s.cheaper++;
+    }
+  }));
+  s.left = Math.max(0, itins.length - i);
+  s.ms = Date.now() - t0;
+  index(map);
+  return s;
+}
+
+module.exports = { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass, keyOf, BOOKING_HOURS };

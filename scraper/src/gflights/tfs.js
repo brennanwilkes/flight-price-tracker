@@ -46,15 +46,19 @@ function segment({ from, to, date, maxStops = null, after = null, selected = nul
  * Round trip if `ret` is given, multi-city (one ticket) if `legs` ([{ from, to, date }]) is, else
  * one-way. Dates are YYYY-MM-DD. `after`: only flights leaving at or after that hour on `out`.
  */
-function buildTfs({ from, to, out, ret = null, legs = null, cabin = 'Y', maxStops = null, after = null, selected = null }) {
+function buildTfs({ from, to, out, ret = null, legs = null, cabin = 'Y', maxStops = null, after = null, selected = null, retSelected = null, booking = false }) {
   if (!CABIN[cabin]) throw new Error(`unknown cabin ${cabin}`);
   if (legs) {
     return Buffer.concat([vfield(1, 28), vfield(2, 2), ...legs.map((l) => segment({ ...l, maxStops })),
       vfield(8, 1), vfield(9, CABIN[cabin]), vfield(14, 1), vfield(19, 3)]).toString('base64url');
   }
   const parts = [vfield(1, 28), vfield(2, 2), segment({ from, to, date: out, maxStops, after, selected })];
-  if (ret) parts.push(segment({ from: to, to: from, date: ret, maxStops }));
-  parts.push(vfield(8, 1), vfield(9, CABIN[cabin]), vfield(14, 1), vfield(19, ret ? 1 : 2));
+  if (ret) parts.push(segment({ from: to, to: from, date: ret, maxStops, selected: retSelected }));
+  parts.push(vfield(8, 1), vfield(9, CABIN[cabin]), vfield(14, 1));
+  // The booking page for the chosen flights (every segment's `selected`): field 16 = {1: -1}, as
+  // Google's own booking links carry it (2026-11-11).
+  if (booking) parts.push(bytes(16, Buffer.from('08ffffffffffffffffff01', 'hex')));
+  parts.push(vfield(19, ret ? 1 : 2));
   return Buffer.concat(parts).toString('base64url');
 }
 
