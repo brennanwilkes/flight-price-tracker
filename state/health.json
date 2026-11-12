@@ -1,7 +1,35 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-11T23:07:15Z",
+ "lastSuccess": "2026-11-11T23:59:20Z",
  "runs": [
+  {
+   "at": "2026-11-11T23:59:20Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 146,
+   "failed": 3,
+   "cells": 4290,
+   "priced": 4054,
+   "changes": 1899,
+   "errors": [
+    "YYJ-JKT-Y 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-DPS-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-DPS-J 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1178
+   },
+   "due": 416,
+   "pages": 6,
+   "pauses": 3,
+   "skipped": 267,
+   "secondOk": 21,
+   "seconds": 1475,
+   "success": true
+  },
   {
    "at": "2026-11-11T23:07:15Z",
    "egress": "vpn",
@@ -544,35 +572,6 @@
    "skipped": 2210,
    "secondOk": 9,
    "seconds": 1287,
-   "success": true
-  },
-  {
-   "at": "2026-11-11T00:06:32Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 252,
-   "failed": 5,
-   "cells": 8193,
-   "priced": 8122,
-   "changes": 5516,
-   "errors": [
-    "IAO-HKG-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "ICN-BWN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-BKK-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "KUL-HKT-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "ICN-SYX-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Seoul ICN Sanya SYX · Haikou HAK Filters A"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1178
-   },
-   "due": 2623,
-   "pages": 6,
-   "skipped": 2366,
-   "secondOk": 17,
-   "seconds": 1381,
    "success": true
   }
  ]
