@@ -46,6 +46,13 @@ test('booking candidates: long-haul tickets first, then their cheapest other out
   assert.strictEqual(got[1].flights.back.legs[0].code, 'PR311');
 });
 
+test('booking candidates: the board\'s tickets, hops too, before any filter\'s', () => {
+  const hop = { kind: 'ow', from: 'HKG', to: 'SGN', date: '2027-09-13', cabin: 'Y', price: 413, flights: { out: { legs: [leg('VN595', 'HKG', 'SGN', '2027-09-13')] } } };
+  const band = { ...ticket, price: 3000, flights: { out: { legs: [leg('CX865', 'YVR', 'HKG', '2027-09-10')] }, back: { legs: [leg('CX888', 'HKG', 'YVR', '2027-09-25')] } } };
+  const got = bookingCandidates([[ticket, hop], [band, hop, ticket]], () => null, new Map(), ['YVR', 'YYJ']);
+  assert.deepStrictEqual(got.map((t) => t.flights.out.legs[0].code), ['PR117', 'VN595', 'CX865']);
+});
+
 test('in cabin: every flight of 6 h or more in the ticket\'s cabin or better; without lengths, every leg', () => {
   assert.ok(inCabin({ cabins: [3, 3, 3, 3] }, 'J'));
   assert.ok(!inCabin({ cabins: [3, 1, 3, 3] }, 'J'));

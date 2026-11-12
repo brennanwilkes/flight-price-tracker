@@ -61,7 +61,7 @@ const { similarCount, scoreOf, rowId, bandOf } = require('../../frontend/app/bui
 const { CITIES, airportsOf, isPacific } = require('../../frontend/app/cities.js');
 const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
 const { addDetails, returnsDone, returnsFor, capped, longestOf, listedOnly, unlistedWhy, useBookings } = require('../src/trips/details');
-const { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass } = require('../src/trips/bookings');
+const { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass, keyOf: bookingKey, BOOKING_HOURS } = require('../src/trips/bookings');
 const { inCabin, bookingUrl } = require('../src/gflights/booking');
 const { openBrowserThread } = require('../src/gflights/browser-thread');
 const { monitorEventLoopDelay } = require('node:perf_hooks');
@@ -99,7 +99,8 @@ const BOOKING_BUILD_MS = 3 * 60e3;
 const BOOKING_PAGES = { warm: 6, build: 6 };
 const QUEUE_MAX = 20000; // every board ticket (~9,600 on 2026-11-12) and its other outbounds; at 8000 the short hops, queued last, never made it in
 // A ticket as the booking pass needs it (--booking-queue).
-const slimLegs = (f) => f && { legs: f.legs.map(({ code, from, to, depDate }) => ({ code, from, to, depDate })) };
+// `min`: the booking pass's cabin check goes by flight length (gflights/booking.js inCabin).
+const slimLegs = (f) => f && { legs: f.legs.map(({ code, from, to, depDate, min }) => ({ code, from, to, depDate, min })) };
 const slim = (t) => ({ kind: t.kind, from: t.from, to: t.to, date: t.date, ret: t.ret, cabin: t.cabin, price: t.price, flights: { out: slimLegs(t.flights.out), back: slimLegs(t.flights.back) } });
 // A day's flights and times hold for a day; their listed prices are trusted as long (CHECKED_HOURS)
 // and the fares behind them are 2-48 h old already. Every shown cell needs ~6,200 searches, a build
@@ -527,12 +528,11 @@ async function main() {
   // Beside the scrape: the last build's shown tickets (its trips files) on their booking pages,
   // while this run plans. In the build: this build's, after the checks.
   const warmBooking = warm && (async () => {
-    // The last build's queue (its shown tickets, then every other ticket its checks priced), else
-    // its shown tickets.
-    let tickets = [];
-    try { if (queueFile) tickets = JSON.parse(fs.readFileSync(queueFile, 'utf8')); } catch {}
-    if (!tickets.length) tickets = homes.flatMap((h) => { try { return JSON.parse(fs.readFileSync(path.join(dataDir, 'derived', `trips-${h}.json`), 'utf8')).ticketTable ?? []; } catch { return []; } });
-    const itins = bookingCandidates(tickets, await rowsOf(), bookings, homes);
+    // The last build's queue (its tiers: the board's cells, then the filters'), else its board's tickets.
+    let tiers = [];
+    try { if (queueFile) { const q = JSON.parse(fs.readFileSync(queueFile, 'utf8')); tiers = Array.isArray(q) ? [q] : q.tiers ?? []; } } catch {}
+    if (!tiers.flat().length) tiers = [homes.flatMap((h) => { try { return JSON.parse(fs.readFileSync(path.join(dataDir, 'derived', `trips-${h}.json`), 'utf8')).ticketTable ?? []; } catch { return []; } })];
+    const itins = bookingCandidates(tiers, await rowsOf(), bookings, homes);
     const b = await openBrowserThread({ lean: true });
     try {
       const s = await bookingPass(itins, (t) => b.bookingSellers(t), bookings, { until: Date.now() + BOOKING_WARM_MS, pages: BOOKING_PAGES.warm, inCabin });
@@ -579,9 +579,13 @@ async function main() {
       }
       if (!warm) {
         const until = Math.min(Date.now() + BOOKING_BUILD_MS, deadline - MULTI_RESERVE - 60e3);
-        const tickets = [...byHome].filter(([v]) => v.endsWith('|')).flatMap(([, rows]) => rows.flatMap((r) => CLASSES.flatMap((cls) => cellTrips(r, cls)).flatMap((t) => t.tickets)));
+        // The board's own cells (overall and per month: the trips files), then the filters' (length
+        // bands, single-flight: the filters files).
+        const mainRows = [...byHome].filter(([v]) => v.endsWith('|')).flatMap(([, rows]) => rows);
+        const board = mainRows.flatMap((r) => CLASSES.flatMap((cls) => [r[cls], ...Object.values(r.months ?? {}).map((m) => m[cls])]).filter(Boolean).flatMap((t) => t.tickets));
+        const tickets = mainRows.flatMap((r) => CLASSES.flatMap((cls) => cellTrips(r, cls)).flatMap((t) => t.tickets));
         const lookup = await rowsOf();
-        const itins = bookingCandidates(tickets, lookup, bookings, homes);
+        const itins = bookingCandidates([board, tickets], lookup, bookings, homes);
         const s = await bookingPass(itins, (t) => chrome.bookingSellers(t), bookings, { until, pages: BOOKING_PAGES.build, inCabin });
         console.log(`booking pages: ${s.checked} of ${itins.length} checked, ${s.cheaper} cheaper than listed, ${s.none} with no seller in its cabin, ${s.failed} failed, ${s.left} left (used from the next build); ${Math.round(s.ms / 1000)} s`);
         // Beyond the board: every other ticket the checks priced (each cell's next-best trips, by
@@ -590,9 +594,12 @@ async function main() {
         // works through it after the shown tickets.
         const shown = new Set(tickets);
         const others = [...new Set(trips.flatMap((t) => t.tickets))].filter((t) => !shown.has(t) && t.flights?.out?.legs?.length).sort((a, b) => a.price - b.price);
-        const queue = bookingCandidates([...tickets, ...others], lookup, new Map(), homes).slice(0, QUEUE_MAX).map(slim);
-        if (queueFile) fs.writeFileSync(queueFile, JSON.stringify(queue));
-        console.log(`booking queue: ${queue.length} itineraries (${tickets.length} shown tickets, ${others.length} others the checks priced)`);
+        const tiers = [bookingCandidates(board, lookup, new Map(), homes)];
+        const boardKeys = new Map(tiers[0].map((t) => [bookingKey(t), null]));
+        tiers.push(bookingCandidates([...tickets, ...others], lookup, boardKeys, homes).slice(0, Math.max(0, QUEUE_MAX - tiers[0].length)));
+        if (queueFile) fs.writeFileSync(queueFile, JSON.stringify({ tiers: tiers.map((l) => l.map(slim)) }));
+        const fresh = (l) => l.filter((t) => bookings.has(bookingKey(t))).length;
+        console.log(`booking queue: ${tiers[0].length} board itineraries (${fresh(tiers[0])} with a booking price under ${BOOKING_HOURS} h), ${tiers[1].length} filters' (${fresh(tiers[1])}); ${tickets.length} shown tickets, ${others.length} others the checks priced`);
       }
     } finally {
       await chrome.close();

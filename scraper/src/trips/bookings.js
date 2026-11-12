@@ -76,17 +76,22 @@ const stripBookings = (rows) => rows.map((o) => (o.listedPrice == null ? o : (({
  * Itineraries to check, best first: each shown ticket's own flights (long-haul business, then
  * long-haul economy, cheapest first), then for a long-haul round trip up to ALTS other outbounds from its search with
  * the same return (Trip.com's $2,785 YVR⇄HKG was on the outbound one row over from the board's).
- * `tickets`: ticketTable form; `rowsOf(query key)`: that search's rows or null. Booked within
- * BOOKING_HOURS: skipped.
+ * `tiers`: lists of tickets (ticketTable form), each taken whole before the next: the board's own
+ * cells, then the filters' (length bands, single-flight). In one list the filters' ~8,200 long-haul
+ * itineraries came before the board's 1,990 hops, which were never reached (2026-11-12). A plain
+ * list is one tier. `rowsOf(query key)`: that search's rows or null. Booked within BOOKING_HOURS: skipped.
  */
-function bookingCandidates(tickets, rowsOf, map, homes) {
+function bookingCandidates(tiers, rowsOf, map, homes) {
+  const lists = Array.isArray(tiers[0]) ? tiers : [tiers];
   const out = []; const seen = new Set(map.keys());
   const add = (t) => { if (!t.flights?.out?.legs?.length || (t.ret && !t.flights.back?.legs?.length)) return; const k = keyOf(t); if (!seen.has(k)) { seen.add(k); out.push(t); } };
   const long = (t) => homes.includes(t.from) || homes.includes(t.to);
-  const ok = tickets.filter((t) => (t.kind === 'rt' || t.kind === 'ow') && CABIN[t.cabin]);
-  // Business first (what the board is for), each cabin's own tickets before their other outbounds.
-  for (const cabin of ['J', 'Y']) addLong(ok.filter((t) => long(t) && t.cabin === cabin));
-  for (const t of ok.filter((x) => !long(x))) add(t);
+  for (const tickets of lists) {
+    const ok = tickets.filter((t) => (t.kind === 'rt' || t.kind === 'ow') && CABIN[t.cabin]);
+    // Business first (what the board is for), each cabin's own tickets before their other outbounds.
+    for (const cabin of ['J', 'Y']) addLong(ok.filter((t) => long(t) && t.cabin === cabin));
+    for (const t of ok.filter((x) => !long(x))) add(t);
+  }
   return out;
 
   // Cheapest first, both homes together: in the trips files' order YVR's came first, and at ~150-300
