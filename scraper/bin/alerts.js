@@ -13,7 +13,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const config = require('../config/alerts.json');
 const sweepConfig = require('../config/sweep.json');
-const { cityName, rowName } = require('../../frontend/app/cities.js');
+const { rowName } = require('../../frontend/app/cities.js');
 const { rowId } = require('../../frontend/app/build.js');
 const { unpack } = require('../../frontend/app/pack.js');
 const { lows, findDeals, isNews } = require('../src/alerts/rules');
@@ -21,28 +21,20 @@ const { lows, findDeals, isNews } = require('../src/alerts/rules');
 const arg = (name) => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1] : null; };
 const readJson = (f, def) => (fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : def);
 const money = (n) => `$${n.toLocaleString('en-CA')}`;
-const day = (iso) => new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', timeZone: 'UTC' });
-const WORD = { buy: 'buy', 'cheap-j': `long flights under ${money(config.cheapBusinessLongLegs)}`, 'new-low': 'new low' };
 
 function dealUrl(d, sha) {
   return `${config.dashboard}?home=${d.home}&sweep=1&v=${sha}#trip=${rowId(d)}~${d.cls}`;
 }
 
+// Two lines, as the board's title line has it: the route, then class and price.
 function message(d, sha) {
-  const place = rowName(d);
-  const t = d.trip;
   return {
-    title: `${place} ${d.cls === 'hybrid' ? 'business' : 'economy'} ${money(t.total)} · ${d.reasons.map((r) => WORD[r]).join(' · ')}`,
-    body: [
-      `${day(t.depart)} – ${day(t.ret)}`, `${t.days} days`, `${t.tickets.length} tickets`,
-      d.home !== 'YVR' ? `from ${cityName(d.home)}` : null,
-      d.reasons.includes('new-low') ? `low was ${money(d.prevLow)}` : null,
-    ].filter(Boolean).join(' · '),
+    title: rowName(d),
+    body: `${d.cls === 'hybrid' ? 'Business' : 'Economy'} ${money(d.trip.total)}`,
     url: dealUrl(d, sha),
     tag: d.key,
   };
 }
-
 async function send(msg) {
   if (!process.env.NOTIFY_SECRET) { console.log(`(no NOTIFY_SECRET) would push: ${msg.title} | ${msg.body} | ${msg.url}`); return false; }
   const res = await fetch(`${config.worker}/notify`, {

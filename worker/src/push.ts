@@ -116,6 +116,11 @@ export interface PushMessage {
 
 const PUSH_TTL_S = 86_400;
 
+async function topicOf(tag: string): Promise<string> {
+  const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(tag)));
+  return bytesToB64Url(hash).slice(0, 32);
+}
+
 /** Encrypts and POSTs one message; the caller reads the status off the Response. */
 export async function sendPush(
   sub: PushSubscriptionJson, message: PushMessage,
@@ -137,8 +142,10 @@ export async function sendPush(
       'Content-Encoding': 'aes128gcm',
       'Content-Type': 'application/octet-stream',
       'TTL': String(PUSH_TTL_S),
-      // Tag collapses a repeat of the same deal on the phone instead of stacking it.
-      'Topic': message.tag.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 32) || 'fare',
+      // Tag collapses a repeat of the same deal on the phone instead of stacking it. Apple takes
+      // only a valid base64url string of at most 32 characters: the tag stripped to 21 characters
+      // ("YVR,hybrid,KUL,KUL+LGK,PEN") was refused, BadWebPushTopic (2026-11-11). Hashed: 32 always.
+      'Topic': await topicOf(message.tag),
       'Urgency': 'normal',
     },
     body,
