@@ -14,7 +14,7 @@ on:
 
 permissions:
   contents: write  # push to the data branch
-  actions: read  # gh cache list (Any search cache)
+  actions: read  # gh cache list (Search cache worth saving)
 
 concurrency:
   group: sweep
@@ -74,14 +74,6 @@ jobs:
           path: .search-cache.json.gz
           key: searches-${{ github.run_id }}
           restore-keys: searches-
-      # Neither found one: is there none at all (a cold start, saved below), or did the download fail
-      # (one exists: this run's near-empty cache isn't saved over it)?
-      - name: Any search cache
-        id: anycache
-        if: steps.searches.outputs.cache-matched-key == '' && steps.searches2.outputs.cache-matched-key == ''
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: echo "none=$([[ $(gh cache list --key searches- --limit 1 --json key --jq length) == 0 ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
       # The booking pages to check beside the next scrape (build-trips.js --booking-queue).
       - name: Restore booking queue
         uses: actions/cache/restore@v4
@@ -126,8 +118,21 @@ jobs:
           NOTIFY_SECRET: ${{ secrets.NOTIFY_SECRET }}
         run: scripts/run_sweep.sh alerts 2>&1 | tee -a sweep.log
 
+      # A cache much smaller than one already saved isn't saved over it: a run that started without
+      # the searches (a failed download, or a thin cache restored) would otherwise hand its few
+      # hundred to every run after (2026-11-11 22:05 to 01:05: four thin boards in a row).
+      - name: Search cache worth saving
+        id: worth
+        if: always() && hashFiles('.search-cache.json.gz') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mine=$(stat -c %s .search-cache.json.gz)
+          best=$(gh cache list --key searches- --limit 20 --json sizeInBytes --jq '[.[].sizeInBytes] | max // 0') || best=0
+          echo "this run's cache: $mine B, the largest saved: $best B"
+          echo "ok=$([[ $mine -ge $(( best / 2 )) ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
       - name: Save search cache
-        if: always() && hashFiles('.search-cache.json.gz') != '' && (steps.searches.outputs.cache-matched-key != '' || steps.searches2.outputs.cache-matched-key != '' || steps.anycache.outputs.none == 'true')
+        if: always() && steps.worth.outputs.ok == 'true'
         uses: actions/cache/save@v4
         with:
           path: .search-cache.json.gz
