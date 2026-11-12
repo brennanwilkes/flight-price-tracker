@@ -74,7 +74,7 @@ const stripBookings = (rows) => rows.map((o) => (o.listedPrice == null ? o : (({
 
 /**
  * Itineraries to check, best first: each shown ticket's own flights (long-haul business, then
- * long-haul economy, in board order), then for a long-haul round trip up to ALTS other outbounds from its search with
+ * long-haul economy, cheapest first), then for a long-haul round trip up to ALTS other outbounds from its search with
  * the same return (Trip.com's $2,785 YVR⇄HKG was on the outbound one row over from the board's).
  * `tickets`: ticketTable form; `rowsOf(query key)`: that search's rows or null. Booked within
  * BOOKING_HOURS: skipped.
@@ -89,7 +89,10 @@ function bookingCandidates(tickets, rowsOf, map, homes) {
   for (const t of ok.filter((x) => !long(x))) add(t);
   return out;
 
-  function addLong(tickets) {
+  // Cheapest first, both homes together: in the trips files' order YVR's came first, and at ~150-300
+  // pages a run (2026-11-12, over the VPN) YYJ's business tickets were never reached.
+  function addLong(list) {
+    const tickets = [...list].sort((a, b) => a.price - b.price);
     for (const t of tickets) add(t);
     for (const t of tickets) {
       if (!t.ret) continue;
