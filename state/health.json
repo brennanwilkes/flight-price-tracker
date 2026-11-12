@@ -1,7 +1,35 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-12T02:44:07Z",
+ "lastSuccess": "2026-11-12T03:47:24Z",
  "runs": [
+  {
+   "at": "2026-11-12T03:47:24Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 86,
+   "failed": 2,
+   "cells": 2260,
+   "priced": 2096,
+   "changes": 927,
+   "errors": [
+    "YVR-DAD-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-SGN-J 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "controlTries": 2,
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1178
+   },
+   "due": 430,
+   "pages": 6,
+   "pauses": 3,
+   "skipped": 342,
+   "secondOk": 12,
+   "seconds": 1298,
+   "success": true
+  },
   {
    "at": "2026-11-12T02:44:07Z",
    "egress": "vpn",
@@ -541,38 +569,6 @@
    "skipped": 1663,
    "secondOk": 10,
    "seconds": 1326,
-   "success": true
-  },
-  {
-   "at": "2026-11-11T04:06:14Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 150,
-   "failed": 7,
-   "cells": 3439,
-   "priced": 3429,
-   "changes": 1657,
-   "errors": [
-    "PNH-SGN-Y 13d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Phnom Penh KTI Ho Chi Minh City SGN Fil",
-    "PNH-SGN-Y 12d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Phnom Penh KTI Ho Chi Minh City SGN Fil",
-    "SGN-PNH-Y 4d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Ho Chi Minh City SGN Phnom Penh KTI Fil",
-    "SGN-PNH-Y 2d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Ho Chi Minh City SGN Phnom Penh KTI Fil",
-    "PNH-SGN-Y 7d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Phnom Penh KTI Ho Chi Minh City SGN Fil",
-    "YYJ-SGN-J 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Ho Chi Minh City SGN Filt",
-    "SGN-LPQ-Y 9d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1178
-   },
-   "due": 2022,
-   "pages": 6,
-   "pauses": 3,
-   "skipped": 1865,
-   "secondOk": 1,
-   "seconds": 1569,
    "success": true
   }
  ]
