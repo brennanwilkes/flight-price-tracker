@@ -36,6 +36,8 @@ jobs:
       # that doesn't say it's automated is shown every seller's price (2026-11-11: Trip.com $2,785
       # vs $4,612 on the same booking page; browser.js openBrowser, gflights/booking.js).
       PW_CHANNEL: chrome
+      # The booking runner (job `booking`) takes the queue from the front; this job's pass beside the scrape from the back.
+      BOOKING_RUNNER: '1'
     steps:
       - uses: actions/checkout@v4
 
@@ -81,6 +83,15 @@ jobs:
           path: .booking-queue.json
           key: booking-queue-${{ github.run_id }}
           restore-keys: booking-queue-
+
+      # The booking runner's prices (job `booking` below), from the last run: its pages finish after
+      # this run's build has read them.
+      - name: Restore booking runner's prices
+        uses: actions/cache/restore@v4
+        with:
+          path: .booking-extra.json
+          key: booking-extra-${{ github.run_id }}
+          restore-keys: booking-extra-
 
       # The data branch as it is, for the checks beside the scrape: fetched before the VPN is up (over
       # it the fetch failed twice on 2026-11-12, 9:05 am and 2:05 pm Vancouver: 83 s, then no
@@ -154,3 +165,61 @@ jobs:
         if: always()
         run: |
           { echo '```'; grep -E '^(control|network|sweep |.*FAILED)' sweep.log || true; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+  # Booking pages on a runner of their own, beside the sweep in the same run (same dispatch, same
+  # concurrency group). The sweep's runner managed ~1,180 pages a run (2026-11-12), CPU-bound; the
+  # queue needs ~1,325 a run to stay within 12 h, and this runner adds ~3,000. Its own ProtonVPN
+  # config (Vancouver, CA#1106): one WireGuard key can't hold two tunnels at once. No pages without
+  # the tunnel: from the runner's US IP the booking page lists fewer sellers.
+  booking:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      PW_CHANNEL: chrome
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: scraper/package-lock.json
+
+      - name: Install
+        working-directory: scraper
+        run: |
+          npm ci --no-audit --no-fund
+          google-chrome --version || npx playwright install --with-deps chrome
+
+      - name: Restore booking queue
+        uses: actions/cache/restore@v4
+        with:
+          path: .booking-queue.json
+          key: booking-queue-${{ github.run_id }}
+          restore-keys: booking-queue-
+      - name: Restore booking runner's prices
+        uses: actions/cache/restore@v4
+        with:
+          path: .booking-extra.json
+          key: booking-extra-${{ github.run_id }}
+          restore-keys: booking-extra-
+      - name: Data snapshot
+        run: scripts/run_sweep.sh snapshot
+
+      - name: VPN up
+        id: vpn
+        env:
+          WG_CONF: ${{ secrets.PROTONVPN_WG_CONF_BOOKING }}
+        run: scripts/vpn_up.sh
+
+      # Done ~47 min into the run, before the sweep job (~50): the run takes no longer.
+      - name: Booking pages
+        if: steps.vpn.outputs.vpn_ok == 'true'
+        run: node scraper/bin/booking-runner.js --data .worktrees/warm --queue .booking-queue.json --extra .booking-extra.json --until $(( $(date +%s) + 43 * 60 )) --pages 6
+
+      - name: Save booking runner's prices
+        if: always() && hashFiles('.booking-extra.json') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: .booking-extra.json
+          key: booking-extra-${{ github.run_id }}

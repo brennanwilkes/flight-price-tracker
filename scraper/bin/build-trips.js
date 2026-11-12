@@ -518,7 +518,8 @@ async function main() {
   // scrape (--booking-cache), applied to every search's rows (details.js useBookings).
   const bookingFile = path.join(dataDir, 'state', 'booking.json');
   const queueFile = arg('booking-queue'); // kept between runs in the Actions cache, not in git
-  const bookings = loadBookings([bookingFile, arg('booking-cache')], Date.parse(generatedAt));
+  // --booking-extra: the booking runner's (sweep.yml job `booking`, bin/booking-runner.js), last run's.
+  const bookings = loadBookings([bookingFile, arg('booking-cache'), arg('booking-extra')], Date.parse(generatedAt));
   useBookings(bookings);
   for (const [k, p] of searches.cache) applyBookings(bookings, k, await p);
   for (const [k, v] of searches.stale) applyBookings(bookings, k, v);
@@ -533,6 +534,8 @@ async function main() {
     try { if (queueFile) { const q = JSON.parse(fs.readFileSync(queueFile, 'utf8')); tiers = Array.isArray(q) ? [q] : q.tiers ?? []; } } catch {}
     if (!tiers.flat().length) tiers = [homes.flatMap((h) => { try { return JSON.parse(fs.readFileSync(path.join(dataDir, 'derived', `trips-${h}.json`), 'utf8')).ticketTable ?? []; } catch { return []; } })];
     const itins = bookingCandidates(tiers, await rowsOf(), bookings, homes);
+    // With the booking runner on its own runner (it takes the queue from the front): from the back.
+    if (process.env.BOOKING_RUNNER === '1') itins.reverse();
     const b = await openBrowserThread({ lean: true });
     try {
       const s = await bookingPass(itins, (t) => b.bookingSellers(t), bookings, { until: Date.now() + BOOKING_WARM_MS, pages: BOOKING_PAGES.warm, inCabin });
