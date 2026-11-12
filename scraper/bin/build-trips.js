@@ -90,9 +90,13 @@ const MULTI_RESERVE = 5 * 60e3;
 const MULTI_STOP = 2.5 * 60e3;
 // Booking pages (bookings.js): beside the scrape (warm) up to BOOKING_WARM_MS, in the build what
 // time the checks leave before the multi-city pass, at most BOOKING_BUILD_MS. Pages at once: ~3-4 s each.
-const BOOKING_WARM_MS = 16 * 60e3; // 20:05 sweep 2026-11-11: 283 pages in 8 min at 3 pages, the scrape unhurt (319 graphs)
+// 12:05 pm sweep 2026-11-12 (Vancouver VPN server): 652 pages in 16 min at 4, 293 in the build in 3.6 min
+// at 6, ~945 a run; the queue was 15,555 and an entry lasts BOOKING_HOURS, so ~1,100-1,300 a run are
+// needed to keep it all checked. The scrape runs ~24-26 min: the pass runs on to ~22, past the flight
+// checks (WARM_UNTIL, ~20), at 6 pages.
+const BOOKING_WARM_MS = 22 * 60e3;
 const BOOKING_BUILD_MS = 3 * 60e3;
-const BOOKING_PAGES = { warm: 4, build: 6 };
+const BOOKING_PAGES = { warm: 6, build: 6 };
 const QUEUE_MAX = 20000; // every board ticket (~9,600 on 2026-11-12) and its other outbounds; at 8000 the short hops, queued last, never made it in
 // A ticket as the booking pass needs it (--booking-queue).
 const slimLegs = (f) => f && { legs: f.legs.map(({ code, from, to, depDate }) => ({ code, from, to, depDate })) };
@@ -531,7 +535,7 @@ async function main() {
     const itins = bookingCandidates(tickets, await rowsOf(), bookings, homes);
     const b = await openBrowserThread({ lean: true });
     try {
-      const s = await bookingPass(itins, (t) => b.bookingSellers(t), bookings, { until: Math.min(warm, Date.now() + BOOKING_WARM_MS), pages: BOOKING_PAGES.warm, inCabin });
+      const s = await bookingPass(itins, (t) => b.bookingSellers(t), bookings, { until: Date.now() + BOOKING_WARM_MS, pages: BOOKING_PAGES.warm, inCabin });
       console.log(`booking pages beside the scrape: ${s.checked} of ${itins.length} checked, ${s.cheaper} cheaper than listed, ${s.failed} failed, ${s.left} left; ${Math.round(s.ms / 1000)} s`);
     } finally { await b.close(); }
     if (arg('booking-cache')) saveBookings(arg('booking-cache'), bookings);
