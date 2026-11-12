@@ -1,7 +1,32 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-12T06:57:11Z",
+ "lastSuccess": "2026-11-12T07:57:09Z",
  "runs": [
+  {
+   "at": "2026-11-12T07:57:09Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 234,
+   "failed": 1,
+   "cells": 6648,
+   "priced": 6519,
+   "changes": 2908,
+   "errors": [
+    "YYJ-MNL-J 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Manila MNL Filters All fi"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1178
+   },
+   "due": 1342,
+   "pages": 6,
+   "skipped": 1107,
+   "secondOk": 14,
+   "seconds": 1395,
+   "success": true
+  },
   {
    "at": "2026-11-12T06:57:11Z",
    "egress": "vpn",
@@ -526,29 +551,6 @@
    "skipped": 1247,
    "secondOk": 21,
    "seconds": 1448,
-   "success": true
-  },
-  {
-   "at": "2026-11-11T08:06:18Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 294,
-   "failed": 0,
-   "cells": 8724,
-   "priced": 8686,
-   "changes": 7455,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1178
-   },
-   "due": 1616,
-   "pages": 6,
-   "skipped": 1322,
-   "secondOk": 9,
-   "seconds": 1294,
    "success": true
   }
  ]
