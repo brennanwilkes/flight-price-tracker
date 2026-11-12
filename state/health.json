@@ -1,7 +1,30 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-12T22:19:46Z",
+ "lastSuccess": "2026-11-12T23:09:17Z",
  "runs": [
+  {
+   "at": "2026-11-12T23:09:17Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 286,
+   "failed": 0,
+   "cells": 7795,
+   "priced": 7778,
+   "changes": 3736,
+   "errors": [],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1178
+   },
+   "due": 832,
+   "pages": 6,
+   "skipped": 546,
+   "secondOk": 5,
+   "seconds": 1281,
+   "success": true
+  },
   {
    "at": "2026-11-12T22:19:46Z",
    "egress": "vpn",
@@ -589,37 +612,6 @@
    "pauses": 3,
    "skipped": 267,
    "secondOk": 21,
-   "seconds": 1475,
-   "success": true
-  },
-  {
-   "at": "2026-11-11T23:07:15Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 220,
-   "failed": 7,
-   "cells": 6473,
-   "priced": 6317,
-   "changes": 3469,
-   "errors": [
-    "YVR-HAN-Y 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "BJS-GUM-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-CEB-Y 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "HKG-GUM-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "TPE-GUM-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "CAN-SYX-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-SHA-J 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1178
-   },
-   "due": 643,
-   "pages": 6,
-   "skipped": 416,
-   "secondOk": 20,
    "seconds": 1475,
    "success": true
   }
