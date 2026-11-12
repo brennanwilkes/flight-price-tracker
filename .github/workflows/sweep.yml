@@ -68,6 +68,13 @@ jobs:
           path: .search-cache.json.gz
           key: searches-${{ github.run_id }}
           restore-keys: searches-
+      # The booking pages to check beside the next scrape (build-trips.js --booking-queue).
+      - name: Restore booking queue
+        uses: actions/cache/restore@v4
+        with:
+          path: .booking-queue.json
+          key: booking-queue-${{ github.run_id }}
+          restore-keys: booking-queue-
 
       - name: Scrape
         env:
@@ -105,6 +112,13 @@ jobs:
         with:
           path: .search-cache.json.gz
           key: searches-${{ github.run_id }}
+
+      - name: Save booking queue
+        if: always() && hashFiles('.booking-queue.json') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: .booking-queue.json
+          key: booking-queue-${{ github.run_id }}
 
       - name: Summary
         if: always()

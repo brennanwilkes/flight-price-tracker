@@ -92,6 +92,10 @@ const MULTI_RESERVE = 5 * 60e3;
 const BOOKING_WARM_MS = 16 * 60e3; // 20:05 sweep 2026-11-11: 283 pages in 8 min at 3 pages, the scrape unhurt (319 graphs)
 const BOOKING_BUILD_MS = 3 * 60e3;
 const BOOKING_PAGES = { warm: 4, build: 6 };
+const QUEUE_MAX = 8000; // ~10 runs' worth beside the scrape
+// A ticket as the booking pass needs it (--booking-queue).
+const slimLegs = (f) => f && { legs: f.legs.map(({ code, from, to, depDate }) => ({ code, from, to, depDate })) };
+const slim = (t) => ({ kind: t.kind, from: t.from, to: t.to, date: t.date, ret: t.ret, cabin: t.cabin, price: t.price, flights: { out: slimLegs(t.flights.out), back: slimLegs(t.flights.back) } });
 // A day's flights and times hold for a day; their listed prices are trusted as long (CHECKED_HOURS)
 // and the fares behind them are 2-48 h old already. Every shown cell needs ~6,200 searches, a build
 // makes ~800: under SEARCH_HOURS = 3 they could never all be fresh at once.
@@ -507,6 +511,7 @@ async function main() {
   // Booking-page prices: the last build's (state/booking.json) and the ones checked beside this
   // scrape (--booking-cache), applied to every search's rows (details.js useBookings).
   const bookingFile = path.join(dataDir, 'state', 'booking.json');
+  const queueFile = arg('booking-queue'); // kept between runs in the Actions cache, not in git
   const bookings = loadBookings([bookingFile, arg('booking-cache')], Date.parse(generatedAt));
   useBookings(bookings);
   for (const [k, p] of searches.cache) applyBookings(bookings, k, await p);
@@ -517,7 +522,11 @@ async function main() {
   // Beside the scrape: the last build's shown tickets (its trips files) on their booking pages,
   // while this run plans. In the build: this build's, after the checks.
   const warmBooking = warm && (async () => {
-    const tickets = homes.flatMap((h) => { try { return JSON.parse(fs.readFileSync(path.join(dataDir, 'derived', `trips-${h}.json`), 'utf8')).ticketTable ?? []; } catch { return []; } });
+    // The last build's queue (its shown tickets, then every other ticket its checks priced), else
+    // its shown tickets.
+    let tickets = [];
+    try { if (queueFile) tickets = JSON.parse(fs.readFileSync(queueFile, 'utf8')); } catch {}
+    if (!tickets.length) tickets = homes.flatMap((h) => { try { return JSON.parse(fs.readFileSync(path.join(dataDir, 'derived', `trips-${h}.json`), 'utf8')).ticketTable ?? []; } catch { return []; } });
     const itins = bookingCandidates(tickets, await rowsOf(), bookings, homes);
     const b = await openBrowserThread({ lean: true });
     try {
@@ -566,9 +575,19 @@ async function main() {
       if (!warm) {
         const until = Math.min(Date.now() + BOOKING_BUILD_MS, deadline - MULTI_RESERVE - 60e3);
         const tickets = [...byHome].filter(([v]) => v.endsWith('|')).flatMap(([, rows]) => rows.flatMap((r) => CLASSES.flatMap((cls) => cellTrips(r, cls)).flatMap((t) => t.tickets)));
-        const itins = bookingCandidates(tickets, await rowsOf(), bookings, homes);
+        const lookup = await rowsOf();
+        const itins = bookingCandidates(tickets, lookup, bookings, homes);
         const s = await bookingPass(itins, (t) => chrome.bookingSellers(t), bookings, { until, pages: BOOKING_PAGES.build, inCabin });
         console.log(`booking pages: ${s.checked} of ${itins.length} checked, ${s.cheaper} cheaper than listed, ${s.failed} failed, ${s.left} left (used from the next build); ${Math.round(s.ms / 1000)} s`);
+        // Beyond the board: every other ticket the checks priced (each cell's next-best trips, by
+        // their listed prices), cheapest first, so a date the cache prices too high for the board
+        // can still be found cheaper on its booking page. The next run's pass beside the scrape
+        // works through it after the shown tickets.
+        const shown = new Set(tickets);
+        const others = [...new Set(trips.flatMap((t) => t.tickets))].filter((t) => !shown.has(t) && t.flights?.out?.legs?.length).sort((a, b) => a.price - b.price);
+        const queue = bookingCandidates([...tickets, ...others], lookup, new Map(), homes).slice(0, QUEUE_MAX).map(slim);
+        if (queueFile) fs.writeFileSync(queueFile, JSON.stringify(queue));
+        console.log(`booking queue: ${queue.length} itineraries (${tickets.length} shown tickets, ${others.length} others the checks priced)`);
       }
     } finally {
       await chrome.close();
