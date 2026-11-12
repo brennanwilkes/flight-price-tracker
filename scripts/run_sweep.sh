@@ -26,7 +26,8 @@ if [[ "${1:-}" == snapshot ]]; then
 	# Shallow: the data branch's history grows every hour, and a full fetch over the VPN took up
 	# to 24 min of the hour (2026-11-09: builds cut off at the job limit). Nothing reads its history.
 	t=$SECONDS
-	if git fetch -q --depth 1 origin "$DATA_BRANCH" 2>/dev/null; then git archive "origin/$DATA_BRANCH" | tar -x -C "$WARM_DIR"; fi
+	for n in 1 2; do git fetch -q --depth 1 origin "$DATA_BRANCH" 2>/dev/null && break; echo "data snapshot: fetch failed (try $n)"; done
+	if git rev-parse -q --verify "origin/$DATA_BRANCH" >/dev/null; then git archive "origin/$DATA_BRANCH" | tar -x -C "$WARM_DIR"; fi
 	echo "data snapshot: $((SECONDS - t)) s"
 	exit 0
 fi

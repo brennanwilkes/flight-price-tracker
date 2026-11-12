@@ -82,6 +82,12 @@ jobs:
           key: booking-queue-${{ github.run_id }}
           restore-keys: booking-queue-
 
+      # The data branch as it is, for the checks beside the scrape: fetched before the VPN is up (over
+      # it the fetch failed twice on 2026-11-12, 9:05 am and 2:05 pm Vancouver: 83 s, then no
+      # checks or booking pages beside the scrape at all).
+      - name: Data snapshot
+        run: scripts/run_sweep.sh snapshot
+
       - name: VPN up
         id: vpn
         env:
@@ -98,7 +104,6 @@ jobs:
           [[ -n "${{ inputs.routes }}" ]] && args+=(--routes "${{ inputs.routes }}")
           # Flight checks beside the scrape (on the fares as they were), into the search cache the
           # build reads: done ~1 min before the scrape's ~26 (searches in flight run ~4.5 min on).
-          scripts/run_sweep.sh snapshot
           WARM_UNTIL=$(( $(date +%s) + 20 * 60 )) scripts/run_sweep.sh warm > warm.log 2>&1 &
           warm=$!
           rc=0
