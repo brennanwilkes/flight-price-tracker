@@ -43,7 +43,7 @@ function index(map) {
   map.byOut = new Map();
   for (const [k, b] of map) {
     const [cabin, out, back] = k.split('|');
-    if (!back) continue;
+    if (!back || b.price == null) continue;
     const ok = `${cabin}|${out}`;
     if (!map.byOut.has(ok) || map.byOut.get(ok).price > b.price) map.byOut.set(ok, b);
   }
@@ -64,7 +64,7 @@ function applyBookings(map, key, rows) {
       : q.ret ? map.byOut.get(`${q.cabin}|${legsKey(o.legs)}`)
         : map.get(`${q.cabin}|${legsKey(o.legs)}|`);
     const own = o.listedPrice ?? o.price;
-    if (b && b.price < own) { o.listedPrice = own; o.price = b.price; o.seller = b.seller; }
+    if (b?.price != null && b.price < own) { o.listedPrice = own; o.price = b.price; o.seller = b.seller; }
   }
   return rows;
 }
@@ -109,10 +109,10 @@ function bookingCandidates(tickets, rowsOf, map, homes) {
 /**
  * Check `itins` on their booking pages until `until` (ms), `pages` at once; `sellers(ticket)` →
  * the booking page's sellers (gflights/booking.js bookingSellers). Each result into `map` (the
- * cheapest seller in the ticket's cabin). Returns { checked, cheaper, failed, ms }.
+ * cheapest seller in the ticket's cabin). Returns { checked, cheaper, none (no seller in its cabin), failed, ms }.
  */
 async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, now = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z') }) {
-  const t0 = Date.now(); const s = { checked: 0, cheaper: 0, failed: 0, left: 0, ms: 0 };
+  const t0 = Date.now(); const s = { checked: 0, cheaper: 0, none: 0, failed: 0, left: 0, ms: 0 };
   let i = 0;
   await Promise.all(Array.from({ length: pages }, async () => {
     while (i < itins.length && Date.now() < until) {
@@ -121,8 +121,11 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, now
       for (let n = 0; n < 2 && !got && Date.now() < until; n++) got = await sellers(t).catch(() => null);
       if (!got) { s.failed++; continue; }
       s.checked++;
-      const best = got.filter((o) => inCabin(o, t.cabin))[0];
-      if (!best) continue;
+      const legs = [...t.flights.out.legs, ...(t.ret ? t.flights.back?.legs ?? [] : [])];
+      const best = got.filter((o) => inCabin(o, t.cabin, legs))[0];
+      // None in its cabin: kept too (price null, never applied), so the page isn't asked again
+      // every run until BOOKING_HOURS.
+      if (!best) { s.none++; map.set(keyOf(t), { price: null, seller: null, at: now(), listed: t.price }); continue; }
       map.set(keyOf(t), { price: best.price, seller: best.sellerName, at: now(), listed: t.price });
       if (best.price < t.price) s.cheaper++;
     }

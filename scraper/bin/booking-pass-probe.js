@@ -26,7 +26,7 @@ const HOMES = new Set(['YVR', 'YYJ']);
         const t0 = Date.now();
         let sellers = null; let err = null;
         for (let n = 0; n < 2 && !sellers; n++) sellers = await bookingSellers(ctx, t).catch((e) => { err = e.message; return null; });
-        const ok = sellers?.filter((o) => inCabin(o, t.cabin)) ?? [];
+        const ok = sellers?.filter((o) => inCabin(o, t.cabin, [...t.flights.out.legs, ...(t.flights.back?.legs ?? [])])) ?? [];
         rows.push({ t, best: ok[0], all: sellers?.length ?? 0, err: sellers ? null : err, s: Math.round((Date.now() - t0) / 1000) });
       }
     }));

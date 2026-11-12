@@ -59,10 +59,19 @@ async function bookingSellers(ctx, t) {
 }
 
 /**
- * A seller's fare is in the ticket's cabin when every leg is in it or better (cabins: per leg,
- * 1 economy .. 4 first). Not parseBooking's matchesCabin (row[24]): Trip.com's all-business YVR⇄ICN
- * fare had it false, 2026-11-11.
+ * A seller's fare is in the ticket's cabin when every flight of 6 h or more is in it or better
+ * (cabins: per leg, 1 economy .. 4 first; SCOPE "cabin by flight length"). Shorter flights may be in
+ * any cabin: Google's business fares put YYJ-YVR, HKG-BKK and the like in economy, and requiring
+ * every leg dropped ~2/3 of business pages unrecorded (2026-11-12, 3:05 pm Vancouver: 1,181
+ * checked, ~400 kept). `legs`: the ticket's flights, out then back, with `min`; without them (or a
+ * count that doesn't match), every leg. Not parseBooking's matchesCabin (row[24]): Trip.com's
+ * all-business YVR⇄ICN fare had it false, 2026-11-11.
  */
-const inCabin = (o, cabin) => (Array.isArray(o.cabins) && o.cabins.length ? o.cabins.every((c) => c >= CABIN[cabin]) : true);
+const LONG_MIN = 6 * 60;
+function inCabin(o, cabin, legs) {
+  if (!Array.isArray(o.cabins) || !o.cabins.length) return true;
+  const byLength = Array.isArray(legs) && legs.length === o.cabins.length && legs.every((l) => Number.isFinite(l?.min));
+  return o.cabins.every((c, i) => c >= CABIN[cabin] || (byLength && legs[i].min < LONG_MIN));
+}
 
 module.exports = { bookingUrl, bookingSellers, inCabin };

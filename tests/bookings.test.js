@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert');
-const { applyBookings, stripBookings, bookingCandidates, keyOf } = require('../scraper/src/trips/bookings');
+const { applyBookings, stripBookings, bookingCandidates, bookingPass, keyOf } = require('../scraper/src/trips/bookings');
 const { bookingUrl, inCabin } = require('../scraper/src/gflights/booking');
 
 const leg = (code, from, to, depDate) => ({ code, from, to, depDate });
@@ -46,8 +46,22 @@ test('booking candidates: long-haul tickets first, then their cheapest other out
   assert.strictEqual(got[1].flights.back.legs[0].code, 'PR311');
 });
 
-test('in cabin: every leg in the ticket\'s cabin or better', () => {
+test('in cabin: every flight of 6 h or more in the ticket\'s cabin or better; without lengths, every leg', () => {
   assert.ok(inCabin({ cabins: [3, 3, 3, 3] }, 'J'));
   assert.ok(!inCabin({ cabins: [3, 1, 3, 3] }, 'J'));
   assert.ok(inCabin({ cabins: [2] }, 'Y'));
+  // YYJ-YVR (32 min) in economy, the crossing in business: business. Premium economy on the crossing: not.
+  const legs = [{ min: 32 }, { min: 760 }, { min: 270 }];
+  assert.ok(inCabin({ cabins: [1, 3, 1] }, 'J', legs));
+  assert.ok(!inCabin({ cabins: [1, 2, 1] }, 'J', legs));
+  assert.ok(!inCabin({ cabins: [1, 3] }, 'J', legs));
+});
+
+test('a page with no seller in its cabin is kept (not asked again), never lowers a row', async () => {
+  const m = mapOf([]);
+  const s = await bookingPass([ticket], async () => [{ sellerName: 'Air Canada', price: 2000, cabins: [1, 2, 1, 1] }], m, { until: Date.now() + 60e3, pages: 1, inCabin });
+  assert.deepStrictEqual([s.checked, s.none, m.get(keyOf(ticket)).price], [1, 1, null]);
+  assert.deepStrictEqual(bookingCandidates([ticket], () => null, m, ['YVR']), []);
+  const outQ = JSON.stringify({ from: 'YVR', to: 'HKG', out: '2027-09-10', cabin: 'J', ret: '2027-09-25' });
+  assert.strictEqual(applyBookings(m, outQ, [{ price: 4870, legs: OUT }])[0].price, 4870);
 });
