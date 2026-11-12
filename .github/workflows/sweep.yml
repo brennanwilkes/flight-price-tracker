@@ -14,6 +14,7 @@ on:
 
 permissions:
   contents: write  # push to the data branch
+  actions: read  # gh cache list (Any search cache)
 
 concurrency:
   group: sweep
@@ -55,19 +56,32 @@ jobs:
       - name: Tests
         run: npm --prefix scraper test
 
-      - name: VPN up
-        id: vpn
-        env:
-          WG_CONF: ${{ secrets.PROTONVPN_WG_CONF }}
-        run: scripts/vpn_up.sh
-
       # Flight-check searches, reused for a few hours across runs (build-trips.js --search-cache).
+      # Restored before the VPN is up: over it, 2026-11-11 22:05, the 62 MB download stalled at 54%
+      # and timed out, and the build ran with no searches (212 board rows of 2,125).
       - name: Restore search cache
+        id: searches
         uses: actions/cache/restore@v4
         with:
           path: .search-cache.json.gz
           key: searches-${{ github.run_id }}
           restore-keys: searches-
+      - name: Restore search cache (again)
+        id: searches2
+        if: steps.searches.outputs.cache-matched-key == ''
+        uses: actions/cache/restore@v4
+        with:
+          path: .search-cache.json.gz
+          key: searches-${{ github.run_id }}
+          restore-keys: searches-
+      # Neither found one: is there none at all (a cold start, saved below), or did the download fail
+      # (one exists: this run's near-empty cache isn't saved over it)?
+      - name: Any search cache
+        id: anycache
+        if: steps.searches.outputs.cache-matched-key == '' && steps.searches2.outputs.cache-matched-key == ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: echo "none=$([[ $(gh cache list --key searches- --limit 1 --json key --jq length) == 0 ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
       # The booking pages to check beside the next scrape (build-trips.js --booking-queue).
       - name: Restore booking queue
         uses: actions/cache/restore@v4
@@ -75,6 +89,12 @@ jobs:
           path: .booking-queue.json
           key: booking-queue-${{ github.run_id }}
           restore-keys: booking-queue-
+
+      - name: VPN up
+        id: vpn
+        env:
+          WG_CONF: ${{ secrets.PROTONVPN_WG_CONF }}
+        run: scripts/vpn_up.sh
 
       - name: Scrape
         env:
@@ -107,7 +127,7 @@ jobs:
         run: scripts/run_sweep.sh alerts 2>&1 | tee -a sweep.log
 
       - name: Save search cache
-        if: always() && hashFiles('.search-cache.json.gz') != ''
+        if: always() && hashFiles('.search-cache.json.gz') != '' && (steps.searches.outputs.cache-matched-key != '' || steps.searches2.outputs.cache-matched-key != '' || steps.anycache.outputs.none == 'true')
         uses: actions/cache/save@v4
         with:
           path: .search-cache.json.gz
