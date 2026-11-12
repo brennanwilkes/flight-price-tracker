@@ -93,7 +93,7 @@ const MULTI_STOP = 2.5 * 60e3;
 const BOOKING_WARM_MS = 16 * 60e3; // 20:05 sweep 2026-11-11: 283 pages in 8 min at 3 pages, the scrape unhurt (319 graphs)
 const BOOKING_BUILD_MS = 3 * 60e3;
 const BOOKING_PAGES = { warm: 4, build: 6 };
-const QUEUE_MAX = 8000; // ~10 runs' worth beside the scrape
+const QUEUE_MAX = 20000; // every board ticket (~9,600 on 2026-11-12) and its other outbounds; at 8000 the short hops, queued last, never made it in
 // A ticket as the booking pass needs it (--booking-queue).
 const slimLegs = (f) => f && { legs: f.legs.map(({ code, from, to, depDate }) => ({ code, from, to, depDate })) };
 const slim = (t) => ({ kind: t.kind, from: t.from, to: t.to, date: t.date, ret: t.ret, cabin: t.cabin, price: t.price, flights: { out: slimLegs(t.flights.out), back: slimLegs(t.flights.back) } });
