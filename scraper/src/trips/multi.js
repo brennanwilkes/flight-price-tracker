@@ -143,7 +143,7 @@ function multiSaving(cache, trip, homes) {
  * Price groupings for `cells` (shown trips, most promising first) and merge the cheaper ones.
  * `browser(query, opts)` → GetShoppingResults payloads (null: cached results only). Returns stats.
  */
-async function applyMulti(dataDir, cells, homes, browser, { budget = 80, selfBudget = 30, now = Date.now() } = {}) {
+async function applyMulti(dataDir, cells, homes, browser, { budget = 80, selfBudget = 30, now = Date.now(), until = Infinity } = {}) {
   const file = path.join(dataDir, 'state', 'multi.json');
   const cache = multiCache(dataDir, now);
   const stats = { searched: 0, failed: 0, merged: 0 };
@@ -160,7 +160,7 @@ async function applyMulti(dataDir, cells, homes, browser, { budget = 80, selfBud
   const ask = [...todo.values(), ...[...selfs.values()].filter((g) => !todo.has(keyOf(g)))];
   let next = 0;
   await Promise.all(Array.from({ length: CONCURRENCY }, async () => {
-    while (next < ask.length) {
+    while (next < ask.length && Date.now() < until) {
       const g = ask[next++];
       stats.searched++;
       try {
@@ -187,7 +187,7 @@ async function applyMulti(dataDir, cells, homes, browser, { budget = 80, selfBud
   }
   next = 0;
   await Promise.all(Array.from({ length: CONCURRENCY }, async () => {
-    while (next < proofs.length) {
+    while (next < proofs.length && Date.now() < until) {
       const { k, g, shown } = proofs[next++];
       stats.proofs = (stats.proofs ?? 0) + 1;
       try {

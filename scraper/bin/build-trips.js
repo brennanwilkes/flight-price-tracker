@@ -87,6 +87,7 @@ const CHECKED_HOURS = 24;
 // MULTI_RESERVE; at 8 min it never ran.
 const DETAILS_RESERVE = 13 * 60e3;
 const MULTI_RESERVE = 5 * 60e3;
+const MULTI_STOP = 2.5 * 60e3;
 // Booking pages (bookings.js): beside the scrape (warm) up to BOOKING_WARM_MS, in the build what
 // time the checks leave before the multi-city pass, at most BOOKING_BUILD_MS. Pages at once: ~3-4 s each.
 const BOOKING_WARM_MS = 16 * 60e3; // 20:05 sweep 2026-11-11: 283 pages in 8 min at 3 pages, the scrape unhurt (319 graphs)
@@ -426,7 +427,7 @@ async function fastOf(p, cache, prio = Infinity) {
  * is about what airlines charge); the via views and the month cells take the cached prices only.
  * Re-tiers and re-sorts the rows.
  */
-async function multiPass(dataDir, byHome, fares, search) {
+async function multiPass(dataDir, byHome, fares, search, until = Infinity) {
   const monthCells = (r) => [...Object.values(r.months), ...Object.values(r.bands ?? {})].flatMap((m) => CLASSES.map((cls) => m[cls] && Object.assign(m[cls], { cls })));
   const cellsOf = (main, months = false) => [...byHome].filter(([v]) => v.endsWith('|') === main)
     .flatMap(([, rows]) => rows.flatMap((r) => [...CLASSES.map((cls) => r[cls] && Object.assign(r[cls], { cls })), ...(months ? monthCells(r) : [])]).filter(Boolean)); // groupsOf reads cls
@@ -453,7 +454,7 @@ async function multiPass(dataDir, byHome, fares, search) {
     // fare) is the point of them, and they're rarely the cheapest by estimate.
     const pacific = turns.filter((t) => t.tickets.some((x) => isPacific(x.to))).slice(0, PACIFIC_MULTI);
     const main = [...pacific, ...turns.filter((t) => !pacific.includes(t))];
-    const st = await applyMulti(dataDir, main, homes, browser, { budget: MULTI_BUDGET });
+    const st = await applyMulti(dataDir, main, homes, browser, { budget: MULTI_BUDGET, until });
     await applyMulti(dataDir, [...cellsOf(false, true), ...cellsOf(true, true).filter((t) => !main.includes(t))], homes, null);
     for (const [view, rows] of byHome) {
       for (const t of rows.flatMap((r) => [r.hybrid, r.economy, ...monthCells(r)])) if (t) { t.tier = tierOf(alertConfig, t.cls, t.total); delete t.cls; }
@@ -613,7 +614,10 @@ async function main() {
   }
   const dayAgo = valuesAt(dataDir, new Date(Date.parse(generatedAt) - 864e5).toISOString().replace(/\.\d+Z$/, 'Z'));
   const cells = [];
-  const m = await multiPass(dataDir, byHome, fares, !process.argv.includes('--no-details') && Date.now() < deadline - MULTI_RESERVE);
+  // Starts no search within MULTI_STOP of the deadline (one in flight runs up to 60 s; the rest of
+  // the build ~1 min): 2026-11-12 02:05 to 16:05, from 14 min on, it ran the build ~7 min past it and
+  // every job into its limit, the alerts and the queue's save never run.
+  const m = await multiPass(dataDir, byHome, fares, !process.argv.includes('--no-details') && Date.now() < deadline - MULTI_RESERVE, deadline - MULTI_STOP);
   console.log(`multi-city: ${m.searched} searched (${m.failed} failed), ${m.proofs ?? 0} searched again with the trip's flights chosen, ${m.merged} trips on one ticket (${m.self ?? 0} self-transfers joined); ${m.ms}ms`);
   if (details) details.multi = m;
   const unlisted = dropUnlisted(byHome);
