@@ -228,6 +228,9 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
       if (/HTTP (429|30\d)/.test(e.message)) { tally.blocked++; cache.blockedUntil = Date.now() + BLOCKED_PAUSE_MS; }
       if (/timeout|abort/i.test(e.message)) tally.timeouts++;
       else tally.errors++;
+      // Why, for the log: most plain fetches have failed since 2026-11-10 at least, unexplained.
+      const why = `${e.message}${e.cause ? ` (${e.cause.code ?? e.cause.message})` : ''}`.replace(/\d+/g, 'N').slice(0, 80);
+      (tally.errorBy ??= {})[why] = (tally.errorBy[why] ?? 0) + 1;
       throw e;
     } finally {
       tally.plain++;
