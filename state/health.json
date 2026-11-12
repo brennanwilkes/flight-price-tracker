@@ -1,7 +1,35 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-12T07:57:09Z",
+ "lastSuccess": "2026-11-12T08:56:48Z",
  "runs": [
+  {
+   "at": "2026-11-12T08:56:48Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 188,
+   "failed": 3,
+   "cells": 5413,
+   "priced": 5287,
+   "changes": 2179,
+   "errors": [
+    "MPH-OSA-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "MPH-IAO-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "OKA-SGN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1178
+   },
+   "due": 1339,
+   "pages": 6,
+   "pauses": 1,
+   "skipped": 1148,
+   "secondOk": 15,
+   "seconds": 1309,
+   "success": true
+  },
   {
    "at": "2026-11-12T07:57:09Z",
    "egress": "vpn",
@@ -524,33 +552,6 @@
    "skipped": 1243,
    "secondOk": 43,
    "seconds": 1498,
-   "success": true
-  },
-  {
-   "at": "2026-11-11T09:06:20Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 143,
-   "failed": 2,
-   "cells": 3643,
-   "priced": 3608,
-   "changes": 2571,
-   "errors": [
-    "YYJ-BJS-J 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Beijing PEK PKX Filters A",
-    "YYJ-BJS-Y 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Beijing PEK PKX Filters Al"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1178
-   },
-   "due": 1392,
-   "pages": 6,
-   "pauses": 2,
-   "skipped": 1247,
-   "secondOk": 21,
-   "seconds": 1448,
    "success": true
   }
  ]
