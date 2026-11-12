@@ -1,7 +1,31 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-12T05:52:31Z",
+ "lastSuccess": "2026-11-12T06:57:11Z",
  "runs": [
+  {
+   "at": "2026-11-12T06:57:11Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 101,
+   "failed": 0,
+   "cells": 3203,
+   "priced": 2946,
+   "changes": 2310,
+   "errors": [],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1178
+   },
+   "due": 1041,
+   "pages": 6,
+   "pauses": 3,
+   "skipped": 940,
+   "secondOk": 13,
+   "seconds": 1309,
+   "success": true
+  },
   {
    "at": "2026-11-12T05:52:31Z",
    "egress": "vpn",
@@ -525,37 +549,6 @@
    "skipped": 1322,
    "secondOk": 9,
    "seconds": 1294,
-   "success": true
-  },
-  {
-   "at": "2026-11-11T07:06:16Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 207,
-   "failed": 6,
-   "cells": 5338,
-   "priced": 5269,
-   "changes": 3881,
-   "errors": [
-    "SGN-PEN-Y 2d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "PEN-SGN-Y 12d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "SGN-PEN-Y 3d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "SGN-PEN-Y 12d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "PEN-SGN-Y 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "SGN-LGK-Y 11d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1178
-   },
-   "due": 1700,
-   "pages": 6,
-   "pauses": 2,
-   "skipped": 1487,
-   "secondOk": 17,
-   "seconds": 1443,
    "success": true
   }
  ]
