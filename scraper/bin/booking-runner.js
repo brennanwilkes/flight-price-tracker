@@ -22,7 +22,7 @@
  */
 const fs = require('node:fs');
 const path = require('node:path');
-const { loadBookings, saveBookings, bookingCandidates, bookingPass, passLine, keyOf, BOOKING_HOURS } = require('../src/trips/bookings');
+const { loadBookings, saveBookings, bookingCandidates, bookingPass, passLine, listedOf, keyOf, BOOKING_HOURS } = require('../src/trips/bookings');
 const { useBookings } = require('../src/trips/details');
 const { provenPrice } = require('../src/trips/ties');
 const { fareKey } = require('../src/trips/fares');
@@ -90,7 +90,7 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   // pages had 1-5 sellers; haleiwa saw 5 at 5:50 pm and 10 at 8:05 pm on the same page.)
   let win = { long: 0, wide: 0, gone: 0, errors: 0 };
   const timed0 = async (t) => { const t1 = Date.now(); try { const r = await b.bookingSellers(t); ms.push(Date.now() - t1);
-    if (homes.includes(t.from) || homes.includes(t.to)) { win.long++; if (r.length >= 6) win.wide++; if (!t.guess && t.price && r[0] && r[0].price > t.price * 1.03) win.gone++; }
+    if (homes.includes(t.from) || homes.includes(t.to)) { win.long++; if (r.length >= 6) win.wide++; if (!t.guess && listedOf(t) && r[0] && r[0].price > listedOf(t) * 1.03) win.gone++; }
     return r; } catch (e) { bad++; win.errors++; ms.push(Date.now() - t1); const w = String(e.message).replace(/\d+/g, 'N').slice(0, 60); why[w] = (why[w] ?? 0) + 1; throw e; } };
   const timed = timed0;
   const pass = async (name, itins, end) => {

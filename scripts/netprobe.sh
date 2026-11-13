@@ -18,16 +18,23 @@ set -uo pipefail
 SEARCH='https://www.google.com/travel/flights?tfs=CBwQAhoeEgoyMDI3LTA5LTEwagcIARIDWVZScgcIARIDSEtHGh4SCjIwMjctMDktMjVqBwgBEgNIS0dyBwgBEgNZVlJAAUgDcAGYAQE&hl=en&gl=CA&curr=CAD'
 UA='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 
-probe() { # name url → "name code connect ttfb total bytes"
-	local out
-	out=$(curl -s -o /dev/null --max-time 15 -A "$UA" -H 'accept-language: en-CA,en;q=0.9' \
+BODY=
+probe() { # name url → "name code connect ttfb total bytes rows" (rows: the search page's result rows inlined, 1/0; - elsewhere)
+	local out rows=-
+	: > "$BODY"
+	out=$(curl -s -o "$BODY" --max-time 15 -A "$UA" -H 'accept-language: en-CA,en;q=0.9' \
 		-w '%{http_code} %{time_connect} %{time_starttransfer} %{time_total} %{size_download}' "$2" 2>/dev/null) || true
-	echo "$1 ${out:-000 0 0 15 0}"
+	# A result row in the inline ds:1 blob starts [[[["<airline>",[ (flights.js parseResults); the
+	# page comes back the same size without them, so size alone doesn't tell.
+	[[ $1 == search ]] && { grep -qE '\[\[\[\["[A-Z0-9]{2}",\["' "$BODY" && rows=1 || rows=0; }
+	echo "$1 ${out:-000 0 0 15 0} $rows"
 }
 
 case "${1:-}" in
 run)
 	log=$2
+	BODY=$(mktemp)
+	trap 'rm -f "$BODY"; exit' EXIT TERM INT
 	while :; do
 		t=$(date +%s)
 		load=$(cut -d' ' -f1 /proc/loadavg)
@@ -44,16 +51,16 @@ summary)
 	log=$2
 	[[ -s "$log" ]] || { echo "netprobe: no samples"; exit 0; }
 	# Per 5-min window and probe: samples, failed (no answer in 15 s), non-200, avg/max total s, and
-	# for search the share under 100 KB (a page without results); the window's load and tunnel MB/s.
+	# for search how many came back without result rows; the window's load and tunnel MB/s.
 	awk '
 		NR == 1 { t0 = $1 }
 		{
 			w = int(($1 - t0) / 300); k = w SUBSEP $2; win[w] = 1
 			n[k]++; tot[k] += $6; if ($6 > mx[k]) mx[k] = $6
 			if ($3 == "000") fail[k]++; else if ($3 != "200" && $3 != "204") bad[k]++
-			if ($2 == "search" && $3 == "200" && $7 < 100000) thin[k]++
-			load[w] += $8; ln[w]++
-			if ($9 != "-") { if (!(w in rx0)) { rx0[w] = $9; tx0[w] = $10; ts0[w] = $1 } rx1[w] = $9; tx1[w] = $10; ts1[w] = $1 }
+			if ($2 == "search" && $3 == "200" && $8 == "0") thin[k]++
+			load[w] += $9; ln[w]++
+			if ($10 != "-") { if (!(w in rx0)) { rx0[w] = $10; tx0[w] = $11; ts0[w] = $1 } rx1[w] = $10; tx1[w] = $11; ts1[w] = $1 }
 		}
 		END {
 			for (w = 0; w in win; w++) {
@@ -64,7 +71,7 @@ summary)
 					if (!n[k]) continue
 					line = line sprintf(" %s %d/%d ok, avg %.1f s, max %.1f s", ps[i], n[k] - fail[k] - bad[k], n[k], tot[k] / n[k], mx[k])
 					if (bad[k]) line = line sprintf(" (%d refused)", bad[k])
-					if (ps[i] == "search" && thin[k]) line = line sprintf(" (%d empty)", thin[k])
+					if (ps[i] == "search" && thin[k]) line = line sprintf(" (%d without results)", thin[k])
 					line = line ";"
 				}
 				dt = ts1[w] - ts0[w]

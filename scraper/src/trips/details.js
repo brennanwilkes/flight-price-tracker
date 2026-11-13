@@ -10,7 +10,9 @@
  * option: { price, min, airlines, legs: [{ code, airline, from, to, dep, arr, depDate, arrDate,
  * min, plane }], stops: [{ at, min }], likely? }.
  */
-const { searchPlain, parseResults, dedupe } = require('../gflights/flights');
+const { parseResults, dedupe } = require('../gflights/flights');
+// In a thread of its own, off the checks' event loop (gflights/plain-thread.js).
+const { searchPlain } = require('../gflights/plain-thread');
 const { airportsOf, isLong } = require('../../../frontend/app/cities.js');
 const { fareKey } = require('./fares');
 const { samePrice } = require('../../../frontend/app/price.js');
@@ -202,7 +204,7 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
   const LATE = { error: 'out of time', late: true }; // not cached
   const plain = slots(cache, 'plain', CONCURRENCY);
   const page = browser && slots(cache, 'pages', pages);
-  const tally = (cache.tally ??= { returns: 0, returnHit: 0, returnLate: 0, empty: 0, pages: 0, full: 0, far: 0, window: 0, windowTry: 0, windowHit: 0, refreshed: 0, blocked: 0, plain: 0, plainEmpty: 0, timeouts: 0, errors: 0, plainMs: [], pageMs: [] });
+  const tally = (cache.tally ??= { returns: 0, returnHit: 0, returnLate: 0, empty: 0, pages: 0, full: 0, far: 0, window: 0, windowTry: 0, windowHit: 0, refreshed: 0, blocked: 0, plain: 0, plainEmpty: 0, timeouts: 0, errors: 0, plainMs: [], netMs: [], pageMs: [] });
   const stale = cache.stale ?? new Map(); // key → result, from earlier builds past their fresh hours
   const stats = { searches: 0, failed: 0, late: 0, full: 0, connection: 0, none: 0, stay: 0 };
   // A result into the cache as it comes; out of time: out again, not a result.
@@ -217,7 +219,8 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
     const t0 = Date.now();
     try {
       // A window with no flights in it comes back without a results blob: none, not a failure.
-      const r = q.after ? await searchPlain(q, 1).catch((e) => { if (/no results blob/.test(e.message)) return []; throw e; }) : await searchPlain(q, tries);
+      const r = q.after ? await searchPlain(q, 1).catch((e) => { if (/no results blob/.test(e.message)) { tally.netMs.push(e.netMs); return []; } throw e; }) : await searchPlain(q, tries);
+      if (r.netMs != null) tally.netMs.push(r.netMs);
       if (!r.length) {
         tally.plainEmpty++;
         const route = `${[q.from].flat()[0]}-${[q.to].flat()[0]} ${q.cabin}${q.ret ? ' rt' : ''}`;
@@ -225,6 +228,7 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
       }
       return r;
     } catch (e) {
+      if (e.netMs != null) tally.netMs.push(e.netMs);
       if (/HTTP (429|30\d)/.test(e.message)) { tally.blocked++; cache.blockedUntil = Date.now() + BLOCKED_PAUSE_MS; }
       if (/timeout|abort/i.test(e.message)) tally.timeouts++;
       else tally.errors++;
