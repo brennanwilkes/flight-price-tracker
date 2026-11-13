@@ -62,7 +62,7 @@ const { similarCount, scoreOf, rowId, bandOf } = require('../../frontend/app/bui
 const { CITIES, airportsOf, isPacific } = require('../../frontend/app/cities.js');
 const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
 const { addDetails, returnsDone, returnsFor, capped, longestOf, listedOnly, unlistedWhy, useBookings } = require('../src/trips/details');
-const { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass, passLine, keyOf: bookingKey, BOOKING_HOURS } = require('../src/trips/bookings');
+const { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass, passLine, listedOf, keyOf: bookingKey, BOOKING_HOURS } = require('../src/trips/bookings');
 const { inCabin, bookingUrl, canary } = require('../src/gflights/booking');
 const { openBrowserThread } = require('../src/gflights/browser-thread');
 const { monitorEventLoopDelay } = require('node:perf_hooks');
@@ -102,7 +102,8 @@ const QUEUE_MAX = 20000; // every board ticket (~9,600 on 2026-11-12) and its ot
 // A ticket as the booking pass needs it (--booking-queue).
 // `min`: the booking pass's cabin check goes by flight length (gflights/booking.js inCabin).
 const slimLegs = (f) => f && { legs: f.legs.map(({ code, from, to, depDate, min }) => ({ code, from, to, depDate, min })) };
-const slim = (t) => ({ kind: t.kind, from: t.from, to: t.to, date: t.date, ret: t.ret, cabin: t.cabin, price: t.price, flights: { out: slimLegs(t.flights.out), back: slimLegs(t.flights.back) } });
+// `listed`: what Google listed it at, before booking prices (bookings.js listedOf): a page is judged against that.
+const slim = (t) => ({ kind: t.kind, from: t.from, to: t.to, date: t.date, ret: t.ret, cabin: t.cabin, price: t.price, listed: listedOf(t), flights: { out: slimLegs(t.flights.out), back: slimLegs(t.flights.back) } });
 // A day's flights and times hold for a day; their listed prices are trusted as long (CHECKED_HOURS)
 // and the fares behind them are 2-48 h old already. Every shown cell needs ~6,200 searches, a build
 // makes ~800: under SEARCH_HOURS = 3 they could never all be fresh at once.

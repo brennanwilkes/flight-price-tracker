@@ -128,7 +128,7 @@ function bookingCandidates(tiers, rowsOf, map, homes) {
       const mine = legsKey(t.flights.out.legs);
       const alts = [...new Map(rows.filter((o) => o.legs?.length && legsKey(o.legs) !== mine && (o.listedPrice ?? o.price) <= t.price * ALT_WITHIN)
         .map((o) => [legsKey(o.legs), o])).values()].sort((a, b) => (a.listedPrice ?? a.price) - (b.listedPrice ?? b.price)).slice(0, ALTS);
-      for (const o of alts) add({ ...t, flights: { out: { legs: o.legs }, back: t.flights.back } });
+      for (const o of alts) add({ ...t, listed: o.listedPrice ?? o.price, flights: { out: { legs: o.legs }, back: t.flights.back } });
     }
   }
 }
@@ -168,20 +168,21 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gat
       const any = got[0];
       const seen = { n: got.length, any: any?.price ?? null, anySeller: any?.sellerName ?? null, ...(short?.() ? { short: true } : {}) };
       if (seen.short) s.short++;
+      const L = listedOf(t);
       // `guess`: a return guessed, not listed with its outbound (trips/ties.js): no listed price to hold the page to.
-      if (any && t.price && !t.guess && any.price > t.price * LISTED_GONE) {
+      if (any && L && !t.guess && any.price > L * LISTED_GONE) {
         s.partial++;
-        map.set(keyOf(t), { price: best?.price ?? null, seller: best?.sellerName ?? null, at: now(), listed: t.price, partial: true, ...seen });
+        map.set(keyOf(t), { price: best?.price ?? null, seller: best?.sellerName ?? null, at: now(), listed: L, partial: true, ...seen });
         continue;
       }
       // None in its cabin: kept too (price null, never applied), so the page isn't asked again
       // every run until BOOKING_HOURS.
       // Without flight lengths (a queue saved before they were kept) every leg had to be in the
       // cabin: not kept then, it's asked again once the queue has them.
-      if (!best) { s.none++; if (legs.every((l) => Number.isFinite(l?.min))) map.set(keyOf(t), { price: null, seller: null, at: now(), listed: t.price, byLength: true, ...seen }); continue; }
-      map.set(keyOf(t), { price: best.price, seller: best.sellerName, at: now(), listed: t.price, ...seen });
-      if (best.price < t.price) s.cheaper++;
-      else if (!t.guess && best.price > t.price * LISTED_GONE) { s.dearer++; s.mixed++; }
+      if (!best) { s.none++; if (legs.every((l) => Number.isFinite(l?.min))) map.set(keyOf(t), { price: null, seller: null, at: now(), listed: L, byLength: true, ...seen }); continue; }
+      map.set(keyOf(t), { price: best.price, seller: best.sellerName, at: now(), listed: L, ...seen });
+      if (best.price < L) s.cheaper++;
+      else if (!t.guess && best.price > L * LISTED_GONE) { s.dearer++; s.mixed++; }
     }
   }));
   s.left = Math.max(0, itins.length - i);
@@ -190,7 +191,19 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gat
   return s;
 }
 
+/**
+ * What Google listed a ticket at, before any booking price was applied: its row's `listedPrice`
+ * (applyBookings), the queue's `listed` (build-trips.js slim), else its price. Held to the ticket's
+ * price, a page was judged against an earlier booking price: 135 of 282 board pages came out
+ * "without the listed offer" with the canary full (11:05 pm Vancouver, 2026-11-12).
+ */
+function listedOf(t) {
+  if (t.listed != null) return t.listed; // the queue's, or an other outbound's own row
+  const row = t.ret ? t.flights?.back?.listedPrice ?? t.flights?.out?.listedPrice : t.flights?.out?.listedPrice;
+  return row ?? t.price;
+}
+
 /** One line of a pass's telemetry (bookingPass's returned stats). */
 const passLine = (s) => `sellers a page ${s.sellers['1-5']} with 1-5, ${s.sellers['6-10']} with 6-10, ${s.sellers['11+']} with 11+; ${s.partial} without the listed offer (held ${PARTIAL_HOURS} h, unapplied), ${s.mixed} dearer in the cabin than the listed fare (listed in another cabin), ${s.noCabins} fares without cabins (not counted), ${s.short} checked while the IP got the short list (held ${SHORT_HOURS} h)`;
 
-module.exports = { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass, passLine, keyOf, BOOKING_HOURS };
+module.exports = { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass, passLine, listedOf, keyOf, BOOKING_HOURS };

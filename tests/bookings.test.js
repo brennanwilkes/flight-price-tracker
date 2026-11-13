@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert');
-const { applyBookings, stripBookings, bookingCandidates, bookingPass, keyOf } = require('../scraper/src/trips/bookings');
+const { applyBookings, stripBookings, bookingCandidates, bookingPass, listedOf, keyOf } = require('../scraper/src/trips/bookings');
 const { bookingUrl, inCabin } = require('../scraper/src/gflights/booking');
 
 const leg = (code, from, to, depDate) => ({ code, from, to, depDate });
@@ -95,4 +95,15 @@ test('a page without the listed offer in any cabin: held as partial, a dearer on
   assert.deepStrictEqual([s.partial, s.mixed, s.noCabins], [1, 1, 1]);
   assert.strictEqual(m.get('Y|VN1@2027-09-13|').partial, true);
   assert.deepStrictEqual([m.get('Y|VN2@2027-09-13|').price, m.get('Y|VN2@2027-09-13|').n, m.get('Y|VN2@2027-09-13|').any], [700, 2, 400]);
+});
+
+test('a page is held to the listed price, not an earlier booking price', async () => {
+  // Board ticket priced $2,785 by an earlier booking; Google listed $4,870. Now $4,612 is the cheapest: a full page.
+  const booked = { ...ticket, price: 2785, flights: { out: { legs: OUT.map((l) => ({ ...l, min: 300 })) }, back: { legs: BACK.map((l) => ({ ...l, min: 300 })), listedPrice: 4870 } } };
+  assert.strictEqual(listedOf(booked), 4870);
+  const m = mapOf([]);
+  const s = await bookingPass([booked], async () => [{ sellerName: 'FlightHub', price: 4612, cabins: [3, 3, 3, 3] }], m, { until: Date.now() + 60e3, pages: 1, inCabin });
+  assert.deepStrictEqual([s.partial, s.cheaper, m.get(keyOf(booked)).price], [0, 1, 4612]);
+  // The queue's `listed` and an other outbound's own row price come first.
+  assert.strictEqual(listedOf({ ...booked, listed: 5000 }), 5000);
 });

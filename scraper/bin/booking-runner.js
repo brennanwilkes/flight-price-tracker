@@ -69,7 +69,15 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   // the ties' searches is marked short, and pages are paced (--gap ms between starts: is it the rate?).
   const isFull = () => view.startsWith('full');
   let held = 0; let holdFrom = null; // wall-clock time held (the pages wait together)
-  const watch = setInterval(() => { canary((t) => b.bookingSellers(t)).then((v) => { if (v !== view) console.log(`  ${Math.round((Date.now() - t0) / 60e3)} min: canary ${v}`); view = v; }); }, 2 * 60e3);
+  // A short reading is asked again 30 s on before pages are held: single short readings came and went
+  // within a check (11:05 pm Vancouver, 2026-11-12: 3 of them, and 14 min held).
+  const ask = () => canary((t) => b.bookingSellers(t));
+  const watch = setInterval(async () => {
+    let v = await ask();
+    if (!v.startsWith('full') && isFull()) { await sleep(30e3); v = await ask(); }
+    if (v !== view) console.log(`  ${Math.round((Date.now() - t0) / 60e3)} min: canary ${v}`);
+    view = v;
+  }, 2 * 60e3);
   const gate = async () => {
     while (!isFull() && Date.now() < until) { holdFrom ??= Date.now(); await sleep(15e3); }
     if (holdFrom != null) { held += Date.now() - holdFrom; holdFrom = null; }
