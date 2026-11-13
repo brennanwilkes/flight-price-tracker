@@ -107,6 +107,11 @@ jobs:
           WG_CONF: ${{ secrets.PROTONVPN_WG_CONF }}
         run: scripts/vpn_up.sh
 
+      # Through the job: is a search timing out on Google limiting this IP, a full tunnel, or a busy
+      # process? (scripts/netprobe.sh; summarized after the alerts, minutes from here.)
+      - name: Network probe
+        run: nohup scripts/netprobe.sh run netprobe.log > /dev/null 2>&1 &
+
       - name: Scrape
         env:
           EGRESS: ${{ steps.vpn.outputs.vpn_ok == 'true' && 'vpn' || 'direct' }}
@@ -135,6 +140,11 @@ jobs:
         env:
           NOTIFY_SECRET: ${{ secrets.NOTIFY_SECRET }}
         run: scripts/run_sweep.sh alerts 2>&1 | tee -a sweep.log
+
+      # The scrape and the checks beside it run ~0-26 min, the build from there.
+      - name: Network probe summary
+        if: always()
+        run: scripts/netprobe.sh summary netprobe.log | tee -a sweep.log
 
       # A cache much smaller than one already saved isn't saved over it: a run that started without
       # the searches (a failed download, or a thin cache restored) would otherwise hand its few
@@ -216,6 +226,10 @@ jobs:
           WG_CONF: ${{ secrets.PROTONVPN_WG_CONF_BOOKING }}
         run: scripts/vpn_up.sh
 
+      # The same probe as the sweep job's, on an IP that only loads booking pages: the control.
+      - name: Network probe
+        run: nohup scripts/netprobe.sh run netprobe.log > /dev/null 2>&1 &
+
       # Done ~47 min into the run, before the sweep job (~50): the run takes no longer.
       # --gap: a page started every N ms at most. Unpaced (~1.7 a second) the IP got the full seller
       # list for ~15 min, then short (10:05 pm Vancouver, 2026-11-12); at 4000 (0.25 a second) full
@@ -228,6 +242,10 @@ jobs:
           pid=$!
           (while kill -0 $pid 2>/dev/null; do sleep 300; echo "  load: $(cut -d' ' -f1-3 /proc/loadavg)"; done) &
           wait $pid
+
+      - name: Network probe summary
+        if: always()
+        run: scripts/netprobe.sh summary netprobe.log
 
       - name: Save booking runner's prices
         if: always() && hashFiles('.booking-extra.json') != ''
