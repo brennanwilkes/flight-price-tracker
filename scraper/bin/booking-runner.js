@@ -58,8 +58,16 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   // the build pass's 1.45, on the same kind of runner.
   const ms = []; let bad = 0; const t0 = Date.now(); let phase = 'board'; const why = {};
   const q = (p) => { const v = [...ms].sort((x, y) => x - y); return v.length ? Math.round(v[Math.floor(p * (v.length - 1))] / 100) / 10 : '-'; };
-  const tick = setInterval(() => console.log(`  ${Math.round((Date.now() - t0) / 60e3)} min (${phase}): ${ms.length} booking pages (${bad} errors), ${(ms.length / ((Date.now() - t0) / 1000)).toFixed(2)} a second, page ${q(0.5)} s median, ${q(0.9)} s p90`), 5 * 60e3);
-  const timed = async (t) => { const t1 = Date.now(); try { const r = await b.bookingSellers(t); ms.push(Date.now() - t1); return r; } catch (e) { bad++; ms.push(Date.now() - t1); const w = String(e.message).replace(/\d+/g, 'N').slice(0, 60); why[w] = (why[w] ?? 0) + 1; throw e; } };
+  const tick = setInterval(() => { console.log(`  ${Math.round((Date.now() - t0) / 60e3)} min (${phase}): ${ms.length} booking pages (${bad} errors), ${(ms.length / ((Date.now() - t0) / 1000)).toFixed(2)} a second, page ${q(0.5)} s median, ${q(0.9)} s p90; this window: ${win.long} long-haul pages, ${win.wide} with 6+ sellers, ${win.gone} without the listed offer, ${win.errors} errors`); win = { long: 0, wide: 0, gone: 0, errors: 0 }; }, 5 * 60e3);
+  // Per 5-min window, long-haul pages only (hops list few sellers anyway): how many had 6+ sellers,
+  // and how many lacked the listed offer. Does the short seller list come on as an IP's pages pile
+  // up? (7:05 pm Vancouver, 2026-11-12: errors 0 in the first 5 min, 246 by 40; 2,362 of 2,859
+  // pages had 1-5 sellers; haleiwa saw 5 at 5:50 pm and 10 at 8:05 pm on the same page.)
+  let win = { long: 0, wide: 0, gone: 0, errors: 0 };
+  const timed0 = async (t) => { const t1 = Date.now(); try { const r = await b.bookingSellers(t); ms.push(Date.now() - t1);
+    if (homes.includes(t.from) || homes.includes(t.to)) { win.long++; if (r.length >= 6) win.wide++; if (!t.guess && t.price && r[0] && r[0].price > t.price * 1.03) win.gone++; }
+    return r; } catch (e) { bad++; win.errors++; ms.push(Date.now() - t1); const w = String(e.message).replace(/\d+/g, 'N').slice(0, 60); why[w] = (why[w] ?? 0) + 1; throw e; } };
+  const timed = timed0;
   const pass = async (name, itins, end) => {
     if (!itins.length || Date.now() >= end) return;
     const s = await bookingPass(itins, timed, bookings, { until: end, pages, inCabin });
