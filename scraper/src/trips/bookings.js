@@ -24,6 +24,10 @@ const PARTIAL_HOURS = 3;
 // short until it rests (10:05 pm Vancouver, 2026-11-12, the canary); kept this long, then asked again.
 const SHORT_HOURS = 3;
 const LISTED_GONE = 1.03;
+// An expired price kept this long (map.prev), to tell whether a recheck found anything new: how
+// often does a booking price move while Google's listed price stays put? (Scheduling rechecks.)
+const PREV_HOURS = 48;
+const near = (a, b) => a != null && b != null && Math.abs(a - b) <= Math.max(5, b * 0.01);
 const ALTS = 2; // a long-haul ticket's other outbounds checked with its return, cheapest first
 const ALT_WITHIN = 1.4; // ... up to this many times its price
 
@@ -34,12 +38,17 @@ const keyOf = (t) => `${t.cabin}|${legsKey(t.flights.out.legs)}|${t.ret ? legsKe
 /** Fresh entries from each file (state/booking.json form: key → { price, seller, at, listed }), newest kept. */
 function loadBookings(files, now = Date.now()) {
   const map = new Map();
+  // Past BOOKING_HOURS, up to PREV_HOURS: not used, kept to compare a recheck with (map.prev; saved with the map).
+  const prev = new Map();
   for (const f of files) {
     if (!f || !fs.existsSync(f)) continue;
     let o;
     try { o = JSON.parse(fs.readFileSync(f, 'utf8')); } catch { continue; }
     for (const [k, b] of Object.entries(o)) {
-      if (now - Date.parse(b.at) >= BOOKING_HOURS * 3600e3) continue;
+      if (now - Date.parse(b.at) >= BOOKING_HOURS * 3600e3) {
+        if (now - Date.parse(b.at) < PREV_HOURS * 3600e3 && b.price != null && !b.partial && !b.short && b.n != null && (!prev.has(k) || prev.get(k).at < b.at)) prev.set(k, b);
+        continue;
+      }
       // "No seller in its cabin" only stands when judged by flight length (byLength): the 5:05 pm
       // run (2026-11-12) read a queue without lengths and wrote off 1,332 of 1,802 pages.
       if (b.price == null && !b.byLength) continue;
@@ -52,6 +61,7 @@ function loadBookings(files, now = Date.now()) {
       if (!map.has(k) || map.get(k).at < b.at) map.set(k, b);
     }
   }
+  map.prev = prev;
   return index(map);
 }
 
@@ -68,7 +78,9 @@ function index(map) {
 }
 
 function saveBookings(file, map) {
-  fs.writeFileSync(file, JSON.stringify(Object.fromEntries([...map].sort())));
+  const all = new Map(map.prev ?? []);
+  for (const [k, b] of map) all.set(k, b);
+  fs.writeFileSync(file, JSON.stringify(Object.fromEntries([...all].sort())));
 }
 
 /** Rows of the search with key `key` (details.js: JSON of the query, "full " first for a full list), cheaper where booked. In place. */
@@ -148,7 +160,7 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gat
   // Telemetry: sellers a page (by count: few looks like the short view), fares without cabins, and
   // why a price came out dearer than listed (mixed: the listed fare is in another cabin; partial:
   // the listed offer isn't on the page at all).
-  const s = { checked: 0, cheaper: 0, dearer: 0, mixed: 0, partial: 0, none: 0, noCabins: 0, short: 0, failed: 0, left: 0, ms: 0, sellers: { '1-5': 0, '6-10': 0, '11+': 0 } };
+  const s = { checked: 0, cheaper: 0, dearer: 0, mixed: 0, partial: 0, none: 0, noCabins: 0, short: 0, failed: 0, left: 0, ms: 0, sellers: { '1-5': 0, '6-10': 0, '11+': 0 }, again: {}, againHours: [], quietDrop: null };
   let i = 0;
   await Promise.all(Array.from({ length: pages }, async () => {
     while (i < itins.length && Date.now() < until) {
@@ -180,6 +192,19 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gat
       // Without flight lengths (a queue saved before they were kept) every leg had to be in the
       // cabin: not kept then, it's asked again once the queue has them.
       if (!best) { s.none++; if (legs.every((l) => Number.isFinite(l?.min))) map.set(keyOf(t), { price: null, seller: null, at: now(), listed: L, byLength: true, ...seen }); continue; }
+      // Against its last check (fresh, or expired and kept in map.prev): did the listed price move,
+      // did the booking price? A drop with the listed price unmoved is a sale only a recheck finds.
+      const was = map.get(keyOf(t)) ?? map.prev?.get(keyOf(t));
+      if (was && was.price != null && !was.partial && !was.short && !seen.short && was.listed != null) {
+        const h = (Date.now() - Date.parse(was.at)) / 3600e3;
+        const k = `${near(L, was.listed) ? 'listed same' : 'listed moved'}, ${near(best.price, was.price) ? 'booked same' : best.price < was.price ? 'booked lower' : 'booked higher'}`;
+        s.again[k] = (s.again[k] ?? 0) + 1;
+        s.againHours.push(h);
+        if (near(L, was.listed) && best.price < was.price - Math.max(5, was.price * 0.01)) {
+          const drop = was.price - best.price;
+          if (!s.quietDrop || drop > s.quietDrop.drop) s.quietDrop = { drop, what: `${keyOf(t)} $${was.price} → $${best.price} (${best.sellerName}) after ${h.toFixed(0)} h, listed $${L}` };
+        }
+      }
       map.set(keyOf(t), { price: best.price, seller: best.sellerName, at: now(), listed: L, ...seen });
       if (best.price < L) s.cheaper++;
       else if (!t.guess && best.price > L * LISTED_GONE) { s.dearer++; s.mixed++; }
@@ -204,6 +229,13 @@ function listedOf(t) {
 }
 
 /** One line of a pass's telemetry (bookingPass's returned stats). */
-const passLine = (s) => `sellers a page ${s.sellers['1-5']} with 1-5, ${s.sellers['6-10']} with 6-10, ${s.sellers['11+']} with 11+; ${s.partial} without the listed offer (held ${PARTIAL_HOURS} h, unapplied), ${s.mixed} dearer in the cabin than the listed fare (listed in another cabin), ${s.noCabins} fares without cabins (not counted), ${s.short} checked while the IP got the short list (held ${SHORT_HOURS} h)`;
+const passLine = (s) => `sellers a page ${s.sellers['1-5']} with 1-5, ${s.sellers['6-10']} with 6-10, ${s.sellers['11+']} with 11+; ${s.partial} without the listed offer (held ${PARTIAL_HOURS} h, unapplied), ${s.mixed} dearer in the cabin than the listed fare (listed in another cabin), ${s.noCabins} fares without cabins (not counted), ${s.short} checked while the IP got the short list (held ${SHORT_HOURS} h)${againLine(s)}`;
+// Rechecks against their last check (bookingPass s.again): what scheduling by listed-price moves would miss.
+function againLine(s) {
+  const n = Object.values(s.again ?? {}).reduce((a, b) => a + b, 0);
+  if (!n) return '';
+  const h = [...s.againHours].sort((a, b) => a - b)[Math.floor(s.againHours.length / 2)];
+  return `; rechecked ${n} (median ${h.toFixed(0)} h on): ${Object.entries(s.again).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${v} ${k}`).join(', ')}${s.quietDrop ? `; biggest drop with the listed price unmoved ${s.quietDrop.what}` : ''}`;
+}
 
 module.exports = { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass, passLine, listedOf, keyOf, BOOKING_HOURS };

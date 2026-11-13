@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert');
-const { applyBookings, stripBookings, bookingCandidates, bookingPass, listedOf, keyOf } = require('../scraper/src/trips/bookings');
+const { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass, passLine, listedOf, keyOf } = require('../scraper/src/trips/bookings');
 const { bookingUrl, inCabin } = require('../scraper/src/gflights/booking');
 
 const leg = (code, from, to, depDate) => ({ code, from, to, depDate });
@@ -106,4 +106,21 @@ test('a page is held to the listed price, not an earlier booking price', async (
   assert.deepStrictEqual([s.partial, s.cheaper, m.get(keyOf(booked)).price], [0, 1, 4612]);
   // The queue's `listed` and an other outbound's own row price come first.
   assert.strictEqual(listedOf({ ...booked, listed: 5000 }), 5000);
+});
+
+test('a recheck is compared with the expired price kept 48 h (map.prev), which is saved again', async () => {
+  const fs = require('node:fs'); const os = require('node:os'); const path = require('node:path');
+  const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'bk-')), 'b.json');
+  const timed = { ...ticket, flights: { out: { legs: OUT.map((l) => ({ ...l, min: 300 })) }, back: { legs: BACK.map((l) => ({ ...l, min: 300 })) } } };
+  const ago = (h) => new Date(Date.now() - h * 3600e3).toISOString();
+  fs.writeFileSync(f, JSON.stringify({ [keyOf(timed)]: { price: 4500, seller: 'X', at: ago(20), listed: 4870, n: 9 }, 'Y|OLD@2027-01-01|': { price: 1, at: ago(60), listed: 1, n: 9 } }));
+  const m = loadBookings([f]);
+  assert.deepStrictEqual([m.size, m.prev.size], [0, 1]);
+  const s = await bookingPass([timed], async () => [{ sellerName: 'Trip.com', price: 3450, cabins: [3, 3, 3, 3] }], m, { until: Date.now() + 60e3, pages: 1, inCabin });
+  assert.deepStrictEqual(s.again, { 'listed same, booked lower': 1 });
+  assert.match(passLine(s), /biggest drop with the listed price unmoved .*\$4500 → \$3450/);
+  saveBookings(f, m);
+  const back = JSON.parse(fs.readFileSync(f, 'utf8'));
+  assert.deepStrictEqual(Object.keys(back), [keyOf(timed)]);
+  assert.strictEqual(back[keyOf(timed)].price, 3450);
 });

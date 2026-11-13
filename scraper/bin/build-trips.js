@@ -641,6 +641,10 @@ async function main() {
         if (queueFile) fs.writeFileSync(queueFile, JSON.stringify({ tiers: tiers.map((l) => l.map(slim)), ...(ties ? { ties } : {}) }));
         const fresh = (l) => l.filter((t) => bookings.has(bookingKey(t))).length;
         console.log(`booking queue: ${tiers[0].length} board itineraries (${fresh(tiers[0])} with a booking price under ${BOOKING_HOURS} h), ${tiers[1].length} filters' (${fresh(tiers[1])}); ${tickets.length} shown tickets, ${others.length} others the checks priced`);
+        // Of those due (none under BOOKING_HOURS), how many were checked before (bookings.prev, up to
+        // 48 h) and are listed at the same price since: the rechecks a listed-price trigger would defer.
+        const due = (l) => { const d = l.filter((t) => !bookings.has(bookingKey(t))); const p = d.filter((t) => bookings.prev?.has(bookingKey(t))); const same = p.filter((t) => Math.abs(listedOf(t) - bookings.prev.get(bookingKey(t)).listed) <= Math.max(5, listedOf(t) * 0.01)); return `${d.length} due, ${p.length} checked 12-48 h ago, ${same.length} of them listed at the same price`; };
+        console.log(`booking queue due: board ${due(tiers[0])}; filters' ${due(tiers[1])}`);
       }
     } finally {
       await chrome.close();
