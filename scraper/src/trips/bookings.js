@@ -16,6 +16,11 @@ const { airportsOf } = require('../../../frontend/app/cities.js');
 const { CABIN } = require('../gflights/tfs');
 
 const BOOKING_HOURS = 12; // as old as the graph prices it stands in for (2-48 h); at 6 a ticket not checked again in time fell back to its cached price
+// A page without the listed price's offer in any cabin (cheapest seller over LISTED_GONE x the
+// listed price) is held as checked this long only, then asked again, and never applied: Google
+// showed one runner 5 sellers ($4,612) where a browser saw 15 (Trip.com $3,450), 2026-11-12.
+const PARTIAL_HOURS = 3;
+const LISTED_GONE = 1.03;
 const ALTS = 2; // a long-haul ticket's other outbounds checked with its return, cheapest first
 const ALT_WITHIN = 1.4; // ... up to this many times its price
 
@@ -35,6 +40,10 @@ function loadBookings(files, now = Date.now()) {
       // "No seller in its cabin" only stands when judged by flight length (byLength): the 5:05 pm
       // run (2026-11-12) read a queue without lengths and wrote off 1,332 of 1,802 pages.
       if (b.price == null && !b.byLength) continue;
+      if (b.partial && now - Date.parse(b.at) >= PARTIAL_HOURS * 3600e3) continue;
+      // From before pages were told apart (no seller count `n`): a price off the listed one may be a
+      // fare without cabins (BudgetAir's $615 "business") or a page without the listed offer; asked again.
+      if (b.n == null && b.price != null && b.listed && Math.abs(b.price - b.listed) > b.listed * (LISTED_GONE - 1)) continue;
       if (!map.has(k) || map.get(k).at < b.at) map.set(k, b);
     }
   }
@@ -46,7 +55,7 @@ function index(map) {
   map.byOut = new Map();
   for (const [k, b] of map) {
     const [cabin, out, back] = k.split('|');
-    if (!back || b.price == null) continue;
+    if (!back || b.price == null || b.partial) continue;
     const ok = `${cabin}|${out}`;
     if (!map.byOut.has(ok) || map.byOut.get(ok).price > b.price) map.byOut.set(ok, b);
   }
@@ -67,7 +76,12 @@ function applyBookings(map, key, rows) {
       : q.ret ? map.byOut.get(`${q.cabin}|${legsKey(o.legs)}`)
         : map.get(`${q.cabin}|${legsKey(o.legs)}|`);
     const own = o.listedPrice ?? o.price;
-    if (b?.price != null && b.price < own) { o.listedPrice = own; o.price = b.price; o.seller = b.seller; }
+    if (b?.price == null || b.partial) continue;
+    // Cheaper: taken. Dearer, on these exact flights (one-way, or the return with its outbound
+    // chosen): the page showed the listed price only in another cabin (SCOPE: cabin by flight
+    // length), so the cabin's own price stands; 403 of 2,612 business pages were so (2026-11-12),
+    // e.g. $4,311 listed, $28,813 in business. An outbound row (any return) only takes cheaper.
+    if (b.price < own || (!(q.ret && !q.selected) && b.price > own * LISTED_GONE)) { o.listedPrice = own; o.price = b.price; o.seller = b.seller; }
   }
   return rows;
 }
@@ -120,7 +134,11 @@ function bookingCandidates(tiers, rowsOf, map, homes) {
  * cheapest seller in the ticket's cabin). Returns { checked, cheaper, none (no seller in its cabin), failed, ms }.
  */
 async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, now = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z') }) {
-  const t0 = Date.now(); const s = { checked: 0, cheaper: 0, none: 0, failed: 0, left: 0, ms: 0 };
+  const t0 = Date.now();
+  // Telemetry: sellers a page (by count: few looks like the short view), fares without cabins, and
+  // why a price came out dearer than listed (mixed: the listed fare is in another cabin; partial:
+  // the listed offer isn't on the page at all).
+  const s = { checked: 0, cheaper: 0, dearer: 0, mixed: 0, partial: 0, none: 0, noCabins: 0, failed: 0, left: 0, ms: 0, sellers: { '1-5': 0, '6-10': 0, '11+': 0 } };
   let i = 0;
   await Promise.all(Array.from({ length: pages }, async () => {
     while (i < itins.length && Date.now() < until) {
@@ -129,15 +147,25 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, now
       for (let n = 0; n < 2 && !got && Date.now() < until; n++) got = await sellers(t).catch(() => null);
       if (!got) { s.failed++; continue; }
       s.checked++;
+      s.sellers[got.length <= 5 ? '1-5' : got.length <= 10 ? '6-10' : '11+']++;
+      s.noCabins += got.filter((o) => !Array.isArray(o.cabins) || !o.cabins.length).length;
       const legs = [...t.flights.out.legs, ...(t.ret ? t.flights.back?.legs ?? [] : [])];
       const best = got.filter((o) => inCabin(o, t.cabin, legs))[0];
+      const any = got[0];
+      const seen = { n: got.length, any: any?.price ?? null, anySeller: any?.sellerName ?? null };
+      if (any && t.price && any.price > t.price * LISTED_GONE) {
+        s.partial++;
+        map.set(keyOf(t), { price: best?.price ?? null, seller: best?.sellerName ?? null, at: now(), listed: t.price, partial: true, ...seen });
+        continue;
+      }
       // None in its cabin: kept too (price null, never applied), so the page isn't asked again
       // every run until BOOKING_HOURS.
       // Without flight lengths (a queue saved before they were kept) every leg had to be in the
       // cabin: not kept then, it's asked again once the queue has them.
-      if (!best) { s.none++; if (legs.every((l) => Number.isFinite(l?.min))) map.set(keyOf(t), { price: null, seller: null, at: now(), listed: t.price, byLength: true }); continue; }
-      map.set(keyOf(t), { price: best.price, seller: best.sellerName, at: now(), listed: t.price });
+      if (!best) { s.none++; if (legs.every((l) => Number.isFinite(l?.min))) map.set(keyOf(t), { price: null, seller: null, at: now(), listed: t.price, byLength: true, ...seen }); continue; }
+      map.set(keyOf(t), { price: best.price, seller: best.sellerName, at: now(), listed: t.price, ...seen });
       if (best.price < t.price) s.cheaper++;
+      else if (best.price > t.price * LISTED_GONE) { s.dearer++; s.mixed++; }
     }
   }));
   s.left = Math.max(0, itins.length - i);
@@ -146,4 +174,7 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, now
   return s;
 }
 
-module.exports = { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass, keyOf, BOOKING_HOURS };
+/** One line of a pass's telemetry (bookingPass's returned stats). */
+const passLine = (s) => `sellers a page ${s.sellers['1-5']} with 1-5, ${s.sellers['6-10']} with 6-10, ${s.sellers['11+']} with 11+; ${s.partial} without the listed offer (held ${PARTIAL_HOURS} h, unapplied), ${s.mixed} dearer in the cabin than the listed fare (listed in another cabin), ${s.noCabins} fares without cabins (not counted)`;
+
+module.exports = { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass, passLine, keyOf, BOOKING_HOURS };

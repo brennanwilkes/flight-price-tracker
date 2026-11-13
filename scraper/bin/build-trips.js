@@ -61,7 +61,7 @@ const { similarCount, scoreOf, rowId, bandOf } = require('../../frontend/app/bui
 const { CITIES, airportsOf, isPacific } = require('../../frontend/app/cities.js');
 const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
 const { addDetails, returnsDone, returnsFor, capped, longestOf, listedOnly, unlistedWhy, useBookings } = require('../src/trips/details');
-const { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass, keyOf: bookingKey, BOOKING_HOURS } = require('../src/trips/bookings');
+const { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass, passLine, keyOf: bookingKey, BOOKING_HOURS } = require('../src/trips/bookings');
 const { inCabin, bookingUrl } = require('../src/gflights/booking');
 const { openBrowserThread } = require('../src/gflights/browser-thread');
 const { monitorEventLoopDelay } = require('node:perf_hooks');
@@ -540,6 +540,7 @@ async function main() {
     try {
       const s = await bookingPass(itins, (t) => b.bookingSellers(t), bookings, { until: Date.now() + BOOKING_WARM_MS, pages: BOOKING_PAGES.warm, inCabin });
       console.log(`booking pages beside the scrape: ${s.checked} of ${itins.length} checked, ${s.cheaper} cheaper than listed, ${s.none} with no seller in its cabin, ${s.failed} failed, ${s.left} left; ${Math.round(s.ms / 1000)} s`);
+      console.log(`booking pages beside the scrape: ${passLine(s)}`);
     } finally { await b.close(); }
     if (arg('booking-cache')) saveBookings(arg('booking-cache'), bookings);
   })().catch((e) => console.log(`booking pages beside the scrape: ${e.message}`));
@@ -591,6 +592,7 @@ async function main() {
         const itins = bookingCandidates([board, tickets], lookup, bookings, homes);
         const s = await bookingPass(itins, (t) => chrome.bookingSellers(t), bookings, { until, pages: BOOKING_PAGES.build, inCabin });
         console.log(`booking pages: ${s.checked} of ${itins.length} checked, ${s.cheaper} cheaper than listed, ${s.none} with no seller in its cabin, ${s.failed} failed, ${s.left} left (used from the next build); ${Math.round(s.ms / 1000)} s`);
+        console.log(`booking pages: ${passLine(s)}`);
         // Beyond the board: every other ticket the checks priced (each cell's next-best trips, by
         // their listed prices), cheapest first, so a date the cache prices too high for the board
         // can still be found cheaper on its booking page. The next run's pass beside the scrape

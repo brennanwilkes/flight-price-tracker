@@ -68,8 +68,10 @@ async function bookingSellers(ctx, t) {
  * all-business YVR⇄ICN fare had it false, 2026-11-11.
  */
 const LONG_MIN = 6 * 60;
+// A fare without its cabins isn't proven in any: passing those let BudgetAir's $615 YVR-MNL-x
+// through as business (listed $892; 2026-11-12).
 function inCabin(o, cabin, legs) {
-  if (!Array.isArray(o.cabins) || !o.cabins.length) return true;
+  if (!Array.isArray(o.cabins) || !o.cabins.length) return false;
   const byLength = Array.isArray(legs) && legs.length === o.cabins.length && legs.every((l) => Number.isFinite(l?.min));
   return o.cabins.every((c, i) => c >= CABIN[cabin] || (byLength && legs[i].min < LONG_MIN));
 }

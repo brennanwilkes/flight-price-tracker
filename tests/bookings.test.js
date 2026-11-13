@@ -32,8 +32,14 @@ test('a booked price lowers the search rows with those flights: outbound list, r
   assert.strictEqual(applyBookings(m, owQ, [{ price: 413, legs: [leg('VN595', 'HKG', 'SGN', '2027-09-13')] }])[0].price, 390);
   // Saved as searched; a dearer booking leaves the row alone.
   assert.deepStrictEqual(stripBookings(outs).map((o) => [o.price, o.seller]), [[4870, undefined], [4770, undefined]]);
-  const dear = mapOf([[keyOf(ticket), { price: 5000, seller: 'X', at: '2026-11-11T20:00:00Z' }]]);
+  const dear = mapOf([[keyOf(ticket), { price: 6000, seller: 'X', at: '2026-11-11T20:00:00Z' }], ['Y|VN595@2027-09-13|', { price: 900, seller: 'VN', at: '2026-11-11T20:00:00Z' }]]);
   assert.strictEqual(applyBookings(dear, outQ, [{ price: 4870, legs: OUT }])[0].price, 4870);
+  // On the exact flights a dearer price in the cabin stands (the listed one was another cabin's).
+  assert.strictEqual(applyBookings(dear, `full ${retQ}`, [{ price: 4870, legs: BACK }])[0].price, 6000);
+  assert.strictEqual(applyBookings(dear, owQ, [{ price: 413, legs: [leg('VN595', 'HKG', 'SGN', '2027-09-13')] }])[0].price, 900);
+  // A page without the listed offer: never applied.
+  const part = mapOf([['Y|VN595@2027-09-13|', { price: 300, seller: 'X', at: '2026-11-11T20:00:00Z', partial: true }]]);
+  assert.strictEqual(applyBookings(part, owQ, [{ price: 413, legs: [leg('VN595', 'HKG', 'SGN', '2027-09-13')] }])[0].price, 413);
 });
 
 test('booking candidates: long-haul tickets first, then their cheapest other outbounds with the same return', () => {
@@ -57,6 +63,9 @@ test('in cabin: every flight of 6 h or more in the ticket\'s cabin or better; wi
   assert.ok(inCabin({ cabins: [3, 3, 3, 3] }, 'J'));
   assert.ok(!inCabin({ cabins: [3, 1, 3, 3] }, 'J'));
   assert.ok(inCabin({ cabins: [2] }, 'Y'));
+  // No cabins given: not proven in any.
+  assert.ok(!inCabin({ cabins: null }, 'Y'));
+  assert.ok(!inCabin({}, 'J'));
   // YYJ-YVR (32 min) in economy, the crossing in business: business. Premium economy on the crossing: not.
   const legs = [{ min: 32 }, { min: 760 }, { min: 270 }];
   assert.ok(inCabin({ cabins: [1, 3, 1] }, 'J', legs));
@@ -76,4 +85,14 @@ test('a page with no seller in its cabin is kept (not asked again), never lowers
   assert.deepStrictEqual(bookingCandidates([timed], () => null, m, ['YVR']), []);
   const outQ = JSON.stringify({ from: 'YVR', to: 'HKG', out: '2027-09-10', cabin: 'J', ret: '2027-09-25' });
   assert.strictEqual(applyBookings(m, outQ, [{ price: 4870, legs: OUT }])[0].price, 4870);
+});
+
+test('a page without the listed offer in any cabin: held as partial, a dearer one in the cabin counted as mixed', async () => {
+  const m = mapOf([]);
+  const hop = (code, price) => ({ kind: 'ow', from: 'HKG', to: 'SGN', date: '2027-09-13', cabin: 'Y', price, flights: { out: { legs: [{ ...leg(code, 'HKG', 'SGN', '2027-09-13'), min: 160 }] } } });
+  const pages = { VN1: [{ sellerName: 'VN', price: 600, cabins: [1] }], VN2: [{ sellerName: 'X', price: 400, cabins: [] }, { sellerName: 'VN', price: 700, cabins: [1] }] };
+  const s = await bookingPass([hop('VN1', 400), hop('VN2', 410)], async (t) => pages[t.flights.out.legs[0].code], m, { until: Date.now() + 60e3, pages: 1, inCabin });
+  assert.deepStrictEqual([s.partial, s.mixed, s.noCabins], [1, 1, 1]);
+  assert.strictEqual(m.get('Y|VN1@2027-09-13|').partial, true);
+  assert.deepStrictEqual([m.get('Y|VN2@2027-09-13|').price, m.get('Y|VN2@2027-09-13|').n, m.get('Y|VN2@2027-09-13|').any], [700, 2, 400]);
 });

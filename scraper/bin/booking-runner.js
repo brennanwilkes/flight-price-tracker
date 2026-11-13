@@ -16,7 +16,7 @@
  */
 const fs = require('node:fs');
 const path = require('node:path');
-const { loadBookings, saveBookings, bookingCandidates, bookingPass } = require('../src/trips/bookings');
+const { loadBookings, saveBookings, bookingCandidates, bookingPass, passLine } = require('../src/trips/bookings');
 const { inCabin } = require('../src/gflights/booking');
 const { openBrowserThread } = require('../src/gflights/browser-thread');
 
@@ -44,6 +44,7 @@ const arg = (name, def) => { const i = process.argv.indexOf(`--${name}`); return
       const timed = async (t) => { const t1 = Date.now(); try { const r = await b.bookingSellers(t); ms.push(Date.now() - t1); return r; } catch (e) { bad++; ms.push(Date.now() - t1); throw e; } };
       const s = await bookingPass(itins, timed, bookings, { until, pages, inCabin }).finally(() => clearInterval(tick));
       console.log(`booking runner: ${s.checked} of ${itins.length} checked, ${s.cheaper} cheaper than listed, ${s.none} with no seller in its cabin, ${s.failed} failed, ${s.left} left; ${Math.round(s.ms / 1000)} s (${(s.checked / (s.ms / 1000)).toFixed(2)} a second)`);
+      console.log(`booking runner: ${passLine(s)}`);
     } finally { await b.close(); }
   }
   saveBookings(extra, bookings);
