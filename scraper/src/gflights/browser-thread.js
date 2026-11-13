@@ -33,6 +33,13 @@ if (isMainThread || !workerData?.browserThread) { // required anywhere but the b
           waiting.set(id, { ok, fail });
           worker.postMessage({ id, booking: ticket, fresh: true });
         }),
+        // Pages from now on in a new session (Google limits a session's booking pages, not the IP's:
+        // 1:05 pm Vancouver, 2026-11-13).
+        renew: () => new Promise((ok, fail) => {
+          const id = next++;
+          waiting.set(id, { ok, fail });
+          worker.postMessage({ id, renew: true });
+        }),
         close: async () => { worker.postMessage({ close: true }); await new Promise((r) => worker.once('exit', r)); },
       });
       if (m.fatal) return reject(new Error(m.fatal));
@@ -47,9 +54,20 @@ if (isMainThread || !workerData?.browserThread) { // required anywhere but the b
   const { openBrowser, newContext, shoppingResults } = require('./browser');
   const { bookingSellers } = require('./booking');
   const { browserThread, ...opts } = workerData;
-  openBrowser(opts).then(({ browser, ctx }) => {
+  openBrowser(opts).then(({ browser, ctx: first }) => {
+    let ctx = first;
     parentPort.on('message', async (m) => {
       if (m.close) { await browser.close().catch(() => {}); parentPort.close(); return; }
+      // A new session: pages from here on in a new context; the old one closed once its pages are done.
+      if (m.renew) {
+        try {
+          const old = ctx;
+          ctx = await newContext(browser, opts);
+          setTimeout(() => old.close().catch(() => {}), 90e3);
+          parentPort.postMessage({ id: m.id, payloads: true });
+        } catch (e) { parentPort.postMessage({ id: m.id, error: e.message }); }
+        return;
+      }
       if (m.fresh) {
         let c = null;
         try { c = await newContext(browser, opts); parentPort.postMessage({ id: m.id, payloads: await bookingSellers(c, m.booking) }); }

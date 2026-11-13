@@ -68,6 +68,12 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   // So pages are held while the canary isn't full (asked every 2 min), what's checked meanwhile in
   // the ties' searches is marked short, and pages are paced (--gap ms between starts: is it the rate?).
   const isFull = () => view.startsWith('full');
+  // Google gives a session the full seller list for ~500 booking pages, then short; a new session on
+  // the same IP is full again (1:05 pm Vancouver, 2026-11-13: short at 29 min in the runner's, full
+  // in a new one). So a new session every --session-pages, and at once when the canary reads short.
+  const sessionMax = Number(arg('session-pages', 300));
+  let sessionPages = 0; let renewing = null; const renewals = { pages: 0, short: 0 };
+  const renew = (why) => (renewing ??= b.renew().then(() => { renewals[why]++; sessionPages = 0; }, (e) => console.log(`  new session failed: ${e.message}`)).finally(() => { renewing = null; }));
   let held = 0; let holdFrom = null; // wall-clock time held (the pages wait together)
   // A short reading is asked again 30 s on before pages are held: single short readings came and went
   // within a check (11:05 pm Vancouver, 2026-11-12: 3 of them, and 14 min held).
@@ -76,9 +82,13 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
     let v = await ask();
     if (!v.startsWith('full') && isFull()) {
       await sleep(30e3); v = await ask();
-      // Short twice: the same page in a new session (no cookies from this one), same IP. Full there
-      // means Google limits the session, not the IP (the IP's ~650 full pages an hour, 2026-11-13).
-      if (!v.startsWith('full')) console.log(`  ${Math.round((Date.now() - t0) / 60e3)} min: canary short in this session; in a new session on the same IP: ${await canary((t) => b.freshSellers(t))}`);
+      // Short twice: the same page in a new session (no cookies from this one), same IP. Full there:
+      // the session's limit, so pages go on in a new one; short there too: the IP's, pages held.
+      if (!v.startsWith('full')) {
+        const f = await canary((t) => b.freshSellers(t));
+        console.log(`  ${Math.round((Date.now() - t0) / 60e3)} min: canary short in this session (${sessionPages} pages); in a new session on the same IP: ${f}`);
+        if (f.startsWith('full')) { await renew('short'); v = f; }
+      }
     }
     if (v !== view) console.log(`  ${Math.round((Date.now() - t0) / 60e3)} min: canary ${v}`);
     view = v;
@@ -88,13 +98,13 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
     if (holdFrom != null) { held += Date.now() - holdFrom; holdFrom = null; }
   };
   const gapMs = Number(arg('gap', 0));
-  const tick = setInterval(() => { console.log(`  ${Math.round((Date.now() - t0) / 60e3)} min (${phase}): ${ms.length} booking pages (${bad} errors), ${(ms.length / ((Date.now() - t0) / 1000)).toFixed(2)} a second, page ${q(0.5)} s median, ${q(0.9)} s p90; this window: ${win.long} long-haul pages, ${win.wide} with 6+ sellers, ${win.gone} without the listed offer, ${win.errors} errors; canary ${view}; held ${Math.round(held / 60e3)} min so far`); win = { long: 0, wide: 0, gone: 0, errors: 0 }; }, 5 * 60e3);
+  const tick = setInterval(() => { console.log(`  ${Math.round((Date.now() - t0) / 60e3)} min (${phase}): ${ms.length} booking pages (${bad} errors), ${(ms.length / ((Date.now() - t0) / 1000)).toFixed(2)} a second, page ${q(0.5)} s median, ${q(0.9)} s p90; this window: ${win.long} long-haul pages, ${win.wide} with 6+ sellers, ${win.gone} without the listed offer, ${win.errors} errors; canary ${view}; held ${Math.round(held / 60e3)} min so far; ${renewals.pages + renewals.short} new sessions, ${sessionPages} pages in this one`); win = { long: 0, wide: 0, gone: 0, errors: 0 }; }, 5 * 60e3);
   // Per 5-min window, long-haul pages only (hops list few sellers anyway): how many had 6+ sellers,
   // and how many lacked the listed offer. Does the short seller list come on as an IP's pages pile
   // up? (7:05 pm Vancouver, 2026-11-12: errors 0 in the first 5 min, 246 by 40; 2,362 of 2,859
   // pages had 1-5 sellers; haleiwa saw 5 at 5:50 pm and 10 at 8:05 pm on the same page.)
   let win = { long: 0, wide: 0, gone: 0, errors: 0 };
-  const timed0 = async (t) => { const t1 = Date.now(); try { const r = await b.bookingSellers(t); ms.push(Date.now() - t1);
+  const timed0 = async (t) => { if (renewing) await renewing; if (++sessionPages >= sessionMax) renew('pages'); const t1 = Date.now(); try { const r = await b.bookingSellers(t); ms.push(Date.now() - t1);
     if (homes.includes(t.from) || homes.includes(t.to)) { win.long++; if (r.length >= 6) win.wide++; if (!t.guess && listedOf(t) && r[0] && r[0].price > listedOf(t) * 1.03) win.gone++; }
     return r; } catch (e) { bad++; win.errors++; ms.push(Date.now() - t1); const w = String(e.message).replace(/\d+/g, 'N').slice(0, 60); why[w] = (why[w] ?? 0) + 1; throw e; } };
   const timed = timed0;
@@ -111,7 +121,7 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
     phase = 'filters';
     await pass('filters', all.slice(nBoard).filter((t) => !bookings.has(keyOf(t))), until);
   } finally { clearInterval(tick); clearInterval(watch); await b.close(); }
-  console.log(`booking runner: pages held ${Math.round(held / 60e3)} min for the short list; canary at the end ${view}`);
+  console.log(`booking runner: pages held ${Math.round(held / 60e3)} min for the short list; canary at the end ${view}; new sessions ${renewals.pages} at ${sessionMax} pages, ${renewals.short} on a short canary`);
   console.log(`booking runner: page errors by kind: ${Object.entries(why).sort((x, y) => y[1] - x[1]).map(([w, n]) => `${n}× ${w}`).join('; ') || 'none'}`);
   saveBookings(extra, bookings);
   if (checkedFile) fs.writeFileSync(checkedFile, JSON.stringify(checked));
