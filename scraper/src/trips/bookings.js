@@ -32,6 +32,9 @@ function loadBookings(files, now = Date.now()) {
     try { o = JSON.parse(fs.readFileSync(f, 'utf8')); } catch { continue; }
     for (const [k, b] of Object.entries(o)) {
       if (now - Date.parse(b.at) >= BOOKING_HOURS * 3600e3) continue;
+      // "No seller in its cabin" only stands when judged by flight length (byLength): the 5:05 pm
+      // run (2026-11-12) read a queue without lengths and wrote off 1,332 of 1,802 pages.
+      if (b.price == null && !b.byLength) continue;
       if (!map.has(k) || map.get(k).at < b.at) map.set(k, b);
     }
   }
@@ -130,7 +133,9 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, now
       const best = got.filter((o) => inCabin(o, t.cabin, legs))[0];
       // None in its cabin: kept too (price null, never applied), so the page isn't asked again
       // every run until BOOKING_HOURS.
-      if (!best) { s.none++; map.set(keyOf(t), { price: null, seller: null, at: now(), listed: t.price }); continue; }
+      // Without flight lengths (a queue saved before they were kept) every leg had to be in the
+      // cabin: not kept then, it's asked again once the queue has them.
+      if (!best) { s.none++; if (legs.every((l) => Number.isFinite(l?.min))) map.set(keyOf(t), { price: null, seller: null, at: now(), listed: t.price, byLength: true }); continue; }
       map.set(keyOf(t), { price: best.price, seller: best.sellerName, at: now(), listed: t.price });
       if (best.price < t.price) s.cheaper++;
     }

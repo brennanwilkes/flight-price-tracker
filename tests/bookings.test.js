@@ -66,9 +66,14 @@ test('in cabin: every flight of 6 h or more in the ticket\'s cabin or better; wi
 
 test('a page with no seller in its cabin is kept (not asked again), never lowers a row', async () => {
   const m = mapOf([]);
-  const s = await bookingPass([ticket], async () => [{ sellerName: 'Air Canada', price: 2000, cabins: [1, 2, 1, 1] }], m, { until: Date.now() + 60e3, pages: 1, inCabin });
+  const withMin = (legs) => legs.map((l, i) => ({ ...l, min: i % 2 ? 120 : 760 }));
+  const timed = { ...ticket, flights: { out: { legs: withMin(OUT) }, back: { legs: withMin(BACK) } } };
+  // Without lengths: not kept.
+  await bookingPass([ticket], async () => [{ sellerName: 'Air Canada', price: 2000, cabins: [1, 2, 1, 1] }], m, { until: Date.now() + 60e3, pages: 1, inCabin });
+  assert.strictEqual(m.size, 0);
+  const s = await bookingPass([timed], async () => [{ sellerName: 'Air Canada', price: 2000, cabins: [1, 2, 1, 1] }], m, { until: Date.now() + 60e3, pages: 1, inCabin });
   assert.deepStrictEqual([s.checked, s.none, m.get(keyOf(ticket)).price], [1, 1, null]);
-  assert.deepStrictEqual(bookingCandidates([ticket], () => null, m, ['YVR']), []);
+  assert.deepStrictEqual(bookingCandidates([timed], () => null, m, ['YVR']), []);
   const outQ = JSON.stringify({ from: 'YVR', to: 'HKG', out: '2027-09-10', cabin: 'J', ret: '2027-09-25' });
   assert.strictEqual(applyBookings(m, outQ, [{ price: 4870, legs: OUT }])[0].price, 4870);
 });
