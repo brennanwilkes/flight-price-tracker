@@ -45,7 +45,8 @@ function loadBookings(files, now = Date.now()) {
     let o;
     try { o = JSON.parse(fs.readFileSync(f, 'utf8')); } catch { continue; }
     for (const [k, b] of Object.entries(o)) {
-      if (now - Date.parse(b.at) >= BOOKING_HOURS * 3600e3) {
+      // `hours`: a filter view's ticket booked at its listed price is held longer (bookingPass listedHours).
+      if (now - Date.parse(b.at) >= (b.hours ?? BOOKING_HOURS) * 3600e3) {
         if (now - Date.parse(b.at) < PREV_HOURS * 3600e3 && b.price != null && !b.partial && !b.short && b.n != null && (!prev.has(k) || prev.get(k).at < b.at)) prev.set(k, b);
         continue;
       }
@@ -117,8 +118,11 @@ const stripBookings = (rows) => rows.map((o) => (o.listedPrice == null ? o : (({
  */
 function bookingCandidates(tiers, rowsOf, map, homes) {
   const lists = Array.isArray(tiers[0]) ? tiers : [tiers];
-  const out = []; const seen = new Set(map.keys());
-  const add = (t) => { if (!t.flights?.out?.legs?.length || (t.ret && !t.flights.back?.legs?.length)) return; const k = keyOf(t); if (!seen.has(k)) { seen.add(k); out.push(t); } };
+  const out = []; const seen = new Set();
+  // Booked within its hours, at the listed price it's queued at: not due. Listed at another price
+  // since: due now (a fare moved; a sale shows here first).
+  const known = (k, t) => { if (!map.has(k)) return false; const b = map.get(k); return b == null || b.listed == null || near(b.listed, listedOf(t)); };
+  const add = (t) => { if (!t.flights?.out?.legs?.length || (t.ret && !t.flights.back?.legs?.length)) return; const k = keyOf(t); if (!seen.has(k) && !known(k, t)) { seen.add(k); out.push(t); } };
   const long = (t) => homes.includes(t.from) || homes.includes(t.to);
   for (const tickets of lists) {
     const ok = tickets.filter((t) => (t.kind === 'rt' || t.kind === 'ow') && CABIN[t.cabin]);
@@ -153,7 +157,7 @@ function bookingCandidates(tiers, rowsOf, map, homes) {
  * seller list); `short()` true when the IP's view is short just now (its results kept SHORT_HOURS,
  * not BOOKING_HOURS); `gapMs` between page starts, across all pages (pacing).
  */
-async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gate = null, short = null, gapMs = 0, now = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z') }) {
+async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gate = null, short = null, gapMs = 0, listedHours = null, now =() => new Date().toISOString().replace(/\.\d+Z$/, 'Z') }) {
   const t0 = Date.now();
   let next = Date.now();
   const pace = async () => { if (!gapMs) return; const at = Math.max(Date.now(), next); next = at + gapMs; await new Promise((r) => setTimeout(r, at - Date.now())); };
@@ -206,7 +210,11 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gat
           if (!s.quietDrop || drop > s.quietDrop.drop) s.quietDrop = { drop, what: `${keyOf(t)} $${was.price} → $${best.price} (${best.sellerName}) after ${h.toFixed(0)} h, listed $${L}` };
         }
       }
-      map.set(keyOf(t), { price: best.price, seller: best.sellerName, at: now(), listed: L, ...seen });
+      // `listedHours`: booked at the listed price, held that long (a recheck finds it changed as
+      // rarely as 10 in 100 at ~13 h, 2:05 pm Vancouver, 2026-11-13); a discount below it moves
+      // more often (22 of 70 dearer) and keeps BOOKING_HOURS. A listed price moving brings it back sooner (bookingCandidates).
+      const hold = listedHours && !seen.short && near(best.price, L) ? { hours: listedHours } : {};
+      map.set(keyOf(t), { price: best.price, seller: best.sellerName, at: now(), listed: L, ...seen, ...hold });
       if (best.price < L) s.cheaper++;
       else if (!t.guess && best.price > L * LISTED_GONE) { s.dearer++; s.mixed++; }
     }

@@ -57,7 +57,7 @@ const zlib = require('node:zlib');
 const config = require('../config/sweep.json');
 const { staleAfterHours } = require('../src/sweep/plan');
 const { loadFares, bundleOf, fareOf, fareKey } = require('../src/trips/fares');
-const { graphTickets, searchTies } = require('../src/trips/ties');
+const { graphTickets, searchTies, TRIED_HOURS } = require('../src/trips/ties');
 const { similarCount, scoreOf, rowId, bandOf } = require('../../frontend/app/build.js');
 const { CITIES, airportsOf, isPacific } = require('../../frontend/app/cities.js');
 const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
@@ -560,15 +560,21 @@ async function main() {
     if (process.env.BOOKING_RUNNER === '1' && arg('booking-ties')) {
       let tried = {};
       try { tried = JSON.parse(fs.readFileSync(arg('booking-checked'), 'utf8')); } catch {}
-      const recent = Object.entries(tried).filter(([, c]) => Date.now() - Date.parse(c.at) < BOOKING_HOURS * 3600e3).map(([k]) => k);
-      const queued = tiers.flat().filter((t) => t.kind === 'rt').map(fareKey);
-      const list = graphTickets(dataDir, homes, { skip: new Set([...queued, ...recent]) });
+      const queued = new Set(tiers.flat().filter((t) => t.kind === 'rt').map(fareKey));
+      // Its graph price lower than when last tried: due now, and first (a sale shows on the graph first).
+      const dropped = (t) => { const g = tried[fareKey(t)]?.graph; return g != null && t.price < g - Math.max(5, g * 0.01); };
+      // Tried: left TIE_HOURS when proven below the graph (BOOKING_HOURS: a discount moves), else TRIED_HOURS.
+      const recent = (t) => { const c = tried[fareKey(t)]; return c && Date.now() - Date.parse(c.at) < (c.price == null ? TRIED_HOURS : BOOKING_HOURS) * 3600e3; };
+      const list = graphTickets(dataDir, homes, { skip: (t) => queued.has(fareKey(t)) || (recent(t) && !dropped(t)) });
+      const drops = list.filter(dropped);
+      list.sort((a, b) => dropped(b) - dropped(a)); // stable: the graph's order otherwise
+      console.log(`unchecked dates: ${drops.length} due early, their graph price lower than when tried${drops.length ? ` (e.g. ${drops[0].from}⇄${drops[0].to} ${drops[0].date}/${drops[0].ret} $${tried[fareKey(drops[0])].graph} → $${drops[0].price})` : ''}`);
       const b = await openBrowserThread({ lean: true });
       try {
         const t1 = Date.now();
         const r = await searchTies(list, { browser: (q, o) => b.shoppingResults(q, o), until: Date.now() + BOOKING_WARM_MS, bookings, homes });
         fs.writeFileSync(arg('booking-ties'), JSON.stringify({ at: generatedAt, itins: r.itins.map((t) => ({ ...slim(t), guess: true, tie: t.tie, graph: t.graph })), tried: r.tried }));
-        console.log(`unchecked dates beside the scrape: ${list.length} business round trips on the graph not queued or tried in ${BOOKING_HOURS} h; ${new Set(r.itins.map((t) => t.tie)).size} with flights both ways (${r.itins.length} itineraries for the booking runner), ${r.tried.length} without; ${Math.round((Date.now() - t1) / 1000)} s`);
+        console.log(`unchecked dates beside the scrape: ${list.length} business round trips on the graph not queued, tried in ${TRIED_HOURS} h or proven in ${BOOKING_HOURS} h; ${new Set(r.itins.map((t) => t.tie)).size} with flights both ways (${r.itins.length} itineraries for the booking runner), ${r.tried.length} without; ${Math.round((Date.now() - t1) / 1000)} s`);
       } finally { await b.close(); }
       return;
     }

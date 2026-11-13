@@ -87,6 +87,20 @@ test('a page with no seller in its cabin is kept (not asked again), never lowers
   assert.strictEqual(applyBookings(m, outQ, [{ price: 4870, legs: OUT }])[0].price, 4870);
 });
 
+test('booked at the listed price: held listedHours; due again at once when listed at another price', async () => {
+  const m = mapOf([]);
+  const withMin = (legs) => legs.map((l, i) => ({ ...l, min: i % 2 ? 120 : 760 }));
+  const t = { ...ticket, listed: 4870, flights: { out: { legs: withMin(OUT) }, back: { legs: withMin(BACK) } } };
+  await bookingPass([t], async () => [{ sellerName: 'Air Canada', price: 4870, cabins: [3, 3, 3, 3] }], m, { until: Date.now() + 60e3, pages: 1, inCabin, listedHours: 24 });
+  assert.strictEqual(m.get(keyOf(t)).hours, 24);
+  assert.deepStrictEqual(bookingCandidates([t], () => null, m, ['YVR']), []);
+  assert.strictEqual(bookingCandidates([{ ...t, listed: 4100 }], () => null, m, ['YVR']).length, 1);
+  // A discount below the listed price keeps BOOKING_HOURS.
+  const d = mapOf([]);
+  await bookingPass([t], async () => [{ sellerName: 'Trip.com', price: 3400, cabins: [3, 3, 3, 3] }], d, { until: Date.now() + 60e3, pages: 1, inCabin, listedHours: 24 });
+  assert.strictEqual(d.get(keyOf(t)).hours, undefined);
+});
+
 test('a page without the listed offer in any cabin: held as partial, a dearer one in the cabin counted as mixed', async () => {
   const m = mapOf([]);
   const hop = (code, price) => ({ kind: 'ow', from: 'HKG', to: 'SGN', date: '2027-09-13', cabin: 'Y', price, flights: { out: { legs: [{ ...leg(code, 'HKG', 'SGN', '2027-09-13'), min: 160 }] } } });

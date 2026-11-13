@@ -14,11 +14,15 @@ const path = require('node:path');
 const { fareKey } = require('./fares');
 
 const SEEN_HOURS = 48; // a graph price older than this isn't planned with either
+// A date pair tried with nothing proven below the graph: tried again after this long, or at once
+// when its graph price drops (a sale shows on the graph first). At 12 h, 5,460 pairs were due
+// against ~126 a run (2:05 pm Vancouver, 2026-11-13).
+const TRIED_HOURS = 72;
 
 /**
  * Round trips home⇄city in `cabins` from the graph (routes/<from>-<to>-<cabin>/current.json),
  * as tickets, each route's cheapest first and routes interleaved by price over their cheapest
- * (ratio), skipping fares in `skip` (fareKeys).
+ * (ratio), skipping fares in `skip` (a Set of fareKeys, or ticket → true to skip).
  */
 function graphTickets(dataDir, homes, { cabins = ['J'], skip = new Set(), now = Date.now() } = {}) {
   const dir = path.join(dataDir, 'routes');
@@ -33,7 +37,7 @@ function graphTickets(dataDir, homes, { cabins = ['J'], skip = new Set(), now = 
     const min = Math.min(...fresh.map(([, c]) => c.price));
     for (const [k, c] of fresh) {
       const t = { kind: 'rt', from, to, cabin, date: k.split('|')[0], ret: c.ret, price: c.price };
-      if (!skip.has(fareKey(t))) out.push({ t, r: c.price / min });
+      if (!(typeof skip === 'function' ? skip(t) : skip.has(fareKey(t)))) out.push({ t, r: c.price / min });
     }
   }
   return out.sort((a, b) => cabins.indexOf(a.t.cabin) - cabins.indexOf(b.t.cabin) || a.r - b.r || a.t.price - b.t.price).map((x) => x.t);
@@ -85,4 +89,4 @@ async function searchTies(list, { browser, until, bookings, homes, chunk = 40, p
   return { itins, tried };
 }
 
-module.exports = { graphTickets, provenPrice, searchTies };
+module.exports = { graphTickets, provenPrice, searchTies, TRIED_HOURS };
