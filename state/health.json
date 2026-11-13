@@ -1,7 +1,33 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-13T02:05:58Z",
+ "lastSuccess": "2026-11-13T03:05:59Z",
  "runs": [
+  {
+   "at": "2026-11-13T03:05:59Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 249,
+   "failed": 2,
+   "cells": 7847,
+   "priced": 7800,
+   "changes": 4186,
+   "errors": [
+    "GUM-ICN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "HKG-MFM-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1178
+   },
+   "due": 797,
+   "pages": 6,
+   "skipped": 546,
+   "secondOk": 11,
+   "seconds": 1407,
+   "success": true
+  },
   {
    "at": "2026-11-13T02:05:58Z",
    "egress": "vpn",
@@ -579,36 +605,6 @@
    "skipped": 342,
    "secondOk": 12,
    "seconds": 1298,
-   "success": true
-  },
-  {
-   "at": "2026-11-12T02:44:07Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 186,
-   "failed": 5,
-   "cells": 6636,
-   "priced": 6388,
-   "changes": 3236,
-   "errors": [
-    "KUL-BJS-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "DAD-KBV-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Da Nang DAD Krabi KBV Filters All filters ",
-    "KBV-PNH-Y-OW: locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for getByRole('button', { name: 'Price graph' }).first()\n    - locator resolved to <button jsname=\"MinD4b\" jscontroller=\"soHxf\" data-idom-class=\"ksBjEc lKxP2d LQeN7 uRHSYe JgWerc\" class=\"VfPpkd-LgbsSe VfPpkd-LgbsSe-OWXEXe-Bz112c-M1Soyc ksBjEc lKxP2d LQeN7 uRHSYe JgWerc\" jsaction=\"click:cOuCgd; mousedown:UX7yZ; mouseup:lbsD7e; mouseenter:tfO1Yc; mouseleave:JywGue; touchstart:p6p2H; touchmove:FwuNnf; touchend:yfqBxc; touchcancel:JMtRjd; focus:AHmuwe; blur:O22p3e; contextmenu:mg9Pef;mlnRJb:fLiPzd;\">…</button>\n  - attempting click action\n    - waiting for element to be visible, enabled and stable\n  - element was detached from the DOM, retrying\n",
-    "KUL-MPH-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "KUL-PNH-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1178
-   },
-   "due": 446,
-   "pages": 6,
-   "pauses": 2,
-   "skipped": 255,
-   "secondOk": 12,
-   "seconds": 1410,
    "success": true
   }
  ]
