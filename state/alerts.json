@@ -49,6 +49,31 @@
    "total": 3491,
    "tier": "buy",
    "at": "2026-11-13T10:38:12Z"
+  },
+  "YVR,hybrid,KUL,KUL": {
+   "total": 3231,
+   "tier": "buy",
+   "at": "2026-11-13T11:29:39Z"
+  },
+  "YVR,hybrid,KUL,KUL+LGK": {
+   "total": 3321,
+   "tier": "buy",
+   "at": "2026-11-13T11:29:39Z"
+  },
+  "YVR,hybrid,KUL,KUL+SIN": {
+   "total": 3399,
+   "tier": "buy",
+   "at": "2026-11-13T11:29:39Z"
+  },
+  "YVR,hybrid,KUL,KUL+KBV": {
+   "total": 3461,
+   "tier": "buy",
+   "at": "2026-11-13T11:29:39Z"
+  },
+  "YVR,hybrid,KUL,KUL+MNL": {
+   "total": 3477,
+   "tier": "buy",
+   "at": "2026-11-13T11:29:39Z"
   }
  }
 }
