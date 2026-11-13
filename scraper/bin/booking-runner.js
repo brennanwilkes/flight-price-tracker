@@ -36,7 +36,13 @@ const arg = (name, def) => { const i = process.argv.indexOf(`--${name}`); return
   if (itins.length && Date.now() < until) {
     const b = await openBrowserThread({ lean: true });
     try {
-      const s = await bookingPass(itins, (t) => b.bookingSellers(t), bookings, { until, pages, inCabin });
+      // Page times, and progress every 5 min: at 0.70 a second (5:05 pm, 2026-11-12) it ran at half
+      // the build pass's 1.45, on the same kind of runner.
+      const ms = []; let bad = 0; const t0 = Date.now();
+      const q = (p) => { const v = [...ms].sort((x, y) => x - y); return v.length ? Math.round(v[Math.floor(p * (v.length - 1))] / 100) / 10 : '-'; };
+      const tick = setInterval(() => console.log(`  ${Math.round((Date.now() - t0) / 60e3)} min: ${ms.length} pages (${bad} errors), ${(ms.length / ((Date.now() - t0) / 1000)).toFixed(2)} a second, page ${q(0.5)} s median, ${q(0.9)} s p90`), 5 * 60e3);
+      const timed = async (t) => { const t1 = Date.now(); try { const r = await b.bookingSellers(t); ms.push(Date.now() - t1); return r; } catch (e) { bad++; ms.push(Date.now() - t1); throw e; } };
+      const s = await bookingPass(itins, timed, bookings, { until, pages, inCabin }).finally(() => clearInterval(tick));
       console.log(`booking runner: ${s.checked} of ${itins.length} checked, ${s.cheaper} cheaper than listed, ${s.none} with no seller in its cabin, ${s.failed} failed, ${s.left} left; ${Math.round(s.ms / 1000)} s (${(s.checked / (s.ms / 1000)).toFixed(2)} a second)`);
     } finally { await b.close(); }
   }
