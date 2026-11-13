@@ -89,7 +89,9 @@ jobs:
       - name: Restore booking runner's prices
         uses: actions/cache/restore@v4
         with:
-          path: .booking-extra.json
+          path: |
+            .booking-extra.json
+            .booking-checked.json
           key: booking-extra-${{ github.run_id }}
           restore-keys: booking-extra-
 
@@ -200,7 +202,9 @@ jobs:
       - name: Restore booking runner's prices
         uses: actions/cache/restore@v4
         with:
-          path: .booking-extra.json
+          path: |
+            .booking-extra.json
+            .booking-checked.json
           key: booking-extra-${{ github.run_id }}
           restore-keys: booking-extra-
       - name: Data snapshot
@@ -217,7 +221,7 @@ jobs:
         if: steps.vpn.outputs.vpn_ok == 'true'
         run: |
           echo "$(nproc) CPUs"
-          node scraper/bin/booking-runner.js --data .worktrees/warm --queue .booking-queue.json --extra .booking-extra.json --until $(( $(date +%s) + 43 * 60 )) --pages 6 &
+          node scraper/bin/booking-runner.js --data .worktrees/warm --queue .booking-queue.json --extra .booking-extra.json --checked .booking-checked.json --until $(( $(date +%s) + 43 * 60 )) --pages 6 &
           pid=$!
           (while kill -0 $pid 2>/dev/null; do sleep 300; echo "  load: $(cut -d' ' -f1-3 /proc/loadavg)"; done) &
           wait $pid
@@ -226,5 +230,7 @@ jobs:
         if: always() && hashFiles('.booking-extra.json') != ''
         uses: actions/cache/save@v4
         with:
-          path: .booking-extra.json
+          path: |
+            .booking-extra.json
+            .booking-checked.json
           key: booking-extra-${{ github.run_id }}

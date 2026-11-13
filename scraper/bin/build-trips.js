@@ -505,6 +505,14 @@ async function main() {
   const checkedFile = path.join(dataDir, 'state', 'checked.json');
   const checkedLog = Object.fromEntries(Object.entries(fs.existsSync(checkedFile) ? JSON.parse(fs.readFileSync(checkedFile, 'utf8')) : {})
     .filter(([, c]) => Date.parse(generatedAt) - Date.parse(c.at) < CHECKED_HOURS * 3600e3));
+  // Prices the booking runner proved on date pairs the board never checked (bin/booking-runner.js,
+  // trips/ties.js), from its last run: taken where newer.
+  try {
+    for (const [k, c] of Object.entries(JSON.parse(fs.readFileSync(arg('booking-checked'), 'utf8')))) {
+      if (c.price == null || Date.parse(generatedAt) - Date.parse(c.at) >= CHECKED_HOURS * 3600e3) continue;
+      if (!checkedLog[k] || checkedLog[k].at < c.at) checkedLog[k] = c;
+    }
+  } catch {}
   // A listed price stands only if searched after the graph's price last changed (fares.js); an
   // entry without its search time (before 2026-11-03) can't show that and is dropped.
   const checked = () => new Map(Object.entries(checkedLog).filter(([, c]) => c.searched).map(([k, c]) => [k, { price: c.price, at: c.searched }]));

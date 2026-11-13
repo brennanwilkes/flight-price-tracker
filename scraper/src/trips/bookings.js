@@ -153,7 +153,8 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, now
       const best = got.filter((o) => inCabin(o, t.cabin, legs))[0];
       const any = got[0];
       const seen = { n: got.length, any: any?.price ?? null, anySeller: any?.sellerName ?? null };
-      if (any && t.price && any.price > t.price * LISTED_GONE) {
+      // `guess`: a return guessed, not listed with its outbound (trips/ties.js): no listed price to hold the page to.
+      if (any && t.price && !t.guess && any.price > t.price * LISTED_GONE) {
         s.partial++;
         map.set(keyOf(t), { price: best?.price ?? null, seller: best?.sellerName ?? null, at: now(), listed: t.price, partial: true, ...seen });
         continue;
@@ -165,7 +166,7 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, now
       if (!best) { s.none++; if (legs.every((l) => Number.isFinite(l?.min))) map.set(keyOf(t), { price: null, seller: null, at: now(), listed: t.price, byLength: true, ...seen }); continue; }
       map.set(keyOf(t), { price: best.price, seller: best.sellerName, at: now(), listed: t.price, ...seen });
       if (best.price < t.price) s.cheaper++;
-      else if (best.price > t.price * LISTED_GONE) { s.dearer++; s.mixed++; }
+      else if (!t.guess && best.price > t.price * LISTED_GONE) { s.dearer++; s.mixed++; }
     }
   }));
   s.left = Math.max(0, itins.length - i);
