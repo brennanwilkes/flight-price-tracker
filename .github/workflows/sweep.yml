@@ -217,14 +217,14 @@ jobs:
         run: scripts/vpn_up.sh
 
       # Done ~47 min into the run, before the sweep job (~50): the run takes no longer.
-      # --gap 4000: a page started every 4 s at most (~0.25 a second). Unpaced (~1.7 a second) the
-      # IP got the full seller list for ~15 min, then short (10:05 pm Vancouver, 2026-11-12); the
-      # canary lines say whether a steadier rate keeps it full all run.
+      # --gap: a page started every N ms at most. Unpaced (~1.7 a second) the IP got the full seller
+      # list for ~15 min, then short (10:05 pm Vancouver, 2026-11-12); at 4000 (0.25 a second) full
+      # all night, held 0-3 min a run (11:05 pm to 9:05 am). 3000: does it stay full at a third more?
       - name: Booking pages
         if: steps.vpn.outputs.vpn_ok == 'true'
         run: |
           echo "$(nproc) CPUs"
-          node scraper/bin/booking-runner.js --data .worktrees/warm --queue .booking-queue.json --extra .booking-extra.json --checked .booking-checked.json --until $(( $(date +%s) + 43 * 60 )) --pages 3 --gap 4000 &
+          node scraper/bin/booking-runner.js --data .worktrees/warm --queue .booking-queue.json --extra .booking-extra.json --checked .booking-checked.json --until $(( $(date +%s) + 43 * 60 )) --pages 3 --gap 3000 &
           pid=$!
           (while kill -0 $pid 2>/dev/null; do sleep 300; echo "  load: $(cut -d' ' -f1-3 /proc/loadavg)"; done) &
           wait $pid
