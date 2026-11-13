@@ -1,7 +1,7 @@
 {
   "tiers": {
-    "hybrid": [[3500, "buy"], [4200, "great"], [5000, "good"]],
-    "economy": [[800, "buy"], [1000, "great"], [1300, "good"]]
+    "hybrid": [[3000, "buy"], [3500, "great"], [4000, "good"]],
+    "economy": [[750, "buy"], [900, "great"], [1000, "good"]]
   },
   "cheapBusinessLongLegs": 3000,
   "newLowWarmupDays": 14,

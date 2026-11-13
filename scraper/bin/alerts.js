@@ -16,7 +16,7 @@ const sweepConfig = require('../config/sweep.json');
 const { rowName } = require('../../frontend/app/cities.js');
 const { rowId } = require('../../frontend/app/build.js');
 const { unpack } = require('../../frontend/app/pack.js');
-const { lows, findDeals, isNews } = require('../src/alerts/rules');
+const { lows, findDeals, isNews, pairOf } = require('../src/alerts/rules');
 
 const arg = (name) => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1] : null; };
 const readJson = (f, def) => (fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : def);
@@ -53,6 +53,15 @@ async function main() {
   const ledgerFile = path.join(dataDir, 'state', 'alerts.json');
   const seeding = !fs.existsSync(ledgerFile);
   const ledger = readJson(ledgerFile, { deals: {} });
+  // Entries from when a deal was a row ("…,SIN+KUL"): folded into their pair's, the lowest kept, so
+  // a pair already pushed isn't pushed again for the change of key.
+  for (const [k, v] of Object.entries(ledger.deals)) {
+    const p = pairOf(k);
+    if (p === k) continue;
+    delete ledger.deals[k];
+    const cur = ledger.deals[p];
+    if (!cur || v.total < cur.total) ledger.deals[p] = v;
+  }
 
   const rows = {};
   let generatedAt = null;

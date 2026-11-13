@@ -29,6 +29,16 @@ test('deals: buy tier, cheap business long legs, new low after warm-up; never a 
   assert.deepEqual(deals.map((d) => [d.in, d.reasons]), [['MNL', ['buy']], ['ICN', ['cheap-j']], ['HKG', ['new-low']]]);
 });
 
+test('a long-haul pair is one deal: its cheapest row with throw-ins, keyed by the pair', () => {
+  const rows = { YVR: [
+    { in: 'SIN', out: 'SIN', set: 'KUL', hybrid: trip(3416, 3200), economy: null },
+    { in: 'SIN', out: 'SIN', set: '', hybrid: trip(3397, 3200), economy: null },
+    { in: 'SIN', out: 'SIN', set: 'MNL', hybrid: trip(3477, 3200), economy: null },
+  ] };
+  const deals = findDeals(config, rows, new Map(), now);
+  assert.deepEqual(deals.map((d) => [d.key, d.trip.total]), [['YVR,hybrid,SIN,SIN', 3397]]);
+});
+
 test('re-alert only on a further $100 / 5% drop or a better tier', () => {
   const d = (total) => ({ trip: { total }, tier: tierOf(config, 'hybrid', total) });
   assert.equal(isNews(config, d(3400), undefined), true);

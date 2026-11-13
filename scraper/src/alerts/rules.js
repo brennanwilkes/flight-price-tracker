@@ -1,5 +1,7 @@
 'use strict';
-/* Deal alerts (SCOPE.md: Alerts). A deal is one dashboard cell: home, class, board row.
+/* Deal alerts (SCOPE.md: Alerts). A deal is a long-haul pair: home, class, in, out; its board rows
+ * with throw-ins (out "SIN+KUL") are one deal, the cheapest of them pushed. Per row, one sale on
+ * one pair took every push a run (2026-11-13: 44 deals in the ledger, 5 pairs).
  *
  * A cell is a deal when its trip connects (checked against real flights) and any of:
  *   buy        it's in the top price tier
@@ -13,13 +15,15 @@ const path = require('node:path');
 const { keyOf } = require('../trips/history');
 
 const TIER_RANK = { '': 0, good: 1, great: 2, buy: 3 };
+/** A cell or history key ("home,cls,in,out[+set]") as its long-haul pair's: "home,cls,in,out". */
+const pairOf = (key) => key.replace(/\+[^,]*$/, '');
 
 /** The tier word for a total, or ''. */
 const tierOf = (config, cls, total) => config.tiers[cls].find(([max]) => total <= max)?.[1] ?? '';
 
 /**
- * Each cell's lowest total and first sighting in [since, before), from derived/history/*.csv.
- * Map "home,cls,in,out[+set]" → { low, first } (history.js keyOf).
+ * Each long-haul pair's lowest total (over its rows with throw-ins) and first sighting in
+ * [since, before), from derived/history/*.csv. Map "home,cls,in,out" → { low, first }.
  */
 function lows(dataDir, since, before) {
   const out = new Map();
@@ -29,10 +33,10 @@ function lows(dataDir, since, before) {
     for (const line of fs.readFileSync(path.join(dir, f), 'utf8').trim().split('\n').slice(1)) {
       const [when, home, cls, inn, out_, total] = line.split(',');
       if (when < since || when >= before || total === '') continue;
-      const key = `${home},${cls},${inn},${out_}`;
+      const key = pairOf(`${home},${cls},${inn},${out_}`);
       const cur = out.get(key);
       if (!cur) out.set(key, { low: Number(total), first: when });
-      else cur.low = Math.min(cur.low, Number(total));
+      else { cur.low = Math.min(cur.low, Number(total)); if (when < cur.first) cur.first = when; }
     }
   }
   return out;
@@ -44,14 +48,15 @@ function lows(dataDir, since, before) {
  * Returns [{ key, home, cls, in, out, set, trip, tier, reasons, prevLow }].
  */
 function findDeals(config, rows, history, now) {
-  const deals = [];
+  const best = new Map(); // pair → its cheapest row's deal
   const warm = Date.parse(now) - config.newLowWarmupDays * 864e5;
   for (const [home, list] of Object.entries(rows)) {
     for (const r of list) {
       for (const cls of ['hybrid', 'economy']) {
         const trip = r[cls];
         if (!trip || trip.connects !== true) continue;
-        const key = keyOf({ home, cls, ...r });
+        const key = pairOf(keyOf({ home, cls, ...r }));
+        if (best.has(key) && best.get(key).trip.total <= trip.total) continue;
         const tier = tierOf(config, cls, trip.total);
         const reasons = [];
         if (tier === 'buy') reasons.push('buy');
@@ -59,10 +64,12 @@ function findDeals(config, rows, history, now) {
         if (cls === 'hybrid' && longJ && longJ < config.cheapBusinessLongLegs) reasons.push('cheap-j');
         const h = history.get(key);
         if (h && Date.parse(h.first) <= warm && trip.total < h.low) reasons.push('new-low');
-        if (reasons.length) deals.push({ key, home, cls, in: r.in, out: r.out, set: r.set, trip, tier, reasons, prevLow: h?.low ?? null });
+        // A cheaper row of the pair that isn't a deal still stands for it (no push for a dearer row).
+        best.set(key, { key, home, cls, in: r.in, out: r.out, set: r.set, trip, tier, reasons, prevLow: h?.low ?? null });
       }
     }
   }
+  const deals = [...best.values()].filter((d) => d.reasons.length);
   return deals.sort((a, b) => TIER_RANK[b.tier] - TIER_RANK[a.tier] || a.trip.total - b.trip.total);
 }
 
@@ -73,4 +80,4 @@ function isNews(config, deal, prior) {
   return deal.trip.total <= prior.total - drop || TIER_RANK[deal.tier] > TIER_RANK[prior.tier ?? ''];
 }
 
-module.exports = { tierOf, lows, findDeals, isNews, TIER_RANK };
+module.exports = { tierOf, lows, findDeals, isNews, pairOf, TIER_RANK };
