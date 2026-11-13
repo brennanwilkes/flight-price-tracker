@@ -62,7 +62,16 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   // the build pass's 1.45, on the same kind of runner.
   const ms = []; let bad = 0; const t0 = Date.now(); let phase = 'board'; const why = {};
   const q = (p) => { const v = [...ms].sort((x, y) => x - y); return v.length ? Math.round(v[Math.floor(p * (v.length - 1))] / 100) / 10 : '-'; };
-  const tick = setInterval(() => { canary((t) => b.bookingSellers(t)).then((v) => { view = v; }); console.log(`  ${Math.round((Date.now() - t0) / 60e3)} min (${phase}): ${ms.length} booking pages (${bad} errors), ${(ms.length / ((Date.now() - t0) / 1000)).toFixed(2)} a second, page ${q(0.5)} s median, ${q(0.9)} s p90; this window: ${win.long} long-haul pages, ${win.wide} with 6+ sellers, ${win.gone} without the listed offer, ${win.errors} errors; canary ${view}`); win = { long: 0, wide: 0, gone: 0, errors: 0 }; }, 5 * 60e3);
+  // An IP gets the full seller list for ~400-450 pages, then short until it rests (10:05 pm
+  // Vancouver, 2026-11-12: full for 15 min, rejected from 20, short by 35; full again an hour on).
+  // So pages are held while the canary isn't full (asked every 2 min), what's checked meanwhile in
+  // the ties' searches is marked short, and pages are paced (--gap ms between starts: is it the rate?).
+  const isFull = () => view.startsWith('full');
+  let held = 0;
+  const watch = setInterval(() => { canary((t) => b.bookingSellers(t)).then((v) => { if (v !== view) console.log(`  ${Math.round((Date.now() - t0) / 60e3)} min: canary ${v}`); view = v; }); }, 2 * 60e3);
+  const gate = async () => { while (!isFull() && Date.now() < until) { held += 15e3; await sleep(15e3); } };
+  const gapMs = Number(arg('gap', 0));
+  const tick = setInterval(() => { console.log(`  ${Math.round((Date.now() - t0) / 60e3)} min (${phase}): ${ms.length} booking pages (${bad} errors), ${(ms.length / ((Date.now() - t0) / 1000)).toFixed(2)} a second, page ${q(0.5)} s median, ${q(0.9)} s p90; this window: ${win.long} long-haul pages, ${win.wide} with 6+ sellers, ${win.gone} without the listed offer, ${win.errors} errors; canary ${view}; held ${Math.round(held / 60e3)} min so far`); win = { long: 0, wide: 0, gone: 0, errors: 0 }; }, 5 * 60e3);
   // Per 5-min window, long-haul pages only (hops list few sellers anyway): how many had 6+ sellers,
   // and how many lacked the listed offer. Does the short seller list come on as an IP's pages pile
   // up? (7:05 pm Vancouver, 2026-11-12: errors 0 in the first 5 min, 246 by 40; 2,362 of 2,859
@@ -74,7 +83,7 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   const timed = timed0;
   const pass = async (name, itins, end) => {
     if (!itins.length || Date.now() >= end) return;
-    const s = await bookingPass(itins, timed, bookings, { until: end, pages, inCabin });
+    const s = await bookingPass(itins, timed, bookings, { until: end, pages, inCabin, gate, short: () => !isFull(), gapMs });
     console.log(`booking runner, ${name}: ${s.checked} of ${itins.length} checked, ${s.cheaper} cheaper than listed, ${s.none} with no seller in its cabin, ${s.failed} failed, ${s.left} left; ${Math.round(s.ms / 1000)} s (${(s.checked / Math.max(1, s.ms / 1000)).toFixed(2)} a second)`);
     console.log(`booking runner, ${name}: ${passLine(s)}`);
   };
@@ -84,7 +93,8 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
     await ties(Math.min(until, Date.now() + TIES_MS));
     phase = 'filters';
     await pass('filters', all.slice(nBoard).filter((t) => !bookings.has(keyOf(t))), until);
-  } finally { clearInterval(tick); await b.close(); }
+  } finally { clearInterval(tick); clearInterval(watch); await b.close(); }
+  console.log(`booking runner: pages held ${Math.round(held / 60e3)} min for the short list; canary at the end ${view}`);
   console.log(`booking runner: page errors by kind: ${Object.entries(why).sort((x, y) => y[1] - x[1]).map(([w, n]) => `${n}× ${w}`).join('; ') || 'none'}`);
   saveBookings(extra, bookings);
   if (checkedFile) fs.writeFileSync(checkedFile, JSON.stringify(checked));
@@ -109,7 +119,7 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
       const rows = new Map();
       for (const [k, p] of cache) { const v = await Promise.race([p, sleep(0).then(() => null)]); if (Array.isArray(v)) rows.set(k, v); }
       const itins = bookingCandidates(tix, (k) => rows.get(k) ?? null, bookings, homes);
-      const s = itins.length ? await bookingPass(itins, timed, bookings, { until: end, pages, inCabin }) : { checked: 0 };
+      const s = itins.length ? await bookingPass(itins, timed, bookings, { until: end, pages, inCabin, gate, short: () => !isFull(), gapMs }) : { checked: 0 };
       st.pages += s.checked;
       for (const tr of trips) {
         const t = tr.tickets[0];

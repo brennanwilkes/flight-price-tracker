@@ -20,6 +20,9 @@ const BOOKING_HOURS = 12; // as old as the graph prices it stands in for (2-48 h
 // listed price) is held as checked this long only, then asked again, and never applied: Google
 // showed one runner 5 sellers ($4,612) where a browser saw 15 (Trip.com $3,450), 2026-11-12.
 const PARTIAL_HOURS = 3;
+// Checked while the IP got the short seller list: an IP gets the full list for ~400-450 pages, then
+// short until it rests (10:05 pm Vancouver, 2026-11-12, the canary); kept this long, then asked again.
+const SHORT_HOURS = 3;
 const LISTED_GONE = 1.03;
 const ALTS = 2; // a long-haul ticket's other outbounds checked with its return, cheapest first
 const ALT_WITHIN = 1.4; // ... up to this many times its price
@@ -41,6 +44,8 @@ function loadBookings(files, now = Date.now()) {
       // run (2026-11-12) read a queue without lengths and wrote off 1,332 of 1,802 pages.
       if (b.price == null && !b.byLength) continue;
       if (b.partial && now - Date.parse(b.at) >= PARTIAL_HOURS * 3600e3) continue;
+      // Checked while the IP got the short seller list (the canary, gflights/booking.js): asked again sooner.
+      if (b.short && now - Date.parse(b.at) >= SHORT_HOURS * 3600e3) continue;
       // From before pages were told apart (no seller count `n`): a price off the listed one may be a
       // fare without cabins (BudgetAir's $615 "business") or a page without the listed offer; asked again.
       if (b.n == null && b.price != null && b.listed && Math.abs(b.price - b.listed) > b.listed * (LISTED_GONE - 1)) continue;
@@ -132,17 +137,26 @@ function bookingCandidates(tiers, rowsOf, map, homes) {
  * Check `itins` on their booking pages until `until` (ms), `pages` at once; `sellers(ticket)` →
  * the booking page's sellers (gflights/booking.js bookingSellers). Each result into `map` (the
  * cheapest seller in the ticket's cabin). Returns { checked, cheaper, none (no seller in its cabin), failed, ms }.
+ * Optional: `gate()` awaited before each page (the runner holds pages while its IP gets the short
+ * seller list); `short()` true when the IP's view is short just now (its results kept SHORT_HOURS,
+ * not BOOKING_HOURS); `gapMs` between page starts, across all pages (pacing).
  */
-async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, now = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z') }) {
+async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gate = null, short = null, gapMs = 0, now = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z') }) {
   const t0 = Date.now();
+  let next = Date.now();
+  const pace = async () => { if (!gapMs) return; const at = Math.max(Date.now(), next); next = at + gapMs; await new Promise((r) => setTimeout(r, at - Date.now())); };
   // Telemetry: sellers a page (by count: few looks like the short view), fares without cabins, and
   // why a price came out dearer than listed (mixed: the listed fare is in another cabin; partial:
   // the listed offer isn't on the page at all).
-  const s = { checked: 0, cheaper: 0, dearer: 0, mixed: 0, partial: 0, none: 0, noCabins: 0, failed: 0, left: 0, ms: 0, sellers: { '1-5': 0, '6-10': 0, '11+': 0 } };
+  const s = { checked: 0, cheaper: 0, dearer: 0, mixed: 0, partial: 0, none: 0, noCabins: 0, short: 0, failed: 0, left: 0, ms: 0, sellers: { '1-5': 0, '6-10': 0, '11+': 0 } };
   let i = 0;
   await Promise.all(Array.from({ length: pages }, async () => {
     while (i < itins.length && Date.now() < until) {
+      if (gate) await gate();
+      if (Date.now() >= until) break;
+      await pace();
       const t = itins[i++];
+      if (!t) break;
       let got = null;
       for (let n = 0; n < 2 && !got && Date.now() < until; n++) got = await sellers(t).catch(() => null);
       if (!got) { s.failed++; continue; }
@@ -152,7 +166,8 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, now
       const legs = [...t.flights.out.legs, ...(t.ret ? t.flights.back?.legs ?? [] : [])];
       const best = got.filter((o) => inCabin(o, t.cabin, legs))[0];
       const any = got[0];
-      const seen = { n: got.length, any: any?.price ?? null, anySeller: any?.sellerName ?? null };
+      const seen = { n: got.length, any: any?.price ?? null, anySeller: any?.sellerName ?? null, ...(short?.() ? { short: true } : {}) };
+      if (seen.short) s.short++;
       // `guess`: a return guessed, not listed with its outbound (trips/ties.js): no listed price to hold the page to.
       if (any && t.price && !t.guess && any.price > t.price * LISTED_GONE) {
         s.partial++;
@@ -176,6 +191,6 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, now
 }
 
 /** One line of a pass's telemetry (bookingPass's returned stats). */
-const passLine = (s) => `sellers a page ${s.sellers['1-5']} with 1-5, ${s.sellers['6-10']} with 6-10, ${s.sellers['11+']} with 11+; ${s.partial} without the listed offer (held ${PARTIAL_HOURS} h, unapplied), ${s.mixed} dearer in the cabin than the listed fare (listed in another cabin), ${s.noCabins} fares without cabins (not counted)`;
+const passLine = (s) => `sellers a page ${s.sellers['1-5']} with 1-5, ${s.sellers['6-10']} with 6-10, ${s.sellers['11+']} with 11+; ${s.partial} without the listed offer (held ${PARTIAL_HOURS} h, unapplied), ${s.mixed} dearer in the cabin than the listed fare (listed in another cabin), ${s.noCabins} fares without cabins (not counted), ${s.short} checked while the IP got the short list (held ${SHORT_HOURS} h)`;
 
 module.exports = { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass, passLine, keyOf, BOOKING_HOURS };

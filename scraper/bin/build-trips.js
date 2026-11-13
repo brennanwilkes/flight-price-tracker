@@ -548,8 +548,11 @@ async function main() {
     try {
       // The canary (gflights/booking.js): which seller list this IP gets, before and after.
       const egress = await fetch('https://api.ipify.org').then((r) => r.text()).catch(() => '?');
-      console.log(`booking pages beside the scrape: exit IP ${egress}; canary ${await canary((t) => b.bookingSellers(t))}`);
-      const s = await bookingPass(itins, (t) => b.bookingSellers(t), bookings, { until: Date.now() + BOOKING_WARM_MS, pages: BOOKING_PAGES.warm, inCabin });
+      const view = await canary((t) => b.bookingSellers(t));
+      console.log(`booking pages beside the scrape: exit IP ${egress}; canary ${view}`);
+      // This IP also carries the scrape and the checks: short from the start at 10:05 pm (2026-11-12).
+      // What it checks on the short list is kept SHORT_HOURS (bookings.js), then asked again.
+      const s = await bookingPass(itins, (t) => b.bookingSellers(t), bookings, { until: Date.now() + BOOKING_WARM_MS, pages: BOOKING_PAGES.warm, inCabin, short: () => !view.startsWith('full') });
       console.log(`booking pages beside the scrape: canary after ${await canary((t) => b.bookingSellers(t))}`);
       console.log(`booking pages beside the scrape: ${s.checked} of ${itins.length} checked, ${s.cheaper} cheaper than listed, ${s.none} with no seller in its cabin, ${s.failed} failed, ${s.left} left; ${Math.round(s.ms / 1000)} s`);
       console.log(`booking pages beside the scrape: ${passLine(s)}`);
