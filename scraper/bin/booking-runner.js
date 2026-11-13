@@ -90,7 +90,7 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
     if (Date.now() > end - 3 * 60e3) return;
     const queued = new Set(tiers.flat().filter((t) => t.kind === 'rt').map(fareKey));
     const list = graphTickets(dataDir, homes, { skip: new Set([...queued, ...Object.keys(checked)]) });
-    const st = { searched: 0, flown: 0, pages: 0, proven: 0, cheaper: 0, best: null };
+    const st = { searched: 0, flown: 0, pages: 0, proven: 0, cheaper: 0, best: null, unpriced: 0, above: 0, ratios: [] };
     const cache = new Map();
     const browser = (qq, opts) => b.shoppingResults(qq, opts);
     for (let i = 0; i < list.length && Date.now() < end - 3 * 60e3; i += TIE_CHUNK) {
@@ -115,12 +115,14 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
         const was = t.graph ?? t.price;
         // Only a price below the graph's goes to the planner: one above may be the short seller
         // list (no listed price to hold a guessed pair to), and the graph's then stands.
+        if (p == null) st.unpriced++; else st.ratios.push(p / was);
+        if (p != null && p >= was) st.above++;
         if (p == null || p >= was) { checked[fareKey(t)] = { price: null, at }; continue; }
         st.proven++;
         if (p < was) { st.cheaper++; if (!st.best || was - p > st.best.save) st.best = { save: was - p, what: `${t.from}⇄${t.to} ${t.cabin} ${t.date}/${t.ret} graph $${was} → $${p}${bookings.get(keyOf(t))?.seller ? ` (${bookings.get(keyOf(t)).seller})` : ''}` }; }
         checked[fareKey(t)] = { price: p, at, searched: at };
       }
     }
-    console.log(`booking runner, unchecked dates: ${list.length} business round trips on the graph not on the board's queue or checked in ${TIE_HOURS} h; ${st.searched} searched, ${st.flown} with flights both ways, ${st.pages} booking pages, ${st.proven} proven below the graph${st.best ? `; most: ${st.best.what}` : ''}`);
+    console.log(`booking runner, unchecked dates: ${list.length} business round trips on the graph not on the board's queue or checked in ${TIE_HOURS} h; ${st.searched} searched, ${st.flown} with flights both ways, ${st.pages} booking pages, ${st.proven} proven below the graph, ${st.above} at or above it, ${st.unpriced} with no price in the cabin (failed, partial or none)${st.ratios.length ? `; booked/graph median ${st.ratios.sort((x, y) => x - y)[Math.floor(st.ratios.length / 2)].toFixed(2)}` : ''}${st.best ? `; most: ${st.best.what}` : ''}`);
   }
 })().catch((e) => { console.error(`booking runner: ${e.stack}`); process.exit(1); });
