@@ -561,6 +561,10 @@ async function main() {
       let tried = {};
       try { tried = JSON.parse(fs.readFileSync(arg('booking-checked'), 'utf8')); } catch {}
       const queued = new Set(tiers.flat().filter((t) => t.kind === 'rt').map(fareKey));
+      // The last build's date pairs, booked by the runner during this run: not searched again. Without
+      // this every other run searched the same pairs, and the runner found them all done (3:05 pm
+      // Vancouver, 2026-11-13: "0 date pairs with flights queued").
+      try { const q = JSON.parse(fs.readFileSync(queueFile, 'utf8')).ties ?? {}; for (const t of q.itins ?? []) queued.add(t.tie); for (const k of q.tried ?? []) queued.add(k); } catch {}
       // Its graph price lower than when last tried: due now, and first (a sale shows on the graph first).
       const dropped = (t) => { const g = tried[fareKey(t)]?.graph; return g != null && t.price < g - Math.max(5, g * 0.01); };
       // Tried: left TIE_HOURS when proven below the graph (BOOKING_HOURS: a discount moves), else TRIED_HOURS.
