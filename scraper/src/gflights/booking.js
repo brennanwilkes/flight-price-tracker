@@ -12,7 +12,9 @@ const { parseBatchExecute, parseBooking } = require('./batchexecute');
 const { CABIN } = require('./tfs');
 
 const PAGE_URL = 'https://www.google.com/travel/flights/booking';
-const WAIT_MS = 40_000;
+// A page answers in ~4 s (median; p90 ~10 s, the booking runner 2026-11-12); one that hasn't by
+// this won't: at 40 s, 143 dead pages (each tried twice) held the runner's 6 pages ~16 of its 43 min.
+const WAIT_MS = 15_000;
 
 const seg = (l) => {
   const m = /^([A-Z0-9]{2})(\d+)$/.exec(l.code ?? '');

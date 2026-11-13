@@ -56,10 +56,10 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   const b = await openBrowserThread({ lean: true });
   // Page times, and progress every 5 min: at 0.70 a second (5:05 pm, 2026-11-12) it ran at half
   // the build pass's 1.45, on the same kind of runner.
-  const ms = []; let bad = 0; const t0 = Date.now(); let phase = 'board';
+  const ms = []; let bad = 0; const t0 = Date.now(); let phase = 'board'; const why = {};
   const q = (p) => { const v = [...ms].sort((x, y) => x - y); return v.length ? Math.round(v[Math.floor(p * (v.length - 1))] / 100) / 10 : '-'; };
   const tick = setInterval(() => console.log(`  ${Math.round((Date.now() - t0) / 60e3)} min (${phase}): ${ms.length} booking pages (${bad} errors), ${(ms.length / ((Date.now() - t0) / 1000)).toFixed(2)} a second, page ${q(0.5)} s median, ${q(0.9)} s p90`), 5 * 60e3);
-  const timed = async (t) => { const t1 = Date.now(); try { const r = await b.bookingSellers(t); ms.push(Date.now() - t1); return r; } catch (e) { bad++; ms.push(Date.now() - t1); throw e; } };
+  const timed = async (t) => { const t1 = Date.now(); try { const r = await b.bookingSellers(t); ms.push(Date.now() - t1); return r; } catch (e) { bad++; ms.push(Date.now() - t1); const w = String(e.message).replace(/\d+/g, 'N').slice(0, 60); why[w] = (why[w] ?? 0) + 1; throw e; } };
   const pass = async (name, itins, end) => {
     if (!itins.length || Date.now() >= end) return;
     const s = await bookingPass(itins, timed, bookings, { until: end, pages, inCabin });
@@ -73,6 +73,7 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
     phase = 'filters';
     await pass('filters', all.slice(nBoard).filter((t) => !bookings.has(keyOf(t))), until);
   } finally { clearInterval(tick); await b.close(); }
+  console.log(`booking runner: page errors by kind: ${Object.entries(why).sort((x, y) => y[1] - x[1]).map(([w, n]) => `${n}× ${w}`).join('; ') || 'none'}`);
   saveBookings(extra, bookings);
   if (checkedFile) fs.writeFileSync(checkedFile, JSON.stringify(checked));
 
