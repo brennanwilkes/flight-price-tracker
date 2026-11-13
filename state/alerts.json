@@ -74,6 +74,36 @@
    "total": 3477,
    "tier": "buy",
    "at": "2026-11-13T11:29:39Z"
+  },
+  "YVR,hybrid,HKG,HKG+SIN": {
+   "total": 3165,
+   "tier": "buy",
+   "at": "2026-11-13T12:28:31Z"
+  },
+  "YVR,hybrid,HKG,HKG+JKT": {
+   "total": 3200,
+   "tier": "buy",
+   "at": "2026-11-13T12:28:31Z"
+  },
+  "YVR,hybrid,HKG,HKG+ICN": {
+   "total": 3274,
+   "tier": "buy",
+   "at": "2026-11-13T12:28:31Z"
+  },
+  "YVR,hybrid,HKG,HKG+CNX": {
+   "total": 3342,
+   "tier": "buy",
+   "at": "2026-11-13T12:28:31Z"
+  },
+  "YVR,hybrid,HKG,HKG+OSA": {
+   "total": 3421,
+   "tier": "buy",
+   "at": "2026-11-13T12:28:31Z"
+  },
+  "YVR,hybrid,HKG,HKG+TYO": {
+   "total": 3478,
+   "tier": "buy",
+   "at": "2026-11-13T12:28:31Z"
   }
  }
 }
