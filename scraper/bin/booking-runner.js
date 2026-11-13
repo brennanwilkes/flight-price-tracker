@@ -8,13 +8,14 @@
  *   node scraper/bin/booking-runner.js --data <data snapshot> --queue .booking-queue.json
  *     --extra .booking-extra.json --checked .booking-checked.json --until <epoch s> [--pages 6]
  *
+ * Booking pages only: an IP gets the full seller list for a few hundred pages an hour (the canary,
+ * 2026-11-12), so this runner's go to booking pages and the sweep's runner does the searching.
  * In turn, while time is left:
  *  1. the board's itineraries from the last build's queue (tier 0);
- *  2. date pairs the board never checks (trips/ties.js): business round trips off the graph, their
- *     flights searched and their booking pages checked, at most TIES_MS; the prices found go to
- *     --checked (state/checked.json form) for the next build's planner;
- *  3. the rest of the queue (the filters'), from the front; the pass beside the scrape takes it
- *     from the back (build-trips.js), so the two don't check the same pages.
+ *  2. date pairs the board never checks (trips/ties.js), their flights searched beside the last
+ *     scrape (the queue's `ties`), at most TIES_MS; prices found below the graph go to --checked
+ *     (state/checked.json form) for the next build's planner;
+ *  3. the rest of the queue (the filters').
  * Known prices: the data branch's state/booking.json and the last run's --extra (this job's, saved
  * in the Actions cache: the build that merges it into booking.json runs before it's done). Writes
  * --extra with everything still fresh, for the next run's build and this job.
@@ -22,14 +23,13 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { loadBookings, saveBookings, bookingCandidates, bookingPass, passLine, keyOf, BOOKING_HOURS } = require('../src/trips/bookings');
-const { addDetails, returnsDone, useBookings } = require('../src/trips/details');
-const { graphTickets, provenPrice } = require('../src/trips/ties');
+const { useBookings } = require('../src/trips/details');
+const { provenPrice } = require('../src/trips/ties');
 const { fareKey } = require('../src/trips/fares');
 const { inCabin, canary } = require('../src/gflights/booking');
 const { openBrowserThread } = require('../src/gflights/browser-thread');
 
 const TIES_MS = 15 * 60e3; // the unchecked date pairs' share of a run, after the board
-const TIE_CHUNK = 40; // date pairs searched, then booked, at a time
 const TIE_HOURS = BOOKING_HOURS; // a date pair checked is left this long
 
 const arg = (name, def) => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1] : def; };
@@ -48,7 +48,8 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   let checked = {};
   try { checked = Object.fromEntries(Object.entries(JSON.parse(fs.readFileSync(checkedFile, 'utf8'))).filter(([, c]) => Date.now() - Date.parse(c.at) < TIE_HOURS * 3600e3)); } catch {}
   let tiers = [];
-  try { const q = JSON.parse(fs.readFileSync(arg('queue'), 'utf8')); tiers = Array.isArray(q) ? [q] : q.tiers ?? []; } catch {}
+  let tieQueue = { itins: [], tried: [] };
+  try { const q = JSON.parse(fs.readFileSync(arg('queue'), 'utf8')); tiers = Array.isArray(q) ? [q] : q.tiers ?? []; if (q.ties) tieQueue = q.ties; } catch {}
   const all = bookingCandidates(tiers, () => null, bookings, homes);
   const nBoard = tiers.length > 1 ? bookingCandidates([tiers[0]], () => null, bookings, homes).length : all.length;
   console.log(`booking runner: ${bookings.size} prices under the age limit, ${tiers.map((l) => l.length).join(' + ')} queued, ${all.length} to check (${nBoard} the board's)`);
@@ -67,9 +68,12 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   // So pages are held while the canary isn't full (asked every 2 min), what's checked meanwhile in
   // the ties' searches is marked short, and pages are paced (--gap ms between starts: is it the rate?).
   const isFull = () => view.startsWith('full');
-  let held = 0;
+  let held = 0; let holdFrom = null; // wall-clock time held (the pages wait together)
   const watch = setInterval(() => { canary((t) => b.bookingSellers(t)).then((v) => { if (v !== view) console.log(`  ${Math.round((Date.now() - t0) / 60e3)} min: canary ${v}`); view = v; }); }, 2 * 60e3);
-  const gate = async () => { while (!isFull() && Date.now() < until) { held += 15e3; await sleep(15e3); } };
+  const gate = async () => {
+    while (!isFull() && Date.now() < until) { holdFrom ??= Date.now(); await sleep(15e3); }
+    if (holdFrom != null) { held += Date.now() - holdFrom; holdFrom = null; }
+  };
   const gapMs = Number(arg('gap', 0));
   const tick = setInterval(() => { console.log(`  ${Math.round((Date.now() - t0) / 60e3)} min (${phase}): ${ms.length} booking pages (${bad} errors), ${(ms.length / ((Date.now() - t0) / 1000)).toFixed(2)} a second, page ${q(0.5)} s median, ${q(0.9)} s p90; this window: ${win.long} long-haul pages, ${win.wide} with 6+ sellers, ${win.gone} without the listed offer, ${win.errors} errors; canary ${view}; held ${Math.round(held / 60e3)} min so far`); win = { long: 0, wide: 0, gone: 0, errors: 0 }; }, 5 * 60e3);
   // Per 5-min window, long-haul pages only (hops list few sellers anyway): how many had 6+ sellers,
@@ -99,32 +103,26 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   saveBookings(extra, bookings);
   if (checkedFile) fs.writeFileSync(checkedFile, JSON.stringify(checked));
 
-  // 2. Date pairs the board never checks: searched as one-ticket trips, then their booking pages.
+  // 2. Date pairs the board never checks: their flights searched beside the scrape on the sweep's
+  // runner (trips/ties.js searchTies, the queue's `ties`), their booking pages here.
   async function ties(end) {
-    if (Date.now() > end - 3 * 60e3) return;
-    const queued = new Set(tiers.flat().filter((t) => t.kind === 'rt').map(fareKey));
-    const list = graphTickets(dataDir, homes, { skip: new Set([...queued, ...Object.keys(checked)]) });
-    const st = { searched: 0, flown: 0, pages: 0, proven: 0, cheaper: 0, best: null, unpriced: 0, above: 0, ratios: [] };
-    const cache = new Map();
-    const browser = (qq, opts) => b.shoppingResults(qq, opts);
-    for (let i = 0; i < list.length && Date.now() < end - 3 * 60e3; i += TIE_CHUNK) {
-      const trips = list.slice(i, i + TIE_CHUNK).map((t) => ({ tickets: [{ ...t }], order: [[0, 'out'], [0, 'back']] }));
-      const searchEnd = Math.min(end - 2 * 60e3, Date.now() + 6 * 60e3);
-      await addDetails(trips, cache, browser, null, searchEnd, { pages: 3 });
-      returnsDone(cache, new Set()); // the return guessed from the one-way list home is what's asked: its booking page prices that pair or lists no one
-      st.searched += trips.length;
-      const tix = trips.map((tr) => tr.tickets[0]).filter((t) => t.flights?.out?.legs?.length && !t.flights.out.miss && t.flights.back?.legs?.length && !t.flights.back.miss);
-      for (const t of tix) t.guess = true;
-      st.flown += tix.length;
-      const rows = new Map();
-      for (const [k, p] of cache) { const v = await Promise.race([p, sleep(0).then(() => null)]); if (Array.isArray(v)) rows.set(k, v); }
-      const itins = bookingCandidates(tix, (k) => rows.get(k) ?? null, bookings, homes);
-      const s = itins.length ? await bookingPass(itins, timed, bookings, { until: end, pages, inCabin, gate, short: () => !isFull(), gapMs }) : { checked: 0 };
-      st.pages += s.checked;
-      for (const tr of trips) {
-        const t = tr.tickets[0];
+    const at0 = stamp();
+    for (const k of tieQueue.tried ?? []) checked[k] ??= { price: null, at: at0 };
+    const byTie = new Map();
+    for (const t of tieQueue.itins ?? []) { if (checked[t.tie]) continue; if (!byTie.has(t.tie)) byTie.set(t.tie, []); byTie.get(t.tie).push(t); }
+    const st = { searched: byTie.size, flown: byTie.size, pages: 0, proven: 0, cheaper: 0, best: null, unpriced: 0, above: 0, ratios: [] };
+    const list = [...byTie.keys()];
+    if (!list.length || Date.now() > end - 60e3) { console.log(`booking runner, unchecked dates: ${list.length} date pairs with flights queued`); return; }
+    const itins = [...byTie.values()].flat().filter((t) => !bookings.has(keyOf(t)));
+    const s = await bookingPass(itins, timed, bookings, { until: end, pages, inCabin, gate, short: () => !isFull(), gapMs });
+    st.pages += s.checked;
+    for (const [tie, group] of byTie) {
+      const t = group[0];
+      // Not reached, or checked on the short list (agency fares missing): left for the next run.
+      if (!group.every((x) => bookings.has(keyOf(x))) || group.some((x) => bookings.get(keyOf(x)).short)) continue;
+      {
         const at = stamp();
-        const p = tix.includes(t) ? provenPrice(t, itins, bookings, keyOf) : null;
+        const p = provenPrice(t, group, bookings, keyOf);
         // Tried, nothing proven (no flights, or no seller in its cabin): not tried again for TIE_HOURS; never planned with.
         const was = t.graph ?? t.price;
         // Only a price below the graph's goes to the planner: one above may be the short seller
@@ -137,6 +135,6 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
         checked[fareKey(t)] = { price: p, at, searched: at };
       }
     }
-    console.log(`booking runner, unchecked dates: ${list.length} business round trips on the graph not on the board's queue or checked in ${TIE_HOURS} h; ${st.searched} searched, ${st.flown} with flights both ways, ${st.pages} booking pages, ${st.proven} proven below the graph, ${st.above} at or above it, ${st.unpriced} with no price in the cabin (failed, partial or none)${st.ratios.length ? `; booked/graph median ${st.ratios.sort((x, y) => x - y)[Math.floor(st.ratios.length / 2)].toFixed(2)}` : ''}${st.best ? `; most: ${st.best.what}` : ''}`);
+    console.log(`booking runner, unchecked dates: ${list.length} date pairs with flights queued (searched beside the last scrape), ${itins.length} itineraries; ${st.pages} booking pages, ${st.proven} proven below the graph, ${st.above} at or above it, ${st.unpriced} with no price in the cabin (failed, partial or none)${st.ratios.length ? `; booked/graph median ${st.ratios.sort((x, y) => x - y)[Math.floor(st.ratios.length / 2)].toFixed(2)}` : ''}${st.best ? `; most: ${st.best.what}` : ''}`);
   }
 })().catch((e) => { console.error(`booking runner: ${e.stack}`); process.exit(1); });

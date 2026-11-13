@@ -54,4 +54,35 @@ function provenPrice(t, itins, map, keyOf) {
   return p;
 }
 
-module.exports = { graphTickets, provenPrice };
+/**
+ * Flights for `list` (graphTickets) until `until` (ms), CHUNK date pairs at a time, as one-ticket
+ * trips (details.js addDetails; `browser`: query → GetShoppingResults payload). The return is the
+ * one guessed from the one-way list home (`guess`): its booking page prices that exact pair or
+ * lists no one. Returns { itins (each pair's ticket and up to ALTS other outbounds, `tie`: its
+ * fareKey, `graph`: the graph's price), tried (fareKeys searched, no flights both ways) }.
+ * Done on the sweep's runner, beside the scrape: searches don't need the full seller list, and
+ * the booking runner's IP keeps its pages for booking pages (2026-11-12).
+ */
+async function searchTies(list, { browser, until, bookings, homes, chunk = 40, pages = 3 }) {
+  const { addDetails, returnsDone } = require('./details');
+  const { bookingCandidates } = require('./bookings');
+  const itins = []; const tried = [];
+  const cache = new Map();
+  for (let i = 0; i < list.length && Date.now() < until - 60e3; i += chunk) {
+    const trips = list.slice(i, i + chunk).map((t) => ({ tickets: [{ ...t }], order: [[0, 'out'], [0, 'back']] }));
+    await addDetails(trips, cache, browser, null, until - 30e3, { pages });
+    returnsDone(cache, new Set());
+    const rows = new Map();
+    for (const [k, p] of cache) { const v = await Promise.race([p, new Promise((r) => setTimeout(r, 0, null))]); if (Array.isArray(v)) rows.set(k, v); }
+    for (const tr of trips) {
+      const t = tr.tickets[0];
+      const tie = fareKey(t);
+      if (!(t.flights?.out?.legs?.length && !t.flights.out.miss && t.flights.back?.legs?.length && !t.flights.back.miss)) { if (Date.now() < until - 30e3) tried.push(tie); continue; }
+      const graph = t.graph ?? t.price;
+      for (const x of bookingCandidates([t], (k) => rows.get(k) ?? null, bookings, homes)) itins.push({ ...x, guess: true, tie, graph });
+    }
+  }
+  return { itins, tried };
+}
+
+module.exports = { graphTickets, provenPrice, searchTies };

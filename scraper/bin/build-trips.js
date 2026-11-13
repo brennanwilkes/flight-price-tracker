@@ -56,7 +56,8 @@ const path = require('node:path');
 const zlib = require('node:zlib');
 const config = require('../config/sweep.json');
 const { staleAfterHours } = require('../src/sweep/plan');
-const { loadFares, bundleOf, fareOf } = require('../src/trips/fares');
+const { loadFares, bundleOf, fareOf, fareKey } = require('../src/trips/fares');
+const { graphTickets, searchTies } = require('../src/trips/ties');
 const { similarCount, scoreOf, rowId, bandOf } = require('../../frontend/app/build.js');
 const { CITIES, airportsOf, isPacific } = require('../../frontend/app/cities.js');
 const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
@@ -541,9 +542,25 @@ async function main() {
     let tiers = [];
     try { if (queueFile) { const q = JSON.parse(fs.readFileSync(queueFile, 'utf8')); tiers = Array.isArray(q) ? [q] : q.tiers ?? []; } } catch {}
     if (!tiers.flat().length) tiers = [homes.flatMap((h) => { try { return JSON.parse(fs.readFileSync(path.join(dataDir, 'derived', `trips-${h}.json`), 'utf8')).ticketTable ?? []; } catch { return []; } })];
+    // With the booking runner on its own runner: this IP, short on booking pages from the start (it
+    // scrapes and checks all hour; 10:05 pm Vancouver, 2026-11-12), searches flights for the date
+    // pairs the board never checks instead (trips/ties.js), and the booking runner books them.
+    if (process.env.BOOKING_RUNNER === '1' && arg('booking-ties')) {
+      let tried = {};
+      try { tried = JSON.parse(fs.readFileSync(arg('booking-checked'), 'utf8')); } catch {}
+      const recent = Object.entries(tried).filter(([, c]) => Date.now() - Date.parse(c.at) < BOOKING_HOURS * 3600e3).map(([k]) => k);
+      const queued = tiers.flat().filter((t) => t.kind === 'rt').map(fareKey);
+      const list = graphTickets(dataDir, homes, { skip: new Set([...queued, ...recent]) });
+      const b = await openBrowserThread({ lean: true });
+      try {
+        const t1 = Date.now();
+        const r = await searchTies(list, { browser: (q, o) => b.shoppingResults(q, o), until: Date.now() + BOOKING_WARM_MS, bookings, homes });
+        fs.writeFileSync(arg('booking-ties'), JSON.stringify({ at: generatedAt, itins: r.itins.map((t) => ({ ...slim(t), guess: true, tie: t.tie, graph: t.graph })), tried: r.tried }));
+        console.log(`unchecked dates beside the scrape: ${list.length} business round trips on the graph not queued or tried in ${BOOKING_HOURS} h; ${new Set(r.itins.map((t) => t.tie)).size} with flights both ways (${r.itins.length} itineraries for the booking runner), ${r.tried.length} without; ${Math.round((Date.now() - t1) / 1000)} s`);
+      } finally { await b.close(); }
+      return;
+    }
     const itins = bookingCandidates(tiers, await rowsOf(), bookings, homes);
-    // With the booking runner on its own runner (it takes the queue from the front): from the back.
-    if (process.env.BOOKING_RUNNER === '1') itins.reverse();
     const b = await openBrowserThread({ lean: true });
     try {
       // The canary (gflights/booking.js): which seller list this IP gets, before and after.
@@ -617,7 +634,10 @@ async function main() {
         const tiers = [bookingCandidates(board, lookup, new Map(), homes)];
         const boardKeys = new Map(tiers[0].map((t) => [bookingKey(t), null]));
         tiers.push(bookingCandidates([...tickets, ...others], lookup, boardKeys, homes).slice(0, Math.max(0, QUEUE_MAX - tiers[0].length)));
-        if (queueFile) fs.writeFileSync(queueFile, JSON.stringify({ tiers: tiers.map((l) => l.map(slim)) }));
+        // With the date pairs searched beside the scrape (--booking-ties), for the booking runner.
+        let ties = null;
+        try { ties = JSON.parse(fs.readFileSync(arg('booking-ties'), 'utf8')); } catch {}
+        if (queueFile) fs.writeFileSync(queueFile, JSON.stringify({ tiers: tiers.map((l) => l.map(slim)), ...(ties ? { ties } : {}) }));
         const fresh = (l) => l.filter((t) => bookings.has(bookingKey(t))).length;
         console.log(`booking queue: ${tiers[0].length} board itineraries (${fresh(tiers[0])} with a booking price under ${BOOKING_HOURS} h), ${tiers[1].length} filters' (${fresh(tiers[1])}); ${tickets.length} shown tickets, ${others.length} others the checks priced`);
       }

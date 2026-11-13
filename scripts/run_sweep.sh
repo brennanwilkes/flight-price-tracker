@@ -33,7 +33,7 @@ if [[ "${1:-}" == snapshot ]]; then
 fi
 if [[ "${1:-}" == warm ]]; then
 	[[ -d "$WARM_DIR/routes" ]] || { echo "no data snapshot: no checks beside the scrape"; exit 0; }
-	exec node scraper/bin/build-trips.js --data "$WARM_DIR" --warm "$WARM_UNTIL" --search-cache "$REPO_ROOT/.search-cache.json.gz" --booking-cache "$REPO_ROOT/.booking-cache.json" --booking-queue "$REPO_ROOT/.booking-queue.json" --booking-extra "$REPO_ROOT/.booking-extra.json" --booking-checked "$REPO_ROOT/.booking-checked.json"
+	exec node scraper/bin/build-trips.js --data "$WARM_DIR" --warm "$WARM_UNTIL" --search-cache "$REPO_ROOT/.search-cache.json.gz" --booking-cache "$REPO_ROOT/.booking-cache.json" --booking-queue "$REPO_ROOT/.booking-queue.json" --booking-extra "$REPO_ROOT/.booking-extra.json" --booking-checked "$REPO_ROOT/.booking-checked.json" --booking-ties "$REPO_ROOT/.booking-ties.json"
 fi
 
 git worktree prune
@@ -87,7 +87,7 @@ if [[ $step == all || $step == build ]]; then
 # BUILD_DEADLINE (epoch seconds, CI): when the build must be done. The search cache: flight checks
 # reused across builds (CI restores and saves it with actions/cache).
 set +e
-node scraper/bin/build-trips.js --data "$DATA_DIR" ${BUILD_DEADLINE:+--deadline "$BUILD_DEADLINE"} --search-cache "$REPO_ROOT/.search-cache.json.gz" --booking-cache "$REPO_ROOT/.booking-cache.json" --booking-queue "$REPO_ROOT/.booking-queue.json" --booking-extra "$REPO_ROOT/.booking-extra.json" --booking-checked "$REPO_ROOT/.booking-checked.json" || rc=1
+node scraper/bin/build-trips.js --data "$DATA_DIR" ${BUILD_DEADLINE:+--deadline "$BUILD_DEADLINE"} --search-cache "$REPO_ROOT/.search-cache.json.gz" --booking-cache "$REPO_ROOT/.booking-cache.json" --booking-queue "$REPO_ROOT/.booking-queue.json" --booking-extra "$REPO_ROOT/.booking-extra.json" --booking-checked "$REPO_ROOT/.booking-checked.json" --booking-ties "$REPO_ROOT/.booking-ties.json" || rc=1
 set -e
 commit_push "build $(date -u +%FT%TZ)"
 fi
