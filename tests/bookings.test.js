@@ -117,7 +117,7 @@ test('a recheck is compared with the expired price kept 48 h (map.prev), which i
   const m = loadBookings([f]);
   assert.deepStrictEqual([m.size, m.prev.size], [0, 1]);
   const s = await bookingPass([timed], async () => [{ sellerName: 'Trip.com', price: 3450, cabins: [3, 3, 3, 3] }], m, { until: Date.now() + 60e3, pages: 1, inCabin });
-  assert.deepStrictEqual(s.again, { 'listed same, booked lower': 1 });
+  assert.deepStrictEqual(s.again, { 'was below listed: listed same, booked lower': 1 });
   assert.match(passLine(s), /biggest drop with the listed price unmoved .*\$4500 → \$3450/);
   saveBookings(f, m);
   const back = JSON.parse(fs.readFileSync(f, 'utf8'));

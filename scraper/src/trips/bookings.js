@@ -197,7 +197,8 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gat
       const was = map.get(keyOf(t)) ?? map.prev?.get(keyOf(t));
       if (was && was.price != null && !was.partial && !was.short && !seen.short && was.listed != null) {
         const h = (Date.now() - Date.parse(was.at)) / 3600e3;
-        const k = `${near(L, was.listed) ? 'listed same' : 'listed moved'}, ${near(best.price, was.price) ? 'booked same' : best.price < was.price ? 'booked lower' : 'booked higher'}`;
+        // Split by what the last check found: a discount below the listed price, or the listed fare.
+        const k = `${was.price < was.listed - Math.max(5, was.listed * 0.01) ? 'was below listed' : 'was at listed'}: ${near(L, was.listed) ? 'listed same' : 'listed moved'}, ${near(best.price, was.price) ? 'booked same' : best.price < was.price ? 'booked lower' : 'booked higher'}`;
         s.again[k] = (s.again[k] ?? 0) + 1;
         s.againHours.push(h);
         if (near(L, was.listed) && best.price < was.price - Math.max(5, was.price * 0.01)) {
