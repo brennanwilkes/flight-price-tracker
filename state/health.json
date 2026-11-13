@@ -1,7 +1,33 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-13T09:24:13Z",
+ "lastSuccess": "2026-11-13T10:14:57Z",
  "runs": [
+  {
+   "at": "2026-11-13T10:14:57Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 219,
+   "failed": 2,
+   "cells": 6419,
+   "priced": 5576,
+   "changes": 3584,
+   "errors": [
+    "HUI-TPE-Y 10d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Taipei City TPE Filters All fil",
+    "HUI-TPE-Y 6d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Taipei City TPE Filters All fil"
+   ],
+   "network": {
+    "checked": 100,
+    "kept": 74,
+    "failed": 6,
+    "routes": 1184
+   },
+   "due": 373,
+   "pages": 3,
+   "skipped": 152,
+   "secondOk": 10,
+   "seconds": 1390,
+   "success": true
+  },
   {
    "at": "2026-11-13T09:24:13Z",
    "egress": "vpn",
@@ -600,34 +626,6 @@
    "skipped": 1303,
    "secondOk": 28,
    "seconds": 1286,
-   "success": true
-  },
-  {
-   "at": "2026-11-12T10:01:04Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 33,
-   "failed": 3,
-   "cells": 777,
-   "priced": 715,
-   "changes": 356,
-   "errors": [
-    "YYJ-BKK-Y 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-SHA-Y 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-BKK-Y 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1178
-   },
-   "due": 1401,
-   "pages": 6,
-   "pauses": 6,
-   "skipped": 1365,
-   "secondOk": 19,
-   "seconds": 1488,
    "success": true
   }
  ]
