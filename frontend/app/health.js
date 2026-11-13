@@ -29,11 +29,12 @@ async function get(base, file) {
 /**
  * Render the tab into `el`; base: the data branch at the dashboard's commit.
  */
-export async function renderHealth(el, base) {
+export async function renderHealth(el, base, live = () => true) {
   el.innerHTML = '<p class="note">Loading…</p>';
   const [health, ledger, status, alerts] = await Promise.all([
     get(base, 'state/health.json'), get(base, 'state/alerts.json'), get(base, 'derived/status.json'), alertState(),
   ]);
+  if (!live()) return; // another tab (or render) since: leave its page alone
   const runs = (health?.runs ?? []).filter((r, i) => !i || hours(r.at) <= 24);
   const last = runs[0];
   const failing = health?.consecutiveFailures ?? 0;
@@ -101,6 +102,6 @@ export async function renderHealth(el, base) {
     try { result.textContent = (await fn()) ?? ''; } catch (e) { result.textContent = e.message; }
     b.disabled = false;
   };
-  el.querySelector('[data-act="enable"]')?.addEventListener('click', (e) => act(e.target, async () => { await subscribe(); renderHealth(el, base); }));
+  el.querySelector('[data-act="enable"]')?.addEventListener('click', (e) => act(e.target, async () => { await subscribe(); renderHealth(el, base, live); }));
   el.querySelector('[data-act="sweep"]').addEventListener('click', (e) => act(e.target, requestSweep));
 }

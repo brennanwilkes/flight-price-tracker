@@ -1,7 +1,8 @@
 // History tab: the board's top routes over time, from derived/history/<YYYY-MM>.csv (a row whenever
 // a cell's total changes). Business and economy sit an order of magnitude apart, so each class
-// gets its own chart (one axis each); in each, the MAX_SERIES routes with the lowest prices ever
-// recorded, one stepped line per route (a price holds until the next change). History is kept per
+// gets its own chart (one axis each); in each, the MAX_SERIES long-haul pairs (in, out) with the
+// lowest prices ever recorded, one stepped line per pair, its rows with throw-ins folded in (the
+// cheapest at each moment; a price holds until the next change). History is kept per
 // route overall (the board's own cells), so the month filter picks the routes, not the values;
 // under a via filter, only the routes whose overall trip is the via view's (the line is its price).
 // Chart.js is loaded from cdnjs the first time the tab opens.
@@ -71,6 +72,26 @@ function onGrid(list) {
   return { times, values, held };
 }
 
+/** Routes' series as one: at each change time the cheapest of those with a live price (a held one,
+ * not built that sweep, counts only when all are held: then the line holds, dashed). `who`: time →
+ * the route that was cheapest then. */
+function envelope(members) {
+  const { times, values, held } = onGrid(members.map((m) => m.pts));
+  times.pop(); // onGrid's "now"
+  const who = new Map();
+  const pts = times.map((t, j) => {
+    let best = null;
+    for (let k = 0; k < members.length; k++) {
+      const y = values[k][j];
+      if (y != null && !held[k][j] && (best == null || y < values[best][j])) best = k;
+    }
+    if (best == null) return [t, null];
+    who.set(t, members[best].r);
+    return [t, values[best][j]];
+  });
+  return { pts, who };
+}
+
 const charts = [];
 
 /**
@@ -79,13 +100,14 @@ const charts = [];
  * unfiltered board's rows }. A route on the
  * board shows when it has a trip in the view; one no longer on the board, unless a via filter is on.
  */
-export async function renderHistory(el, base, home, view, priority = 'hybrid') {
+export async function renderHistory(el, base, home, view, priority = 'hybrid', live = () => true) {
   el.innerHTML = '<p class="note">Loading…</p>';
   let Chart, series;
   try { [Chart, series] = await Promise.all([loadChartJs(), loadHistory(base)]); } catch (e) {
-    el.innerHTML = `<p class="note">Couldn't load the history: ${esc(e.message)}</p>`;
+    if (live()) el.innerHTML = `<p class="note">Couldn't load the history: ${esc(e.message)}</p>`;
     return;
   }
+  if (!live()) return; // another tab (or render) since: leave its page alone
   const picks = CLASSES.slice().sort(([a]) => (a === priority ? -1 : 1)).map(([cls, name]) => {
     const shown = new Map(view.rows.map((r) => [routeOf(r), r.cells[cls]]));
     const onBoard = new Set(view.all.map(routeOf));
@@ -93,7 +115,7 @@ export async function renderHistory(el, base, home, view, priority = 'hybrid') {
     // the one in the via view (seen: a route's overall $6,440 beside its via cell's other price).
     const overall = new Map((view.main ?? []).map((r) => [routeOf(r), r[cls]]));
     const same = (route) => !view.via || overall.get(route)?.total === shown.get(route)?.total;
-    const top = [...series].flatMap(([key, pts]) => {
+    const routes = [...series].flatMap(([key, pts]) => {
       const [h, c, inn, ends] = key.split(',');
       const route = `${inn},${ends}`;
       const [out, ...set] = ends.split('+');
@@ -101,7 +123,20 @@ export async function renderHistory(el, base, home, view, priority = 'hybrid') {
       if (h !== home || c !== cls || low === Infinity) return [];
       if ((onBoard.has(route) || view.via) && (!shown.get(route) || !same(route))) return [];
       return [{ r: { in: inn, out, set: set.join('+') }, trip: shown.get(route), pts, low }];
-    }).sort((a, b) => a.low - b.low).slice(0, MAX_SERIES);
+    });
+    // One line per long-haul pair (in, out), its throw-in rows folded in: the cheapest of them at
+    // each moment. Otherwise one headline pair filled the chart with its throw-in combinations.
+    const pairs = new Map();
+    for (const x of routes) {
+      const k = `${x.r.in},${x.r.out}`;
+      if (!pairs.has(k)) pairs.set(k, { r: { in: x.r.in, out: x.r.out, set: '' }, members: [], low: Infinity, trip: null });
+      const p = pairs.get(k);
+      p.members.push(x);
+      p.low = Math.min(p.low, x.low);
+      if (x.trip && (!p.trip || x.trip.total < p.trip.total)) { p.trip = x.trip; p.tripOf = x.r; }
+    }
+    const top = [...pairs.values()].sort((a, b) => a.low - b.low).slice(0, MAX_SERIES)
+      .map((p) => ({ ...p, ...envelope(p.members) }));
     return { cls, name, top };
   });
   el.innerHTML = picks.map(({ cls, name, top }) => `
@@ -125,8 +160,8 @@ export async function renderHistory(el, base, home, view, priority = 'hybrid') {
     const chart = new Chart(canvas, {
       type: 'line',
       data: {
-        datasets: top.map(({ r, trip }, i) => ({
-          label: rowName(r), route: { trip }, data: values[i].map((y, j) => ({ x: times[j], y: clip(y), price: y })), stepped: true, borderColor: tok(`--s${i + 1}`), borderWidth: 2,
+        datasets: top.map(({ r, trip, tripOf, who }, i) => ({
+          label: rowName(r), route: { trip, tripOf }, data: values[i].map((y, j) => ({ x: times[j], y: clip(y), price: y, who: who.get(times[j]) ?? who.get(times[j - 1]) })), stepped: true, borderColor: tok(`--s${i + 1}`), borderWidth: 2,
           segment: { borderDash: (ctx) => (held[i][ctx.p0DataIndex] || clip(values[i][ctx.p0DataIndex]) !== values[i][ctx.p0DataIndex] ? [4, 4] : undefined) },
           pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: tok(`--s${i + 1}`), pointHoverBorderColor: tok('--panel'), pointHoverBorderWidth: 2,
         })),
@@ -143,10 +178,13 @@ export async function renderHistory(el, base, home, view, priority = 'hybrid') {
             boxWidth: 8, boxHeight: 8, usePointStyle: true,
             titleFont: { family: 'JetBrains Mono', size: 12, weight: '700' }, bodyFont: { family: 'JetBrains Mono', size: 12 },
             callbacks: {
-              // Route and its price at that moment; then the route's current dates (history keeps prices,
-              // not dates), when it's on the board.
+              // The pair and its cheapest price at that moment, with the row (throw-ins) that had it;
+              // then its cheapest row now and that trip's dates (history keeps prices, not dates).
               title: (items) => `${items[0].dataset.label}  ${items[0].raw.price == null ? '—' : money(items[0].raw.price)}`,
-              label: (item) => (item.dataset.route.trip ? fmtDates(item.dataset.route.trip) : ''),
+              label: (item) => [
+                item.raw.who?.set ? `then: ${rowName(item.raw.who)}` : '',
+                item.dataset.route.trip ? `now: ${item.dataset.route.tripOf?.set ? `${rowName(item.dataset.route.tripOf)}, ` : ''}${fmtDates(item.dataset.route.trip)}` : '',
+              ].filter(Boolean),
             },
           },
         },

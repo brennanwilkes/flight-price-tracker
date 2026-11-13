@@ -280,24 +280,33 @@ function fillFilters(data) {
 // Tabs by hash: #history, #health, else the board (whose trip view is #trip=…).
 const tabOf = () => ({ '#history': 'history', '#health': 'health' })[location.hash] ?? 'board';
 
+// Each render's number: a tab whose data is still loading draws only if no render came after it
+// (tapping tabs quickly, a slow Health or History load landed on the tab tapped since).
+let renders = 0;
+const loading = () => { $('#view').innerHTML = '<p class="note">Loading…</p>'; };
+
 function render() {
   const tab = (state.tab = tabOf());
+  const n = ++renders;
+  const live = () => n === renders;
   document.body.dataset.tab = tab;
   for (const a of document.querySelectorAll('.tabs a')) a.toggleAttribute('aria-current', a.dataset.tab === tab);
   for (const b of document.querySelectorAll('.toggle button')) b.setAttribute('aria-pressed', String(b.dataset.home === state.home));
   if (tab === 'health') {
     renderSheet();
-    renderHealth($('#view'), dataBase(state.sha));
+    if (state.sha) renderHealth($('#view'), dataBase(state.sha), live);
+    else loading(); // show() renders again once the data commit is known
     return;
   }
   if (tab === 'history') {
     renderSheet();
     const data = state.data[viewKey()];
-    if (data) { fillFilters(data); renderHistory($('#view'), dataBase(state.sha), state.home, { rows: rows(data), all: data.rows, via: state.vias.length > 0, main: state.data[state.home]?.rows ?? [] }, state.priority); }
+    if (data) { fillFilters(data); renderHistory($('#view'), dataBase(state.sha), state.home, { rows: rows(data), all: data.rows, via: state.vias.length > 0, main: state.data[state.home]?.rows ?? [] }, state.priority, live); }
+    else loading();
     return;
   }
   const data = state.data[viewKey()];
-  if (!data) return;
+  if (!data) { loading(); return; }
 
   fillFilters(data);
   const list = rows(data);
