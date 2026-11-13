@@ -1,7 +1,32 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-13T12:06:08Z",
+ "lastSuccess": "2026-11-13T13:07:13Z",
  "runs": [
+  {
+   "at": "2026-11-13T13:07:13Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 277,
+   "failed": 1,
+   "cells": 8652,
+   "priced": 7601,
+   "changes": 3790,
+   "errors": [
+    "OKA-PNH-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Okinawa OKA Phnom Penh KTI Filters All fil"
+   ],
+   "network": {
+    "checked": 100,
+    "kept": 84,
+    "failed": 1,
+    "routes": 1198
+   },
+   "due": 680,
+   "pages": 6,
+   "skipped": 402,
+   "secondOk": 21,
+   "seconds": 1381,
+   "success": true
+  },
   {
    "at": "2026-11-13T12:06:08Z",
    "egress": "vpn",
@@ -594,34 +619,6 @@
    "skipped": 1113,
    "secondOk": 13,
    "seconds": 1338,
-   "success": true
-  },
-  {
-   "at": "2026-11-12T13:05:07Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 166,
-   "failed": 3,
-   "cells": 6082,
-   "priced": 5863,
-   "changes": 3970,
-   "errors": [
-    "PUS-CTS-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "DPS-YYJ-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "SIN-PQC-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1178
-   },
-   "due": 1360,
-   "pages": 6,
-   "pauses": 1,
-   "skipped": 1191,
-   "secondOk": 26,
-   "seconds": 1372,
    "success": true
   }
  ]
