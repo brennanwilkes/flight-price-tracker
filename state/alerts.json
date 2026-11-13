@@ -189,6 +189,21 @@
    "total": 3495,
    "tier": "buy",
    "at": "2026-11-13T17:30:01Z"
+  },
+  "YVR,hybrid,HKG,HKG+MNL": {
+   "total": 3151,
+   "tier": "buy",
+   "at": "2026-11-13T18:30:46Z"
+  },
+  "YVR,hybrid,HKG,HKG+MPH": {
+   "total": 3265,
+   "tier": "buy",
+   "at": "2026-11-13T18:30:46Z"
+  },
+  "YVR,hybrid,HKG,HKG+PPS": {
+   "total": 3287,
+   "tier": "buy",
+   "at": "2026-11-13T18:30:46Z"
   }
  }
 }
