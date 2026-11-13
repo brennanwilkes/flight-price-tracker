@@ -24,6 +24,16 @@
    "total": 3485,
    "tier": "buy",
    "at": "2026-11-12T18:35:38Z"
+  },
+  "YVR,hybrid,SIN,SIN+PEN": {
+   "total": 3438,
+   "tier": "buy",
+   "at": "2026-11-13T05:33:00Z"
+  },
+  "YVR,hybrid,SIN,SIN+KBV": {
+   "total": 3478,
+   "tier": "buy",
+   "at": "2026-11-13T05:33:00Z"
   }
  }
 }
