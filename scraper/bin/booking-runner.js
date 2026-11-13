@@ -25,7 +25,7 @@ const { loadBookings, saveBookings, bookingCandidates, bookingPass, passLine, ke
 const { addDetails, returnsDone, useBookings } = require('../src/trips/details');
 const { graphTickets, provenPrice } = require('../src/trips/ties');
 const { fareKey } = require('../src/trips/fares');
-const { inCabin } = require('../src/gflights/booking');
+const { inCabin, canary } = require('../src/gflights/booking');
 const { openBrowserThread } = require('../src/gflights/browser-thread');
 
 const TIES_MS = 15 * 60e3; // the unchecked date pairs' share of a run, after the board
@@ -53,12 +53,16 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   const nBoard = tiers.length > 1 ? bookingCandidates([tiers[0]], () => null, bookings, homes).length : all.length;
   console.log(`booking runner: ${bookings.size} prices under the age limit, ${tiers.map((l) => l.length).join(' + ')} queued, ${all.length} to check (${nBoard} the board's)`);
 
+  const egress = await fetch('https://api.ipify.org').then((r) => r.text()).catch(() => '?');
   const b = await openBrowserThread({ lean: true });
+  // The canary (gflights/booking.js) at the start and with each window: which seller list this IP gets.
+  let view = await canary((t) => b.bookingSellers(t));
+  console.log(`booking runner: exit IP ${egress}; canary ${view}`);
   // Page times, and progress every 5 min: at 0.70 a second (5:05 pm, 2026-11-12) it ran at half
   // the build pass's 1.45, on the same kind of runner.
   const ms = []; let bad = 0; const t0 = Date.now(); let phase = 'board'; const why = {};
   const q = (p) => { const v = [...ms].sort((x, y) => x - y); return v.length ? Math.round(v[Math.floor(p * (v.length - 1))] / 100) / 10 : '-'; };
-  const tick = setInterval(() => { console.log(`  ${Math.round((Date.now() - t0) / 60e3)} min (${phase}): ${ms.length} booking pages (${bad} errors), ${(ms.length / ((Date.now() - t0) / 1000)).toFixed(2)} a second, page ${q(0.5)} s median, ${q(0.9)} s p90; this window: ${win.long} long-haul pages, ${win.wide} with 6+ sellers, ${win.gone} without the listed offer, ${win.errors} errors`); win = { long: 0, wide: 0, gone: 0, errors: 0 }; }, 5 * 60e3);
+  const tick = setInterval(() => { canary((t) => b.bookingSellers(t)).then((v) => { view = v; }); console.log(`  ${Math.round((Date.now() - t0) / 60e3)} min (${phase}): ${ms.length} booking pages (${bad} errors), ${(ms.length / ((Date.now() - t0) / 1000)).toFixed(2)} a second, page ${q(0.5)} s median, ${q(0.9)} s p90; this window: ${win.long} long-haul pages, ${win.wide} with 6+ sellers, ${win.gone} without the listed offer, ${win.errors} errors; canary ${view}`); win = { long: 0, wide: 0, gone: 0, errors: 0 }; }, 5 * 60e3);
   // Per 5-min window, long-haul pages only (hops list few sellers anyway): how many had 6+ sellers,
   // and how many lacked the listed offer. Does the short seller list come on as an IP's pages pile
   // up? (7:05 pm Vancouver, 2026-11-12: errors 0 in the first 5 min, 246 by 40; 2,362 of 2,859

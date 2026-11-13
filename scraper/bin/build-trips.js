@@ -62,7 +62,7 @@ const { CITIES, airportsOf, isPacific } = require('../../frontend/app/cities.js'
 const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
 const { addDetails, returnsDone, returnsFor, capped, longestOf, listedOnly, unlistedWhy, useBookings } = require('../src/trips/details');
 const { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass, passLine, keyOf: bookingKey, BOOKING_HOURS } = require('../src/trips/bookings');
-const { inCabin, bookingUrl } = require('../src/gflights/booking');
+const { inCabin, bookingUrl, canary } = require('../src/gflights/booking');
 const { openBrowserThread } = require('../src/gflights/browser-thread');
 const { monitorEventLoopDelay } = require('node:perf_hooks');
 const alertConfig = require('../config/alerts.json');
@@ -546,7 +546,11 @@ async function main() {
     if (process.env.BOOKING_RUNNER === '1') itins.reverse();
     const b = await openBrowserThread({ lean: true });
     try {
+      // The canary (gflights/booking.js): which seller list this IP gets, before and after.
+      const egress = await fetch('https://api.ipify.org').then((r) => r.text()).catch(() => '?');
+      console.log(`booking pages beside the scrape: exit IP ${egress}; canary ${await canary((t) => b.bookingSellers(t))}`);
       const s = await bookingPass(itins, (t) => b.bookingSellers(t), bookings, { until: Date.now() + BOOKING_WARM_MS, pages: BOOKING_PAGES.warm, inCabin });
+      console.log(`booking pages beside the scrape: canary after ${await canary((t) => b.bookingSellers(t))}`);
       console.log(`booking pages beside the scrape: ${s.checked} of ${itins.length} checked, ${s.cheaper} cheaper than listed, ${s.none} with no seller in its cabin, ${s.failed} failed, ${s.left} left; ${Math.round(s.ms / 1000)} s`);
       console.log(`booking pages beside the scrape: ${passLine(s)}`);
     } finally { await b.close(); }

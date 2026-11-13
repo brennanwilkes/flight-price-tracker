@@ -78,4 +78,23 @@ function inCabin(o, cabin, legs) {
   return o.cabins.every((c, i) => c >= CABIN[cabin] || (byLength && legs[i].min < LONG_MIN));
 }
 
-module.exports = { bookingUrl, bookingSellers, inCabin };
+/**
+ * A fixed booking page whose two views are known (2026-11-12): YVR⇄HKG business Sep 10-25 2027,
+ * PR117/PR318 + PR311/PR116. The full view's cheapest is an agency's ~$3,450 (Trip.com, Globehunters;
+ * 6-15 sellers), the short one's $4,612 at best (5 sellers). Asked every few minutes, it says which
+ * view an IP is getting. By price, not seller count: haleiwa saw 6 sellers and $3,469 at 9:05 pm.
+ */
+const CANARY_FULL_BELOW = 4000;
+const L = (code, from, to, depDate) => ({ code, from, to, depDate });
+const CANARY = { kind: 'rt', from: 'YVR', to: 'HKG', date: '2027-09-10', ret: '2027-09-25', cabin: 'J',
+  flights: { out: { legs: [L('PR117', 'YVR', 'MNL', '2027-09-10'), L('PR318', 'MNL', 'HKG', '2027-09-12')] }, back: { legs: [L('PR311', 'HKG', 'MNL', '2027-09-25'), L('PR116', 'MNL', 'YVR', '2027-09-26')] } } };
+
+/** The canary's result, one line: "full|short: N sellers, $X Seller", or "failed: why". */
+async function canary(sellers) {
+  try {
+    const got = await sellers(CANARY);
+    return `${got[0]?.price < CANARY_FULL_BELOW ? 'full' : 'short'}: ${got.length} sellers, $${got[0]?.price} ${got[0]?.sellerName ?? ''}`.trim();
+  } catch (e) { return `failed: ${String(e.message).slice(0, 50)}`; }
+}
+
+module.exports = { bookingUrl, bookingSellers, inCabin, canary, CANARY };
