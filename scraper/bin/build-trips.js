@@ -122,27 +122,38 @@ const MAX_LAND_DAYS = 3;
 // candidates' searches.
 const CAPS = [18, 16, 15, 14, 13, 12, 11, 10];
 const SEARCH_PER_CAP = 2; // round trips' returns searched per long-haul cap per cell
+const SEARCH_QUEUE_MAX = 8000; // the search runner's queue: more than a run of it can do
 
 /**
  * Search results from earlier builds, under SEARCH_HOURS old: { cache: key → result, at: key → ISO
  * time, lands: landings of them }.
  */
-function loadSearches(file, now) {
+function loadSearches(file, now, extraFile = null) {
   const cache = new Map(), at = new Map(), stale = new Map(), rows = [];
-  if (file && fs.existsSync(file)) {
+  // The search cache, then the search runner's (--search-extra, bin/search-runner.js): the newer row wins.
+  const newest = new Map();
+  let extra = 0, newer = 0;
+  for (const [f, isExtra] of [[file, false], [extraFile, true]]) {
+    if (!f || !fs.existsSync(f)) continue;
     try {
-      for (const [k, when, v] of readRows(zlib.gunzipSync(fs.readFileSync(file)))) {
-        const age = now - Date.parse(when);
-        if (age >= STALE_DAYS * 864e5) continue;
-        at.set(k, when);
-        rows.push([k, v]);
-        if (age < SEARCH_HOURS * 3600e3) cache.set(k, Promise.resolve(v));
-        else stale.set(k, v);
+      for (const [k, when, v] of readRows(zlib.gunzipSync(fs.readFileSync(f)))) {
+        const had = newest.get(k);
+        if (isExtra) { extra++; if (!had || had[0] < when) newer++; }
+        if (!had || had[0] < when) newest.set(k, [when, v]);
       }
     } catch (e) {
-      console.log(`search cache unreadable, starting empty: ${e.message}`);
+      console.log(`search cache ${path.basename(f)} unreadable${isExtra ? '' : ', starting empty'}: ${e.message}`);
     }
   }
+  for (const [k, [when, v]] of newest) {
+    const age = now - Date.parse(when);
+    if (age >= STALE_DAYS * 864e5) continue;
+    at.set(k, when);
+    rows.push([k, v]);
+    if (age < SEARCH_HOURS * 3600e3) cache.set(k, Promise.resolve(v));
+    else stale.set(k, v);
+  }
+  if (extraFile) console.log(`search runner's searches: ${extra} rows, ${newer} newer than the cache's`);
   cache.at = at;
   cache.stale = stale;
   return { cache, at, stale, lands: landings(rows) };
@@ -523,7 +534,7 @@ async function main() {
   // Phase timings: where a slow build spends its time, in the CI log as it runs.
   const lap = (what) => console.log(`${what}: ${Math.round((Date.now() - t0) / 1000)} s in, heap ${Math.round(process.memoryUsage().heapUsed / 2 ** 20)} MB`);
   const details0 = !process.argv.includes('--no-details');
-  const searches = loadSearches(arg('search-cache'), Date.parse(generatedAt));
+  const searches = loadSearches(arg('search-cache'), Date.parse(generatedAt), arg('search-extra'));
   // Booking-page prices: the last build's (state/booking.json) and the ones checked beside this
   // scrape (--booking-cache), applied to every search's rows (details.js useBookings).
   const bookingFile = path.join(dataDir, 'state', 'booking.json');
@@ -659,6 +670,13 @@ async function main() {
     const emptyBy = Object.entries(t.emptyBy ?? {}).sort((a, b) => b[1] - a[1]);
     if (emptyBy.length) console.log(`search pages with none inlined, by route: ${emptyBy.slice(0, 12).map(([r, n]) => `${r} ${n}`).join(', ')} (${emptyBy.length} routes)`);
     await saveSearches(arg('search-cache'), searches, generatedAt);
+    // The browser searches left out of time, most wanted first, for the search runner (bin/search-runner.js).
+    if (!warm && arg('search-queue')) {
+      const wanted = [...(searches.cache.wanted?.values() ?? [])].filter((w) => !w.keys.every((k) => searches.cache.has(k)));
+      const list = wanted.sort((a, b) => a.prio - b.prio).slice(0, SEARCH_QUEUE_MAX).map(({ q, keys, had }) => ({ q, keys, had }));
+      fs.writeFileSync(arg('search-queue'), JSON.stringify({ at: generatedAt, searches: list }));
+      console.log(`search queue: ${list.length} browser searches for the search runner (${wanted.length} left out of time, ${wanted.filter((w) => w.had).length} of them served stale)`);
+    }
     await warmBooking;
     if (warm) { console.log(`checks beside the scrape: ${details.searches} searches (${details.browser} in a browser, ${details.failed} failed, ${details.late} left)`); return; }
     fs.mkdirSync(path.dirname(checkedFile), { recursive: true });

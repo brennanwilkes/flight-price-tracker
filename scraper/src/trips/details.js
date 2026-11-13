@@ -241,11 +241,18 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
       tally.plainMs.push(Date.now() - t0);
     }
   });
-  const inPage = async (p, q, opts) => {
+  // `keys`: the cache keys the page's list goes under. One left out of time is kept in cache.wanted
+  // for the search runner on the booking job's runner (bin/search-runner.js, build-trips.js
+  // --search-queue): this runner made ~100-180 browser pages a build of ~10,700 wanted (2:05 pm
+  // Vancouver, 2026-11-13), CPU-bound.
+  const inPage = async (p, q, opts, keys) => {
     const r = await page(p, deadline, async () => {
       tally.pages++;
       const t0 = Date.now();
       try { return await browser(q, opts); } finally { tally.pageMs.push(Date.now() - t0); }
+    }).catch((e) => {
+      if (e instanceof Late && keys) (cache.wanted ??= new Map()).set(keys[0], { q, keys, prio: p, had: keys.some((k) => stale.has(k)) });
+      throw e;
     });
     return dedupe(r.flatMap(parseResults));
   };
@@ -259,7 +266,7 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
       if (opts.length || !page || q.after) return opts; // a window empty: the full list decides
       tally.empty++;
     } else tally.far++;
-    const all = await inPage(p, q, { timeout: SLOW_PAGE_MS });
+    const all = await inPage(p, q, { timeout: SLOW_PAGE_MS }, key && [key, `full ${key}`]);
     if (key) cache.set(`full ${key}`, Promise.resolve(all));
     return all;
   };
@@ -301,7 +308,7 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
   cache.searchReturn = (q, p = RETURN_PRIO + prio) => {
     const key = JSON.stringify(q);
     if (!cache.has(key) && !stale.has(key) && Date.now() > deadline) tally.returnLate++;
-    return once(key, (pp) => { tally.returns++; return inPage(pp, q, { timeout: SLOW_PAGE_MS }); }, p);
+    return once(key, (pp) => { tally.returns++; return inPage(pp, q, { timeout: SLOW_PAGE_MS }, [key]); }, p);
   };
   const searchOnce = (q, key = JSON.stringify(q), p = prio) => once(key, (pp) => plainThenPage(q, pp, key), p);
   const hasFull = (key) => cache.has(`full ${key}`) || stale.has(`full ${key}`);
@@ -310,7 +317,7 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
   const fullOnce = (q) => {
     const key = `full ${JSON.stringify(q)}`;
     if (!cache.has(key) && !stale.has(key)) { stats.full++; tally.full++; }
-    return once(key, (pp) => inPage(pp, q, { timeout: SLOW_PAGE_MS }), prio);
+    return once(key, (pp) => inPage(pp, q, { timeout: SLOW_PAGE_MS }, [key]), prio);
   };
 
   // Each trip's flights and their search keys worked out once; every search not made yet started
@@ -402,7 +409,7 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
       cache.returns.set(trip, jobs);
       jobs.push((p = RETURN_PRIO + prio) => {
         if (!cache.has(key) && !stale.has(key) && Date.now() > deadline) tally.returnLate++;
-        return once(key, (pp) => { tally.returns++; return inPage(pp, q, { timeout: SLOW_PAGE_MS }); }, p).then((list) => {
+        return once(key, (pp) => { tally.returns++; return inPage(pp, q, { timeout: SLOW_PAGE_MS }, [key]); }, p).then((list) => {
           if (!Array.isArray(list) || !list.length || f.ticket.flights.back !== s.picks[i]) return;
           const back = chosenReturn(trip, flights, s.picks, i, list);
           if (!back) return;

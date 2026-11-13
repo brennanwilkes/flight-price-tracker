@@ -94,6 +94,13 @@ jobs:
             .booking-checked.json
           key: booking-extra-${{ github.run_id }}
           restore-keys: booking-extra-
+      # The search runner's browser searches (job `booking`, bin/search-runner.js), from the last run.
+      - name: Restore search runner's searches
+        uses: actions/cache/restore@v4
+        with:
+          path: .search-extra.json.gz
+          key: search-extra-${{ github.run_id }}
+          restore-keys: search-extra-
 
       # The data branch as it is, for the checks beside the scrape: fetched before the VPN is up (over
       # it the fetch failed twice on 2026-11-12, 9:05 am and 2:05 pm Vancouver: 83 s, then no
@@ -173,6 +180,13 @@ jobs:
           path: .booking-queue.json
           key: booking-queue-${{ github.run_id }}
 
+      - name: Save search queue
+        if: always() && hashFiles('.search-queue.json') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: .search-queue.json
+          key: search-queue-${{ github.run_id }}
+
       - name: Summary
         if: always()
         run: |
@@ -217,6 +231,12 @@ jobs:
             .booking-checked.json
           key: booking-extra-${{ github.run_id }}
           restore-keys: booking-extra-
+      - name: Restore search queue
+        uses: actions/cache/restore@v4
+        with:
+          path: .search-queue.json
+          key: search-queue-${{ github.run_id }}
+          restore-keys: search-queue-
       - name: Data snapshot
         run: scripts/run_sweep.sh snapshot
 
@@ -244,7 +264,12 @@ jobs:
           echo "$(nproc) CPUs"
           node scraper/bin/booking-runner.js --data .worktrees/warm --queue .booking-queue.json --extra .booking-extra.json --checked .booking-checked.json --until $(( $(date +%s) + 43 * 60 )) --pages 3 --gap 2500 --session-pages 300 &
           pid=$!
+          # The sweep build's browser searches left out of time (bin/search-runner.js), its own browser
+          # and sessions on this tunnel: this runner's CPU idles beside booking pages (load ~1-3 of 4).
+          node scraper/bin/search-runner.js --queue .search-queue.json --out .search-extra.json.gz --until $(( $(date +%s) + 43 * 60 )) --pages 5 --gap 1500 --session-pages 300 2>&1 | sed -u 's/^/[search] /' &
+          spid=$!
           (while kill -0 $pid 2>/dev/null; do sleep 300; echo "  load: $(cut -d' ' -f1-3 /proc/loadavg)"; done) &
+          wait $spid || echo "search runner failed"
           wait $pid
 
       - name: Network probe summary
@@ -259,3 +284,10 @@ jobs:
             .booking-extra.json
             .booking-checked.json
           key: booking-extra-${{ github.run_id }}
+
+      - name: Save search runner's searches
+        if: always() && hashFiles('.search-extra.json.gz') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: .search-extra.json.gz
+          key: search-extra-${{ github.run_id }}
