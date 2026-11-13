@@ -83,6 +83,11 @@ async function newPage(ctx, ms = PAGE_DEADLINE_MS) {
 // flagged $4,612 (5 sellers), unflagged Trip.com $2,785 (11 sellers), as a person's Chrome sees it.
 async function openBrowser({ channel = process.env.PW_CHANNEL || undefined, lean = false, flagged = process.env.BROWSER_FLAGGED === '1' } = {}) {
   const browser = await chromium.launch({ channel, headless: true, args: flagged ? [] : ['--disable-blink-features=AutomationControlled'] });
+  return { browser, ctx: await newContext(browser, { lean, flagged }) };
+}
+
+/** A context (its own cookies: a new session to Google) on an open browser, as openBrowser's. */
+async function newContext(browser, { lean = false, flagged = process.env.BROWSER_FLAGGED === '1' } = {}) {
   const major = browser.version().split('.')[0];
   const ctx = await browser.newContext({
     locale: 'en-CA', timezoneId: 'America/Vancouver', viewport: { width: 1280, height: 900 },
@@ -92,7 +97,7 @@ async function openBrowser({ channel = process.env.PW_CHANNEL || undefined, lean
   const socs = /SOCS=([^;]+)/.exec(HEADERS.cookie)[1];
   await ctx.addCookies([{ name: 'SOCS', value: socs, domain: '.google.com', path: '/' }]);
   await ctx.addInitScript(RECORDER);
-  return { browser, ctx };
+  return ctx;
 }
 
 const addDays = (iso, n) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
@@ -271,4 +276,4 @@ async function shoppingResults(ctx, query, { timeout = 30_000 } = {}) {
   }
 }
 
-module.exports = { bgrTally, openBrowser, priceGraph, bookingOptions, shoppingResults, addDays };
+module.exports = { bgrTally, openBrowser, newContext, priceGraph, bookingOptions, shoppingResults, addDays };

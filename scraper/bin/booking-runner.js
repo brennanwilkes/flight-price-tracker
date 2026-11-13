@@ -74,7 +74,12 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   const ask = () => canary((t) => b.bookingSellers(t));
   const watch = setInterval(async () => {
     let v = await ask();
-    if (!v.startsWith('full') && isFull()) { await sleep(30e3); v = await ask(); }
+    if (!v.startsWith('full') && isFull()) {
+      await sleep(30e3); v = await ask();
+      // Short twice: the same page in a new session (no cookies from this one), same IP. Full there
+      // means Google limits the session, not the IP (the IP's ~650 full pages an hour, 2026-11-13).
+      if (!v.startsWith('full')) console.log(`  ${Math.round((Date.now() - t0) / 60e3)} min: canary short in this session; in a new session on the same IP: ${await canary((t) => b.freshSellers(t))}`);
+    }
     if (v !== view) console.log(`  ${Math.round((Date.now() - t0) / 60e3)} min: canary ${v}`);
     view = v;
   }, 2 * 60e3);
