@@ -29,6 +29,8 @@ the search runner's rows (`--search-extra`).
 
 | Run | Board | Filters fresh (< 12 h) | Search runner | Search backlog | Notes |
 |---|---|---|---|---|---|
+| 11:05 am Nov 14 | 826/826 | 4,588 of 14,526 (526) | 820, 8 lost | 11,958 | first telemetry: search page 14.5 s median, 91% waiting on Google (reply 57%, more 34%), renderer 3.4 CPU-s; slots 97% in pages; machine ~2 of 4 cores; search runner rows 1,177, 518 older than the sweep's own (duplicate searches): builds leave the runner's queue head to it from 1:05 pm; 1,378 hidden |
+| 10:05 am Nov 14 | 795/795 | 4,537 of 14,298 (611) | 654, 34 lost | 10,942 | 1,571 hidden |
 | 9:05 am Nov 14 | 713/713 | 4,509 of 14,134 (668) | 631, "more flights" 4 lost | 11,798 | load 7-18; 1,519 hidden |
 | 8:05 am Nov 14 | 563/563 | 4,377 of 13,921 (796) | 680, 50 lost | 11,112 | load ~11; 1,538 hidden |
 | 7:05 am Nov 14 | 572/572 | 4,355 of 13,892 (791) | 634, 36 lost | 11,706 | load 12-15; 1,577 hidden |
@@ -60,6 +62,15 @@ the search runner's rows (`--search-extra`).
 - **The booking job's machine is out of CPU:** at a 1.5 s gap, load 12–18 on 4 cores. Booking
   pages gained ~210 a run and the search runner lost ~210, with more rejected "more flights"
   replies. The next lever is CPU per page, not rates; CPU by runner logged from 11:05 pm Nov 13.
+- **Telemetry, 11:05 am Nov 14, corrects the CPU story:** a search page uses 3.4 renderer
+  CPU-s (not ~7) and spends 91% of its 14.5 s waiting on Google's replies; the search runner's 5
+  slots are 97% busy in pages; the machine averaged ~2 of 4 cores (search runner 124%, booking 61%).
+  The search runner is bound by slots × Google's reply time, not CPU. Booking pages: 2.5 s, 78%
+  waiting for sellers; slots 59% in pages, 36% the 1.5 s gap: the gap binds booking.
+- **The sweep and the search runner made the same searches:** the sweep's builds paged the
+  most-wanted browser searches while the runner worked the same queue head that hour (518 of the
+  runner's 1,177 rows older than the sweep's). From 1:05 pm Nov 14 the builds leave the runner's
+  first 1,000 to it (`--runner-queue`, logged as "left to the search runner").
 - **Searches on the sweep IP degrade** over the run (pages without results climb).
 
 ## Telemetry (from 11:05 am Nov 14)

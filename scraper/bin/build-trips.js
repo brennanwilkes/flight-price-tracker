@@ -123,6 +123,9 @@ const MAX_LAND_DAYS = 3;
 const CAPS = [18, 16, 15, 14, 13, 12, 11, 10];
 const SEARCH_PER_CAP = 2; // round trips' returns searched per long-haul cap per cell
 const SEARCH_QUEUE_MAX = 8000; // the search runner's queue: more than a run of it can do
+// How far into its queue the search runner gets in a run (630-905, 12:05-11:05 am Vancouver Nov 14),
+// with room: the builds leave these to it.
+const RUNNER_REACH = 1000;
 
 /**
  * Search results from earlier builds, under SEARCH_HOURS old: { cache: key → result, at: key → ISO
@@ -535,6 +538,15 @@ async function main() {
   const lap = (what) => console.log(`${what}: ${Math.round((Date.now() - t0) / 1000)} s in, heap ${Math.round(process.memoryUsage().heapUsed / 2 ** 20)} MB`);
   const details0 = !process.argv.includes('--no-details');
   const searches = loadSearches(arg('search-cache'), Date.parse(generatedAt), arg('search-extra'));
+  // The searches the search runner is making this hour (--runner-queue: the queue it works, the
+  // last build's): not paged here too (details.js runnerKeys).
+  if (arg('runner-queue')) {
+    try {
+      const head = (JSON.parse(fs.readFileSync(arg('runner-queue'), 'utf8')).searches ?? []).slice(0, RUNNER_REACH);
+      searches.cache.runnerKeys = new Set(head.flatMap((s) => s.keys));
+      console.log(`search runner's queue: ${head.length} searches left to it`);
+    } catch (e) { console.log(`search runner's queue unread: ${e.message}`); }
+  }
   // Booking-page prices: the last build's (state/booking.json) and the ones checked beside this
   // scrape (--booking-cache), applied to every search's rows (details.js useBookings).
   const bookingFile = path.join(dataDir, 'state', 'booking.json');
@@ -676,7 +688,7 @@ async function main() {
       await chrome.close();
     }
     const t = searches.cache.tally ?? {};
-    const why = `${t.far ?? 0} past the inline horizon (straight to a browser), ${t.empty ?? 0} pages with none inlined, ${t.window ?? 0} searched again after the connection (connected ${t.windowHit ?? 0} of ${t.windowTry ?? 0} trips' misses), ${t.full ?? 0} full lists, ${t.pages ?? 0} browser pages, ${t.refreshed ?? 0} stale searches refreshed, ${t.returns ?? 0} round trips' returns searched with the outbound chosen, ${t.returnLate ?? 0} skipped out of time (${t.returnHit ?? 0} returns shown from one), ${t.blocked ?? 0} refused by Google`;
+    const why = `${t.far ?? 0} past the inline horizon (straight to a browser), ${t.empty ?? 0} pages with none inlined, ${t.window ?? 0} searched again after the connection (connected ${t.windowHit ?? 0} of ${t.windowTry ?? 0} trips' misses), ${t.full ?? 0} full lists, ${t.pages ?? 0} browser pages (${t.runner ?? 0} left to the search runner), ${t.refreshed ?? 0} stale searches refreshed, ${t.returns ?? 0} round trips' returns searched with the outbound chosen, ${t.returnLate ?? 0} skipped out of time (${t.returnHit ?? 0} returns shown from one), ${t.blocked ?? 0} refused by Google`;
     const pct = (a, q) => (a.length ? `${(a.toSorted((x, y) => x - y)[Math.floor(q * (a.length - 1))] / 1000).toFixed(1)} s` : '-');
     console.log(`search mix: ${why}`);
     console.log(`search timing: ${t.plain ?? 0} plain fetches (median ${pct(t.plainMs ?? [], 0.5)}, 90% ${pct(t.plainMs ?? [], 0.9)}; in the fetch thread median ${pct(t.netMs ?? [], 0.5)}, 90% ${pct(t.netMs ?? [], 0.9)};${t.plainEmpty ?? 0} with no results inlined, ${t.timeouts ?? 0} timed out, ${t.errors ?? 0} other errors), browser pages median ${pct(t.pageMs ?? [], 0.5)}, 90% ${pct(t.pageMs ?? [], 0.9)}`);

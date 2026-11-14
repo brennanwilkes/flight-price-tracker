@@ -645,6 +645,20 @@ test('past the inline horizon: one browser page per search, its full list reused
   assert.ok(cache.has(`full ${JSON.stringify(flightsOf(trip)[0].query)}`));
 });
 
+test('a search at the head of the search runner\'s queue is left to it: not paged, kept wanted', async () => {
+  const { addDetails, flightsOf } = require('../scraper/src/trips/details');
+  const far = new Date(Date.now() + 320 * 864e5).toISOString().slice(0, 10);
+  const trip = { order: [[0, 'out']], tickets: [{ kind: 'ow', cabin: 'Y', from: 'BKK', to: 'HAN', date: far, price: 200 }] };
+  const key = JSON.stringify(flightsOf(trip)[0].query);
+  let pages = 0;
+  const cache = new Map();
+  cache.runnerKeys = new Set([key]);
+  await addDetails([trip], cache, async () => { pages++; return []; });
+  assert.strictEqual(pages, 0);
+  assert.ok(cache.tally.runner >= 1);
+  assert.ok(cache.wanted.has(key), 'still wanted: in the next queue if the runner missed it');
+});
+
 test("a round trip's return is from the search with its outbound chosen, not the cheapest one-way home", async () => {
   const { addDetails, returnsDone, flightsOf } = require('../scraper/src/trips/details');
   const opt = (price, ...legs) => ({ price, min: 0, airlines: [...new Set(legs.map((l) => l[0].slice(0, 2)))], stops: [],

@@ -101,6 +101,16 @@ jobs:
           path: .search-extra.json.gz
           key: search-extra-${{ github.run_id }}
           restore-keys: search-extra-
+      # The queue the search runner works this hour (job `booking`, the last build's): this run's
+      # builds leave its head to it (build-trips.js --runner-queue) rather than make the same searches.
+      - name: Restore search runner's queue
+        uses: actions/cache/restore@v4
+        with:
+          path: .search-queue.json
+          key: search-queue-${{ github.run_id }}
+          restore-keys: search-queue-
+      - name: Keep the search runner's queue
+        run: if [ -f .search-queue.json ]; then mv .search-queue.json .search-queue-runner.json; fi
 
       # The data branch as it is, for the checks beside the scrape: fetched before the VPN is up (over
       # it the fetch failed twice on 2026-11-12, 9:05 am and 2:05 pm Vancouver: 83 s, then no

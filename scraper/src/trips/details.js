@@ -245,12 +245,19 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
   // for the search runner on the booking job's runner (bin/search-runner.js, build-trips.js
   // --search-queue): this runner made ~100-180 browser pages a build of ~10,700 wanted (2:05 pm
   // Vancouver, 2026-11-13), CPU-bound.
+  // `cache.runnerKeys`: searches the search runner is making this hour (the head of its queue,
+  // build-trips.js --runner-queue). Paged here too, both made the same search: of the runner's
+  // 1,177 rows merged at 11:05 am Vancouver (Nov 14), 518 were older than the sweep's own. Left
+  // to the runner (out of time here: served stale, in the next queue if the runner missed it).
+  const runnerHas = (keys) => keys && cache.runnerKeys?.size && keys.some((k) => cache.runnerKeys.has(k));
   const inPage = async (p, q, opts, keys) => {
-    const r = await page(p, deadline, async () => {
+    const skip = runnerHas(keys);
+    if (skip) tally.runner = (tally.runner ?? 0) + 1;
+    const r = await (skip ? Promise.reject(new Late()) : page(p, deadline, async () => {
       tally.pages++;
       const t0 = Date.now();
       try { return await browser(q, opts); } finally { tally.pageMs.push(Date.now() - t0); }
-    }).catch((e) => {
+    })).catch((e) => {
       if (e instanceof Late && keys) (cache.wanted ??= new Map()).set(keys[0], { q, keys, prio: p, had: keys.some((k) => stale.has(k)) });
       throw e;
     });

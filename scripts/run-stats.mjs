@@ -44,7 +44,7 @@ const rows = runs.map((r) => {
     hidden: g(/priced as listed: (\d+) cells hidden/),
     used: g(/search demand: (\d+) searches used/), needSearch: g(/that takes (\d+) a run/),
     neverSearched: g(/search demand: .*?(\d+) never searched/),
-    cpu: m(log, /CPU averages over .*/)?.[0], load: m(log, /load \(1 min\) average .*/)?.[0],
+    cpu: m(log, /CPU averages over .*/)?.[0], load: m(log, /load \(1 min\) average \d.*/)?.[0],
   };
 });
 
@@ -90,5 +90,5 @@ const last = rows.at(-1);
 if (last.cpu || last.load) console.log(`\nNewest run's booking machine: ${[last.load, last.cpu].filter(Boolean).join('; ')}`);
 if (args.includes('--detail')) {
   console.log(`\nNewest run (${last.when}) telemetry:`);
-  for (const l of last.log.split('\n')) if (/pages: \d+ \(\d+ failed\); time a page|slot time \(|CPU averages|load \(1 min\)|search demand:|booking demand:|more flights \{/.test(l)) console.log(`  ${l.trim()}`);
+  for (const l of last.log.split('\n')) if (/pages: \d+ \(\d+ failed\); time a page|slot time \(|CPU averages|load \(1 min\) average \d|search demand:|booking demand:|more flights \{/.test(l)) console.log(`  ${l.trim()}`);
 }
