@@ -1,7 +1,38 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-14T02:06:26Z",
+ "lastSuccess": "2026-11-14T03:06:04Z",
  "runs": [
+  {
+   "at": "2026-11-14T03:06:04Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 166,
+   "failed": 6,
+   "cells": 4304,
+   "priced": 3003,
+   "changes": 1919,
+   "errors": [
+    "DLI-HUI-Y 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Lat DLI Hue HUI Filters All filters ",
+    "DLI-BKI-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Da Lat DLI Kota Kinabalu BKI Filters All f",
+    "HUI-DLI-Y 6d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Da Lat DLI Filters All filters ",
+    "DLI-HUI-Y 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Lat DLI Hue HUI Filters All filters ",
+    "HUI-DLI-Y 8d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Da Lat DLI Filters All filters ",
+    "YYJ-HKG-J 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Hong Kong HKG Filters All"
+   ],
+   "network": {
+    "checked": 77,
+    "kept": 33,
+    "failed": 4,
+    "routes": 1279
+   },
+   "due": 885,
+   "pages": 6,
+   "skipped": 713,
+   "secondOk": 7,
+   "pauses": 1,
+   "seconds": 1525,
+   "success": true
+  },
   {
    "at": "2026-11-14T02:06:26Z",
    "egress": "vpn",
@@ -564,32 +595,6 @@
    "skipped": 509,
    "secondOk": 1,
    "seconds": 1252,
-   "success": true
-  },
-  {
-   "at": "2026-11-13T03:05:59Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 249,
-   "failed": 2,
-   "cells": 7847,
-   "priced": 7800,
-   "changes": 4186,
-   "errors": [
-    "GUM-ICN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "HKG-MFM-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1178
-   },
-   "due": 797,
-   "pages": 6,
-   "skipped": 546,
-   "secondOk": 11,
-   "seconds": 1407,
    "success": true
   }
  ]
