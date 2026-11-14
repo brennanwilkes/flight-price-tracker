@@ -103,7 +103,10 @@ async function openBrowser({ channel = process.env.PW_CHANNEL || undefined, lean
 async function newContext(browser, { lean = false, flagged = process.env.BROWSER_FLAGGED === '1' } = {}) {
   const major = browser.version().split('.')[0];
   const ctx = await browser.newContext({
-    locale: 'en-CA', timezoneId: 'America/Vancouver', viewport: { width: 1280, height: 900 },
+    // Lean pages a smaller window (still the desktop layout): less to lay out and paint. The booking
+    // job's 4 vCPUs pinned at load ~16 when its pages grew 40% (1:05 pm Vancouver, Nov 14: search
+    // page main thread 2.8 → 9.4 CPU-s, page 14.5 → 20.7 s, no more pages done).
+    locale: 'en-CA', timezoneId: 'America/Vancouver', viewport: lean ? { width: 1024, height: 640 } : { width: 1280, height: 900 },
     ...(lean ? { reducedMotion: 'reduce' } : {}),
     userAgent: flagged ? undefined : `Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${major}.0.0.0 Safari/537.36`,
   });

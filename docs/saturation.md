@@ -29,6 +29,8 @@ the search runner's rows (`--search-extra`).
 
 | Run | Board | Filters fresh (< 12 h) | Search runner | Search backlog | Notes |
 |---|---|---|---|---|---|
+| 1:05 pm Nov 14 | 666/666 | 4,541 of 14,346 (553) | 811, 0 lost | 11,305 | search 7 at once, booking gap 1.2 s / 200-page sessions: load ~16 on 4 vCPUs, search page 20.7 s (main thread 9.4 CPU-s, was 2.8), booking page 4.4 s (was 2.5), no more pages done (1,591 booking): reverted for 3:05 pm, lean pages 1024×640 instead; 1,605 hidden |
+| 12:05 pm Nov 14 | 677/677 | 4,517 of 14,689 (681) | 896, 1 lost | 11,900 | builds left the runner's queue head to it: runner rows newer than the cache's 1,034 of 1,569 (66%, was 56%); 1,586 hidden |
 | 11:05 am Nov 14 | 826/826 | 4,588 of 14,526 (526) | 820, 8 lost | 11,958 | first telemetry: search page 14.5 s median, 91% waiting on Google (reply 57%, more 34%), renderer 3.4 CPU-s; slots 97% in pages; machine ~2 of 4 cores; search runner rows 1,177, 518 older than the sweep's own (duplicate searches): builds leave the runner's queue head to it from 1:05 pm; 1,378 hidden |
 | 10:05 am Nov 14 | 795/795 | 4,537 of 14,298 (611) | 654, 34 lost | 10,942 | 1,571 hidden |
 | 9:05 am Nov 14 | 713/713 | 4,509 of 14,134 (668) | 631, "more flights" 4 lost | 11,798 | load 7-18; 1,519 hidden |
