@@ -108,8 +108,12 @@ jobs:
       - name: Data snapshot
         run: scripts/run_sweep.sh snapshot
 
+      # 4:05 pm Vancouver, 2026-11-13: this step hung until the job's 58 min ran out (every command in
+      # it has its own timeout; no log came back). Past 5 min: on without the tunnel (EGRESS direct).
       - name: VPN up
         id: vpn
+        timeout-minutes: 5
+        continue-on-error: true
         env:
           WG_CONF: ${{ secrets.PROTONVPN_WG_CONF }}
         run: scripts/vpn_up.sh
@@ -139,11 +143,11 @@ jobs:
 
       # Even after a failed scrape: trips from whatever fares are current.
       - name: Build trips
-        if: ${{ !cancelled() && steps.vpn.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.vpn.outcome != 'skipped' }}
         run: scripts/run_sweep.sh build 2>&1 | tee -a sweep.log
 
       - name: Alerts
-        if: ${{ !cancelled() && steps.vpn.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.vpn.outcome != 'skipped' }}
         env:
           NOTIFY_SECRET: ${{ secrets.NOTIFY_SECRET }}
         run: scripts/run_sweep.sh alerts 2>&1 | tee -a sweep.log
@@ -242,6 +246,8 @@ jobs:
 
       - name: VPN up
         id: vpn
+        timeout-minutes: 5
+        continue-on-error: true
         env:
           WG_CONF: ${{ secrets.PROTONVPN_WG_CONF_BOOKING }}
         run: scripts/vpn_up.sh
