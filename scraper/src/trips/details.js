@@ -283,7 +283,11 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
       tally.refreshed++;
     }, () => {});
   };
+  // Demand telemetry (build-trips.js "search demand"): each distinct search this build looked up,
+  // and whether it was fresh, stale or missing then.
+  const used = (cache.used ??= new Map());
   const once = (key, run, p) => {
+    if (!used.has(key)) used.set(key, cache.has(key) ? 'fresh' : stale.has(key) ? 'stale' : 'none');
     if (cache.has(key)) return cache.get(key);
     const old = stale.get(key);
     if (old) { STALE.add(old); refresh(key, run); return Promise.resolve(old); }

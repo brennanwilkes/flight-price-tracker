@@ -666,6 +666,11 @@ async function main() {
         // 48 h) and are listed at the same price since: the rechecks a listed-price trigger would defer.
         const due = (l) => { const d = l.filter((t) => !bookings.has(bookingKey(t))); const p = d.filter((t) => bookings.prev?.has(bookingKey(t))); const same = p.filter((t) => Math.abs(listedOf(t) - bookings.prev.get(bookingKey(t)).listed) <= Math.max(5, listedOf(t) * 0.01)); return `${d.length} due, ${p.length} checked 12-48 h ago, ${same.length} of them listed at the same price`; };
         console.log(`booking queue due: board ${due(tiers[0])}; filters' ${due(tiers[1])}`);
+        // Demand against throughput: the board's tickets are held 12 h, the filters' 12-24 h (12 when
+        // discounted), so keeping all fresh takes about these many booking pages a run (hourly), plus
+        // the tickets new to the queue (not checked in 48 h) as they come.
+        const unseen = (l) => l.filter((t) => !bookings.has(bookingKey(t)) && !bookings.prev?.has(bookingKey(t))).length;
+        console.log(`booking demand: board ${tiers[0].length} held 12 h takes ${Math.round(tiers[0].length / 12)} pages a run, ${unseen(tiers[0])} not checked in 48 h; filters' ${tiers[1].length} held 12-24 h take ${Math.round(tiers[1].length / 24)}-${Math.round(tiers[1].length / 12)} a run, ${unseen(tiers[1])} not checked in 48 h`);
       }
     } finally {
       await chrome.close();
@@ -679,6 +684,20 @@ async function main() {
     if (errorBy.length) console.log(`plain search errors: ${errorBy.slice(0, 6).map(([w, n]) => `${n}× ${w}`).join('; ')}`);
     const emptyBy = Object.entries(t.emptyBy ?? {}).sort((a, b) => b[1] - a[1]);
     if (emptyBy.length) console.log(`search pages with none inlined, by route: ${emptyBy.slice(0, 12).map(([r, n]) => `${r} ${n}`).join(', ')} (${emptyBy.length} routes)`);
+    // Demand against throughput: each search used is held SEARCH_HOURS, so keeping every one fresh
+    // takes used / SEARCH_HOURS searches an hour (a run). Ages at load say when the fresh ones
+    // expire: the 18-24 h ones are next run's and the one after's.
+    {
+      const used = searches.cache.used ?? new Map();
+      const n = { fresh: 0, stale: 0, none: 0 };
+      const age = [0, 0, 0, 0]; // fresh at load, by age: 0-6, 6-12, 12-18, 18-24 h
+      for (const [k, state] of used) {
+        n[state]++;
+        const when = searches.cache.at?.get(k);
+        if (state === 'fresh' && when) age[Math.min(3, Math.floor((Date.parse(generatedAt) - Date.parse(when)) / (6 * 3600e3)))]++;
+      }
+      console.log(`search demand: ${used.size} searches used, ${n.fresh} fresh at load (by age: ${age[0]} under 6 h, ${age[1]} 6-12 h, ${age[2]} 12-18 h, ${age[3]} 18-24 h), ${n.stale} stale (served), ${n.none} never searched; kept fresh at ${SEARCH_HOURS} h that takes ${Math.round(used.size / SEARCH_HOURS)} a run (hourly), made this build ${(t.plain ?? 0) - (t.errors ?? 0) - (t.timeouts ?? 0)} plain + ${t.pages ?? 0} browser pages here, plus the search runner's (its newer rows above)`);
+    }
     await saveSearches(arg('search-cache'), searches, generatedAt);
     // The browser searches left out of time, most wanted first, for the search runner (bin/search-runner.js).
     if (!warm && arg('search-queue')) {

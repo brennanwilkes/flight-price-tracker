@@ -9,6 +9,7 @@
  */
 const { buildTfs } = require('./tfs');
 const { parseBatchExecute, parseBooking } = require('./batchexecute');
+const { profile } = require('./page-stats');
 const { CABIN } = require('./tfs');
 
 const PAGE_URL = 'https://www.google.com/travel/flights/booking';
@@ -38,17 +39,22 @@ function bookingUrl(t) {
 async function bookingSellers(ctx, t) {
   const url = bookingUrl(t);
   if (!url) throw new Error('flight codes unparsed');
+  const t0 = Date.now();
   const page = await ctx.newPage();
   const timer = setTimeout(() => page.close().catch(() => {}), WAIT_MS + 30_000);
+  // Phases (page-stats.js): open, nav (to DOMContentLoaded), sellers (then to the reply).
+  const prof = await profile(page, 'booking', t0);
+  prof.mark('open');
+  let ok = false;
   try {
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 }).finally(() => prof.mark('nav'));
     const until = Date.now() + WAIT_MS;
     let rejected = 0;
     while (Date.now() < until) {
       for (const r of await page.evaluate(() => window.__rpc.splice(0))) {
         if (!r.url.includes('GetBookingResults') || r.text == null) continue;
         const payloads = parseBatchExecute(r.text).filter((p) => p != null);
-        if (payloads.length) return payloads.flatMap(parseBooking).filter((o) => o.price != null).sort((a, b) => a.price - b.price);
+        if (payloads.length) { ok = true; return payloads.flatMap(parseBooking).filter((o) => o.price != null).sort((a, b) => a.price - b.price); }
         rejected++;
       }
       await page.waitForTimeout(250);
@@ -56,6 +62,8 @@ async function bookingSellers(ctx, t) {
     throw new Error(`booking page: no sellers within ${WAIT_MS} ms (${rejected} rejected)`);
   } finally {
     clearTimeout(timer);
+    prof.mark('sellers');
+    await prof.done(ok);
     await page.close().catch(() => {});
   }
 }

@@ -7,6 +7,7 @@
  */
 const { chromium } = require('playwright');
 const { pageUrl, HEADERS } = require('./page');
+const { profile } = require('./page-stats');
 const { parseBatchExecute, parseCalendar, parseBooking } = require('./batchexecute');
 
 const RPC_TIMEOUT_MS = 20_000;
@@ -258,8 +259,15 @@ async function bookingOptions(ctx, { from, to, out, ret, cabin }) {
  * inlines none (gflights/flights.js). Returns the payload, laid out like the inline ds:1 blob.
  */
 async function shoppingResults(ctx, query, { timeout = 30_000 } = {}) {
+  const t0 = Date.now();
   const page = await newPage(ctx, timeout + 60_000);
   const label = `${query.from}-${query.to} ${query.out}`;
+  // Phases (page-stats.js): open, nav (to DOMContentLoaded), reply (then to the first usable
+  // reply: Google's time plus rejected replies waited out), more, reloadNav, reloadReply.
+  const prof = await profile(page, 'search', t0);
+  prof.mark('open');
+  const go = (phase) => () => page.goto(pageUrl(query), { waitUntil: 'domcontentloaded', timeout: PAGE_TIMEOUT_MS }).finally(() => prof.mark(phase));
+  let ok = false;
   try {
     // A rejected reply that the page doesn't ask again for, or a load that sends nothing: loaded
     // again rather than waited out (10% of the checks' pages sat out a 60 s timeout, 13:05 sweep
@@ -269,13 +277,12 @@ async function shoppingResults(ctx, query, { timeout = 30_000 } = {}) {
     for (let n = 1; ; n++) {
       const left = until - Date.now();
       try {
-        payloads = await capture(page, 'GetShoppingResults', (p) => [p],
-          () => page.goto(pageUrl(query), { waitUntil: 'domcontentloaded', timeout: PAGE_TIMEOUT_MS }), label,
+        payloads = await capture(page, 'GetShoppingResults', (p) => [p], go('nav'), label,
           n < SHOP_LOADS ? Math.min(left, SHOP_TRY_MS) : left, REJECT_GRACE_MS, true);
         break;
       } catch (e) {
         if (n >= SHOP_LOADS || until - Date.now() < 5_000) throw e;
-      }
+      } finally { prof.mark('reply'); }
     }
     // The first reply is only Google's "top flights"; the rest (often the cheapest) load behind
     // "View more flights".
@@ -288,10 +295,9 @@ async function shoppingResults(ctx, query, { timeout = 30_000 } = {}) {
       if (n) {
         moreTally.reloads++;
         try {
-          payloads = await capture(page, 'GetShoppingResults', (p) => [p],
-            () => page.goto(pageUrl(query), { waitUntil: 'domcontentloaded', timeout: PAGE_TIMEOUT_MS }), `${label} again`,
+          payloads = await capture(page, 'GetShoppingResults', (p) => [p], go('reloadNav'), `${label} again`,
             SHOP_TRY_MS, REJECT_GRACE_MS, true);
-        } catch { moreTally.lost++; break; } // the first load's top flights kept
+        } catch { moreTally.lost++; break; } finally { prof.mark('reloadReply'); } // the first load's top flights kept
       }
       if (!await more.isVisible().catch(() => false)) { if (n) moreTally.lost++; break; }
       try {
@@ -302,10 +308,12 @@ async function shoppingResults(ctx, query, { timeout = 30_000 } = {}) {
         moreTally[e instanceof Rejected ? 'rejected' : 'failed']++;
         if (!(e instanceof Rejected)) break; // no reply in 15 s: not waited out again
         if (n === MORE_TRIES - 1) moreTally.lost++;
-      }
+      } finally { prof.mark('more'); }
     }
+    ok = true;
     return payloads;
   } finally {
+    await prof.done(ok);
     await page.close();
   }
 }

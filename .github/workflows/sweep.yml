@@ -276,10 +276,13 @@ jobs:
           # and sessions on this tunnel: this runner's CPU idles beside booking pages (load ~1-3 of 4).
           node scraper/bin/search-runner.js --queue .search-queue.json --out .search-extra.json.gz --until $(( $(date +%s) + 43 * 60 )) --pages 5 --gap 1500 --session-pages 300 2>&1 | sed -u 's/^/[search] /' &
           spid=$!
-          # Load 5-9 at a 2 s booking gap, 12-18 at 1.5 s (9:05, 10:05 pm Vancouver, Nov 13): CPU by runner.
-          (while kill -0 $pid 2>/dev/null; do sleep 300; echo "  load: $(cut -d' ' -f1-3 /proc/loadavg); cpu now: $(scripts/cpu-split.sh booking=$pid search=$(pgrep -f bin/search-runner.js | head -1))"; done) &
+          # Load 5-9 at a 2 s booking gap, 12-18 at 1.5 s (9:05, 10:05 pm Vancouver, Nov 13): CPU by runner
+          # and by Chrome process kind every minute (to cpu.log, every 5th to the log), averaged at the end.
+          (n=0; while kill -0 $pid 2>/dev/null; do sleep 60; n=$((n + 1)); l="  load: $(cut -d' ' -f1-3 /proc/loadavg); cpu now: $(scripts/cpu-split.sh booking=$pid search=$(pgrep -f bin/search-runner.js | head -1))"; echo "$l" >> cpu.log; [ $((n % 5)) = 0 ] && echo "$l"; done) &
           wait $spid || echo "search runner failed"
           wait $pid
+          scripts/cpu-split.sh --summary cpu.log
+          awk '/load:/ { split($0, a, " "); s += a[2]; n++; if (a[2] > m) m = a[2] } END { if (n) printf "load (1 min) average %.1f, max %.1f on %d CPUs\n", s / n, m, '"$(nproc)"' }' cpu.log
 
       - name: Network probe summary
         if: always()

@@ -62,11 +62,29 @@ the search runner's rows (`--search-extra`).
   replies. The next lever is CPU per page, not rates; CPU by runner logged from 11:05 pm Nov 13.
 - **Searches on the sweep IP degrade** over the run (pages without results climb).
 
+## Telemetry (from 11:05 am Nov 14)
+
+Tuning and ETAs used to come from page counts and one run's change. They were wrong more than once.
+Each run now logs:
+
+| Line | Says |
+|---|---|
+| `search runner, search pages: …` / `booking runner, booking pages: …` | each phase's median, p90 and share of all page time (open, nav, reply, more, reload, sellers); renderer CPU a page from Chrome's counters (process, main thread: script, compile, layout, style); requests a page by type |
+| `… slot time (N slots × S s): …` | share of slot time in pages, held by the gap, waiting on a new session, idle: which limit binds |
+| `CPU averages over N samples` | booking machine CPU by runner and by Chrome process kind (node, browser, renderer, gpu, utility), sampled every minute |
+| `load (1 min) average` | the booking machine's load over the run |
+| `search demand: …` | searches the build used: fresh by age, stale, never searched; what keeping all fresh at 24 h takes a run |
+| `booking demand: …` | board and filter tickets ÷ their holds = pages a run needed; tickets not checked in 48 h |
+
+`node scripts/run-stats.mjs [N] [--detail]` turns the last N runs' logs into the numbers table,
+least-squares trends and capacity against demand. The estimates below come from it.
+
 ## Estimates
 
-(As of 9:05 am Nov 14; the earlier "3 pm / 1 pm Nov 14" estimates were wrong.)
+(`scripts/run-stats.mjs 10`, 12:05-9:05 am Nov 14; the earlier "3 pm / 1 pm Nov 14" estimates were wrong.)
 
-- Filters: fresh rose 3,343 → 4,509 over 9 runs (~+130 a run, 25% → 32%) at 490-900 pages a
-  run; not converging fast enough to give a date.
-- Search backlog: flat at 11,100-12,100. The search runner's ~630-850 a run only matches what
-  comes in. No drain date until search pages get cheaper or faster.
+- Filters fresh: 4,509 of 14,134, +132 a run → all fresh ~10 am Nov 17 at this rate.
+- Search backlog: 11,798, −64 a run → ~Nov 22. Too slow: the search runner is the bottleneck.
+- Hidden board cells: 1,519, −35 a run → ~5 am Nov 16.
+- Booking pages ~1,590 a run: the board takes ~610 (steady state ~350 at 12 h, so ~260 a run
+  are due early on price moves), unchecked dates ~290, filters ~690 (steady state 575-1,150).

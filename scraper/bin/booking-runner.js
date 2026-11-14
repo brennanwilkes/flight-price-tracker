@@ -109,7 +109,8 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   // up? (7:05 pm Vancouver, 2026-11-12: errors 0 in the first 5 min, 246 by 40; 2,362 of 2,859
   // pages had 1-5 sellers; haleiwa saw 5 at 5:50 pm and 10 at 8:05 pm on the same page.)
   let win = { long: 0, wide: 0, gone: 0, errors: 0 };
-  const timed0 = async (t) => { if (renewing) await renewing; if (++sessionPages >= sessionMax) renew('pages'); const t1 = Date.now(); try { const r = await b.bookingSellers(t); ms.push(Date.now() - t1);
+  let renewWait = 0; // slot ms waiting on a new session
+  const timed0 = async (t) => { if (renewing) { const tr = Date.now(); await renewing; renewWait += Date.now() - tr; } if (++sessionPages >= sessionMax) renew('pages'); const t1 = Date.now(); try { const r = await b.bookingSellers(t); ms.push(Date.now() - t1);
     if (homes.includes(t.from) || homes.includes(t.to)) { win.long++; if (r.length >= 6) win.wide++; if (!t.guess && listedOf(t) && r[0] && r[0].price > listedOf(t) * 1.03) win.gone++; }
     return r; } catch (e) { bad++; win.errors++; ms.push(Date.now() - t1); const w = String(e.message).replace(/\d+/g, 'N').slice(0, 60); why[w] = (why[w] ?? 0) + 1; throw e; } };
   const timed = timed0;
@@ -126,7 +127,18 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
     phase = 'filters';
     // Not those booked in this run already (the board's, the unchecked dates').
     await pass('filters', all.slice(nBoard).filter((t) => !(bookings.get(keyOf(t))?.at >= started)), until, FILTER_LISTED_HOURS);
-  } finally { clearInterval(tick); clearInterval(watch); await b.close(); }
+  } finally {
+    clearInterval(tick); clearInterval(watch);
+    // Where the page slots' time went (page-stats.js lines, then the slot split): pages, waiting on a
+    // new session, held for the short list; the rest is the gap, work between pages and idle.
+    const t = await b.tally().catch(() => null);
+    for (const line of t?.pages ?? []) console.log(`booking runner, ${line}`);
+    const slotMs = pages * (Date.now() - t0);
+    const share = (x) => `${Math.round((100 * x) / slotMs)}%`;
+    const inPages = ms.reduce((x, y) => x + y, 0);
+    console.log(`booking runner, slot time (${pages} slots × ${Math.round((Date.now() - t0) / 1000)} s): pages ${share(inPages)}, waiting on a new session ${share(renewWait)}, held for the short list ${share(pages * held)}, gap/between pages/idle ${share(slotMs - inPages - renewWait - pages * held)}`);
+    await b.close();
+  }
   console.log(`booking runner: pages held ${Math.round(held / 60e3)} min for the short list; canary at the end ${view}; new sessions ${renewals.pages} at ${sessionMax} pages, ${renewals.short} on a short canary`);
   console.log(`booking runner: page errors by kind: ${Object.entries(why).sort((x, y) => y[1] - x[1]).map(([w, n]) => `${n}× ${w}`).join('; ') || 'none'}`);
   saveBookings(extra, bookings);
