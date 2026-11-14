@@ -20,8 +20,10 @@ const SHOP_LOADS = 2;
 const SHOP_TRY_MS = 25_000;
 const REJECT_GRACE_MS = 4_000;
 // "View more flights": page loads at most to get its reply, and how long after a rejected reply to
-// wait for the page's own retry.
-const MORE_TRIES = 3;
+// wait for the page's own retry. 5, not 3: at 0.35 pages a second (12:05 am Vancouver Nov 14) a
+// reload's click got its reply about 1 time in 2 (170 of 346) and 89 pages lost the full list
+// after 3 loads; a reload is ~3 s (Google has the search cached).
+const MORE_TRIES = 5;
 const MORE_REJECT_MS = 2_000;
 // Per process: "View more flights" replies (ok on the first load, ok after a reload, rejected, no
 // reply in 15 s), reloads made for it, and pages left with the top flights only after reloads.
