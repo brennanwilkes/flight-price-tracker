@@ -29,6 +29,7 @@ the search runner's rows (`--search-extra`).
 
 | Run | Board | Filters fresh (< 12 h) | Search runner | Search backlog | Notes |
 |---|---|---|---|---|---|
+| 9:05 pm Nov 13 | 872/872, 0 left | 3,244 of 13,264 (filters got 1 page: board + unchecked dates used the run) | 881 searches, 13.8 s median, 0 errors; "more flights" 822 ok, 28 ok after reload, 1 lost | 11,728 | booking pages at exactly 0.50/s (the 2 s gap): 1.5 s from 10:05 pm |
 | 8:05 pm Nov 13 | 671/671 checked, 0 left | 3,236 of 13,000 | 778 searches, 16.0 s median; "more flights" 469 ok, 267 rejected | 11,510 | rejected "more flights" lost the full list (button gone): reload added for 9:05 pm |
 | 6:05 pm Nov 13 | 531 in 18 min | 2,968 | 732 searches | ~12,190 | |
 
@@ -40,7 +41,11 @@ the search runner's rows (`--search-extra`).
 - **"View more flights" rejected about 1 time in 3:** the full list (often the cheapest flights)
   was lost. From 9:05 pm Nov 13 the page is loaded again and clicked, up to 3 loads (tallied as
   `reloads`, `okReload`, `lost`).
-- **The booking runner is CPU-bound** with both browsers (load 5–7 on 4 cores).
+- **Booking pages are gap-bound:** at a 2 s gap the run made ~1,270 pages, and the board (~870
+  due a run) plus unchecked dates (~400) left none for filters. Board holds can't be longer: of
+  ~350 board rechecks with the listed price unmoved after 12 h, 50 booked lower (biggest
+  $3,240 → $2,073). Gap 1.5 s from 10:05 pm Nov 13.
+- **The booking runner's machine is busy** with both browsers (load 5–7 on 4 cores).
 - **Searches on the sweep IP degrade** over the run (pages without results climb).
 
 ## Estimates

@@ -264,11 +264,13 @@ jobs:
       # 3500: 640, short at 31 min. It's the session's limit, not the IP's (1:05 pm: short in the
       # runner's session, full in a new one on the same IP): --session-pages, a new session every N
       # pages and on a short canary. 2500: 1,052 pages, full all run, 3 new sessions (2:05 pm). 2000: ~1,290.
+      # 2000 ran at exactly 0.50 a second, held 0 min, and the board (872) and unchecked dates (400)
+      # left 4 s for the filters (9:05 pm Nov 13): 1500.
       - name: Booking pages
         if: steps.vpn.outputs.vpn_ok == 'true'
         run: |
           echo "$(nproc) CPUs"
-          node scraper/bin/booking-runner.js --data .worktrees/warm --queue .booking-queue.json --extra .booking-extra.json --checked .booking-checked.json --until $(( $(date +%s) + 43 * 60 )) --pages 3 --gap 2000 --session-pages 300 &
+          node scraper/bin/booking-runner.js --data .worktrees/warm --queue .booking-queue.json --extra .booking-extra.json --checked .booking-checked.json --until $(( $(date +%s) + 43 * 60 )) --pages 3 --gap 1500 --session-pages 300 &
           pid=$!
           # The sweep build's browser searches left out of time (bin/search-runner.js), its own browser
           # and sessions on this tunnel: this runner's CPU idles beside booking pages (load ~1-3 of 4).
