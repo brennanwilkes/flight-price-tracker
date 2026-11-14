@@ -1,7 +1,30 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-14T20:06:08Z",
+ "lastSuccess": "2026-11-14T21:06:03Z",
  "runs": [
+  {
+   "at": "2026-11-14T21:06:03Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 283,
+   "failed": 0,
+   "cells": 8487,
+   "priced": 7972,
+   "changes": 3015,
+   "errors": [],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 582,
+   "pages": 6,
+   "skipped": 299,
+   "secondOk": 1,
+   "seconds": 1305,
+   "success": true
+  },
   {
    "at": "2026-11-14T20:06:08Z",
    "egress": "vpn",
@@ -523,33 +546,6 @@
    "skipped": 274,
    "secondOk": 7,
    "seconds": 1270,
-   "success": true
-  },
-  {
-   "at": "2026-11-13T21:06:08Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 224,
-   "failed": 2,
-   "cells": 6246,
-   "priced": 5275,
-   "changes": 4970,
-   "errors": [
-    "DAD-BJS-Y 13d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "DAD-MNL-Y 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 100,
-    "kept": 49,
-    "failed": 0,
-    "routes": 1239
-   },
-   "due": 622,
-   "pages": 6,
-   "pauses": 1,
-   "skipped": 396,
-   "secondOk": 13,
-   "seconds": 1378,
    "success": true
   }
  ]
