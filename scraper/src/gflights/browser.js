@@ -84,7 +84,10 @@ async function newPage(ctx, ms = PAGE_DEADLINE_MS) {
   return page;
 }
 
-// lean: images, fonts and media not loaded (the flight checks read the RPC replies, not the page's looks).
+// lean: images, fonts and media not loaded (the flight checks read the RPC replies, not the page's looks),
+// and reduced motion (a person's setting too): a search page took ~7 CPU-seconds, 5 at once with
+// their loading animations painting through 15-20 s waits (CPU by runner, 11:05 pm Vancouver, Nov 13:
+// search 160-210% at 0.28 pages a second, booking ~120% at 0.57).
 // flagged: the browser says it's automated (navigator.webdriver, "HeadlessChrome"). Google then
 // lists fewer sellers and drops the cheapest agency fares: same IP and booking page 2026-11-11,
 // flagged $4,612 (5 sellers), unflagged Trip.com $2,785 (11 sellers), as a person's Chrome sees it.
@@ -98,6 +101,7 @@ async function newContext(browser, { lean = false, flagged = process.env.BROWSER
   const major = browser.version().split('.')[0];
   const ctx = await browser.newContext({
     locale: 'en-CA', timezoneId: 'America/Vancouver', viewport: { width: 1280, height: 900 },
+    ...(lean ? { reducedMotion: 'reduce' } : {}),
     userAgent: flagged ? undefined : `Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${major}.0.0.0 Safari/537.36`,
   });
   if (lean) await ctx.route('**/*', (r) => (['image', 'font', 'media'].includes(r.request().resourceType()) ? r.abort() : r.continue()));
