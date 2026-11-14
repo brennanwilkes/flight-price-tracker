@@ -1,8 +1,9 @@
 // History tab: the board's top routes over time, from derived/history/<YYYY-MM>.csv (a row whenever
 // a cell's total changes). Business and economy sit an order of magnitude apart, so each class
 // gets its own chart (one axis each); in each, the MAX_SERIES long-haul pairs (in, out) with the
-// lowest prices ever recorded, one stepped line per pair, its rows with throw-ins folded in (the
-// cheapest at each moment; a price holds until the next change). History is kept per
+// lowest prices ever recorded, one line per pair, its rows with throw-ins folded in (the
+// cheapest at each moment; a price holds until the next change). Drawn one point a day, the
+// day's low (local days): hourly changes made the lines unreadable. History is kept per
 // route overall (the board's own cells), so the month filter picks the routes, not the values;
 // under a via filter, only the routes whose overall trip is the via view's (the line is its price).
 // Chart.js is loaded from cdnjs the first time the tab opens.
@@ -92,6 +93,36 @@ function envelope(members) {
   return { pts, who };
 }
 
+/** Local midnights from the day of `t0` through today. */
+function dayGrid(t0) {
+  const days = [];
+  const d = new Date(t0);
+  d.setHours(0, 0, 0, 0);
+  for (; d.getTime() <= Date.now(); d.setDate(d.getDate() + 1)) days.push(d.getTime());
+  return days;
+}
+
+/** A series (envelope's pts and who) as one value a day: the lowest live price in effect at any
+ * time that day, the price carried in from the day before included. A day with none holds the
+ * last low (`held`, drawn dashed); before the first record, and after a last record with no price
+ * (the route gone), nothing. `who`: the row that had the day's low. */
+function daily(pts, who, days) {
+  let i = 0, cur = null, curWho = null, last = null;
+  return days.map((d, j) => {
+    const end = days[j + 1] ?? Infinity;
+    let low = cur, lowWho = curWho;
+    while (i < pts.length && pts[i][0] < end) {
+      const [t, y] = pts[i++];
+      cur = y; curWho = who.get(t) ?? curWho;
+      if (y != null && (low == null || y < low)) { low = y; lowWho = curWho; }
+    }
+    if (i === 0) return { y: null, held: false, who: null };
+    if (low != null) { last = low; return { y: low, held: false, who: lowWho }; }
+    if (i === pts.length && cur == null) return { y: null, held: false, who: null };
+    return { y: last, held: last != null, who: null };
+  });
+}
+
 const charts = [];
 
 /**
@@ -154,15 +185,17 @@ export async function renderHistory(el, base, home, view, priority = 'hybrid', l
   for (const { cls, top } of picks) {
     const canvas = el.querySelector(`canvas[data-cls="${cls}"]`);
     if (!canvas) continue;
-    const { times, values, held } = onGrid(top.map((x) => x.pts));
+    const times = dayGrid(Math.min(...top.map((x) => x.pts[0]?.[0] ?? Date.now())));
+    const days = top.map(({ pts, who }) => daily(pts, who, times));
     const [lo, hi] = RANGE[cls];
     const clip = (y) => (y == null ? null : Math.min(hi, Math.max(lo, y)));
     const chart = new Chart(canvas, {
       type: 'line',
       data: {
-        datasets: top.map(({ r, trip, tripOf, who }, i) => ({
-          label: rowName(r), route: { trip, tripOf }, data: values[i].map((y, j) => ({ x: times[j], y: clip(y), price: y, who: who.get(times[j]) ?? who.get(times[j - 1]) })), stepped: true, borderColor: tok(`--s${i + 1}`), borderWidth: 2,
-          segment: { borderDash: (ctx) => (held[i][ctx.p0DataIndex] || clip(values[i][ctx.p0DataIndex]) !== values[i][ctx.p0DataIndex] ? [4, 4] : undefined) },
+        datasets: top.map(({ r, trip, tripOf }, i) => ({
+          label: rowName(r), route: { trip, tripOf }, data: days[i].map((v, j) => ({ x: times[j], y: clip(v.y), price: v.y, who: v.who })),
+          cubicInterpolationMode: 'monotone', borderColor: tok(`--s${i + 1}`), borderWidth: 2,
+          segment: { borderDash: (ctx) => (days[i][ctx.p1DataIndex].held || clip(days[i][ctx.p0DataIndex].y) !== days[i][ctx.p0DataIndex].y ? [4, 4] : undefined) },
           pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: tok(`--s${i + 1}`), pointHoverBorderColor: tok('--panel'), pointHoverBorderWidth: 2,
         })),
       },
@@ -178,10 +211,11 @@ export async function renderHistory(el, base, home, view, priority = 'hybrid', l
             boxWidth: 8, boxHeight: 8, usePointStyle: true,
             titleFont: { family: 'JetBrains Mono', size: 12, weight: '700' }, bodyFont: { family: 'JetBrains Mono', size: 12 },
             callbacks: {
-              // The pair and its cheapest price at that moment, with the row (throw-ins) that had it;
+              // The pair and its lowest price that day, with the row (throw-ins) that had it;
               // then its cheapest row now and that trip's dates (history keeps prices, not dates).
               title: (items) => `${items[0].dataset.label}  ${items[0].raw.price == null ? '—' : money(items[0].raw.price)}`,
               label: (item) => [
+                `${new Date(item.raw.x).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}, the day's low`,
                 item.raw.who?.set ? `then: ${rowName(item.raw.who)}` : '',
                 item.dataset.route.trip ? `now: ${item.dataset.route.tripOf?.set ? `${rowName(item.dataset.route.tripOf)}, ` : ''}${fmtDates(item.dataset.route.trip)}` : '',
               ].filter(Boolean),
@@ -190,7 +224,7 @@ export async function renderHistory(el, base, home, view, priority = 'hybrid', l
         },
         scales: {
           x: {
-            type: 'linear', min: times[0], max: times.at(-1), grid: { display: false }, border: { color: tok('--line') },
+            type: 'linear', min: times[0], max: Math.max(times.at(-1), times[0] + 864e5), grid: { display: false }, border: { color: tok('--line') },
             // A tick at each midnight (at most 6, evenly thinned), labelled with the day.
             afterBuildTicks(axis) {
               const days = [];
