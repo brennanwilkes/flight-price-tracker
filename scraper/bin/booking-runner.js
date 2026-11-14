@@ -139,7 +139,7 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
     for (const k of tieQueue.tried ?? []) checked[k] ??= { price: null, at: at0 };
     const byTie = new Map();
     for (const t of tieQueue.itins ?? []) { if (checked[t.tie]) continue; if (!byTie.has(t.tie)) byTie.set(t.tie, []); byTie.get(t.tie).push(t); }
-    const st = { searched: byTie.size, flown: byTie.size, pages: 0, proven: 0, cheaper: 0, best: null, unpriced: 0, above: 0, ratios: [] };
+    const st = { searched: byTie.size, flown: byTie.size, pages: 0, proven: 0, cheaper: 0, best: null, unpriced: 0, above: 0, ratios: [], bands: {} };
     const list = [...byTie.keys()];
     if (!list.length || Date.now() > end - 60e3) { console.log(`booking runner, unchecked dates: ${list.length} date pairs with flights queued`); return; }
     const itins = [...byTie.values()].flat().filter((t) => !bookings.has(keyOf(t)));
@@ -157,6 +157,12 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
         // Only a price below the graph's goes to the planner: one above may be the short seller
         // list (no listed price to hold a guessed pair to), and the graph's then stands.
         if (p == null) st.unpriced++; else st.ratios.push(p / was);
+        // By days out: booked/graph went 0.95 → 3.15 median from one run to the next (9:05 → 10:05 pm
+        // Vancouver, Nov 13), the 72 h hold leaving the far-out pairs: are those agency-less?
+        const out = Date.parse(t.date) - Date.parse(at0);
+        const band = out < 150 * 864e5 ? '<150 d' : out < 300 * 864e5 ? '150-300 d' : '300+ d';
+        const bs = (st.bands[band] ??= { n: 0, below: 0, none: 0, ratios: [] });
+        bs.n++; if (p == null) bs.none++; else { bs.ratios.push(p / was); if (p < was) bs.below++; }
         if (p != null && p >= was) st.above++;
         // `graph`: the graph's price when tried; lower since, it's due again at once (build-trips.js).
         if (p == null || p >= was) { checked[fareKey(t)] = { price: null, at, graph: was }; continue; }
@@ -166,5 +172,7 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
       }
     }
     console.log(`booking runner, unchecked dates: ${list.length} date pairs with flights queued (searched beside the last scrape), ${itins.length} itineraries; ${st.pages} booking pages, ${st.proven} proven below the graph, ${st.above} at or above it, ${st.unpriced} with no price in the cabin (failed, partial or none)${st.ratios.length ? `; booked/graph median ${st.ratios.sort((x, y) => x - y)[Math.floor(st.ratios.length / 2)].toFixed(2)}` : ''}${st.best ? `; most: ${st.best.what}` : ''}`);
+    const med = (a) => (a.length ? a.sort((x, y) => x - y)[Math.floor(a.length / 2)].toFixed(2) : '-');
+    console.log(`booking runner, unchecked dates by days out: ${Object.entries(st.bands).map(([b, v]) => `${b} ${v.n} pairs, ${v.below} below the graph, ${v.none} unpriced, booked/graph median ${med(v.ratios)}`).join('; ')}`);
   }
 })().catch((e) => { console.error(`booking runner: ${e.stack}`); process.exit(1); });
