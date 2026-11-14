@@ -29,6 +29,15 @@ the search runner's rows (`--search-extra`).
 
 | Run | Board | Filters fresh (< 12 h) | Search runner | Search backlog | Notes |
 |---|---|---|---|---|---|
+| 9:05 am Nov 14 | 713/713 | 4,509 of 14,134 (668) | 631, "more flights" 4 lost | 11,798 | load 7-18; 1,519 hidden |
+| 8:05 am Nov 14 | 563/563 | 4,377 of 13,921 (796) | 680, 50 lost | 11,112 | load ~11; 1,538 hidden |
+| 7:05 am Nov 14 | 572/572 | 4,355 of 13,892 (791) | 634, 36 lost | 11,706 | load 12-15; 1,577 hidden |
+| 6:05 am Nov 14 | 415/415 | 4,227 of 14,114 (885) | 700, 36 lost | 11,841 | 1,466 hidden |
+| 5:05 am Nov 14 | 540/540 | 3,819 of 13,828 (903) | 791, 0 lost | 11,590 | 1,449 hidden |
+| 4:05 am Nov 14 | 564/564 | 3,583 of 13,809 (696) | 813, 10 lost | 11,688 | load ~7; 1,589 hidden |
+| 3:05 am Nov 14 | 706/706 | 3,633 of 13,596 (489) | 849, 7 lost | 12,100 | load 6-9; 1,695 hidden |
+| 2:05 am Nov 14 | 566/566 | 3,672 of 13,521 (606) | 677, 6 lost | 12,105 | load 10-14; 1,664 hidden |
+| 1:05 am Nov 14 | 705/705 | 3,543 of 13,509 (581) | 704, 2 lost (up to 5 loads) | 11,910 | load 12-18; 1,796 hidden. Both runners together use 3-4 cores in every run; searches go 630-850 with page time (median 15-20 s, 5 at once) |
 | 12:05 am Nov 14 | 747/747 (0.65 pages/s) | 3,343 of 13,331 (filters 495 pages) | 905 searches, 12.9 s median; "more flights" 569 ok, 170 after reload, 89 lost | 12,024 | reduced motion: load 5-8 (was 10-17), CPU search 130-250%, booking 30-85%; more rejected replies at the faster rate: up to 5 loads from 1:05 am; 1,821 board cells hidden (return not searched) |
 | 11:05 pm Nov 13 | 786/786 | 3,100 of 13,207 (filters 383 pages) | 710 searches, 17.3 s median; "more flights" 1 lost | 11,975 | CPU: search runner 160-210% at 0.28 pages/s (~7 CPU-s a page), booking ~120% at 0.57 (~2 CPU-s); unchecked dates 0.95 again, same far out; reduced motion from 12:05 am |
 | 10:05 pm Nov 13 | 818/819 | 3,193 of 13,269 (filters 247 pages) | 672 searches, 18.2 s median; "more flights" 524 ok, 80 after reload, 32 lost | 11,582 | gap 1.5 s: 0.58 pages/s (3 at once, 4.4 s each), load 12-18 on 4 cores (5-9 at 2 s); unchecked dates booked/graph 3.15 (0.95 before) |
@@ -55,6 +64,9 @@ the search runner's rows (`--search-extra`).
 
 ## Estimates
 
-- Filters: about +500 fresh a run → all fresh around 3 pm Nov 14 if the 24 h holds keep up.
-- Search backlog: about −700 a run → drained in about 16 runs (around 1 pm Nov 14), less as
-  rejected pages stop losing the full list.
+(As of 9:05 am Nov 14; the earlier "3 pm / 1 pm Nov 14" estimates were wrong.)
+
+- Filters: fresh rose 3,343 → 4,509 over 9 runs (~+130 a run, 25% → 32%) at 490-900 pages a
+  run; not converging fast enough to give a date.
+- Search backlog: flat at 11,100-12,100. The search runner's ~630-850 a run only matches what
+  comes in. No drain date until search pages get cheaper or faster.
