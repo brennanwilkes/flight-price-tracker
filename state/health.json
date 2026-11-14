@@ -1,7 +1,35 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-14T12:06:02Z",
+ "lastSuccess": "2026-11-14T13:06:24Z",
  "runs": [
+  {
+   "at": "2026-11-14T13:06:24Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 227,
+   "failed": 4,
+   "cells": 7453,
+   "priced": 7239,
+   "changes": 382,
+   "errors": [
+    "LGK-HAN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "SGN-CNX-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "SGN-BWN-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Ho Chi Minh City SGN Bandar Seri Begawan B",
+    "YYJ-SHA-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 337,
+   "pages": 3,
+   "skipped": 106,
+   "secondOk": 15,
+   "seconds": 1471,
+   "success": true
+  },
   {
    "at": "2026-11-14T12:06:02Z",
    "egress": "vpn",
@@ -522,31 +550,6 @@
    "skipped": 403,
    "secondOk": 12,
    "seconds": 1295,
-   "success": true
-  },
-  {
-   "at": "2026-11-13T13:07:13Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 277,
-   "failed": 1,
-   "cells": 8652,
-   "priced": 7601,
-   "changes": 3790,
-   "errors": [
-    "OKA-PNH-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Okinawa OKA Phnom Penh KTI Filters All fil"
-   ],
-   "network": {
-    "checked": 100,
-    "kept": 84,
-    "failed": 1,
-    "routes": 1198
-   },
-   "due": 680,
-   "pages": 6,
-   "skipped": 402,
-   "secondOk": 21,
-   "seconds": 1381,
    "success": true
   }
  ]
