@@ -124,8 +124,8 @@ const CAPS = [18, 16, 15, 14, 13, 12, 11, 10];
 const SEARCH_PER_CAP = 2; // round trips' returns searched per long-haul cap per cell
 const SEARCH_QUEUE_MAX = 8000; // the search runner's queue: more than a run of it can do
 // How far into its queue the search runner gets in a run (630-905, 12:05-11:05 am Vancouver Nov 14),
-// with room: the builds leave these to it.
-const RUNNER_REACH = 1000;
+// with room: the builds leave these to it. 1300 with 7 pages at once from 1:05 pm (~+40%).
+const RUNNER_REACH = 1300;
 
 /**
  * Search results from earlier builds, under SEARCH_HOURS old: { cache: key → result, at: key → ISO
