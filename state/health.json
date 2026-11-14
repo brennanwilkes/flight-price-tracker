@@ -1,7 +1,32 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-14T01:06:04Z",
+ "lastSuccess": "2026-11-14T02:06:26Z",
  "runs": [
+  {
+   "at": "2026-11-14T02:06:26Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 145,
+   "failed": 1,
+   "cells": 4154,
+   "priced": 4050,
+   "changes": 1816,
+   "errors": [
+    "YYJ-TPE-Y 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 100,
+    "kept": 25,
+    "failed": 2,
+    "routes": 1262
+   },
+   "due": 753,
+   "pages": 6,
+   "skipped": 607,
+   "secondOk": 11,
+   "seconds": 1381,
+   "success": true
+  },
   {
    "at": "2026-11-14T01:06:04Z",
    "egress": "vpn",
@@ -565,36 +590,6 @@
    "skipped": 546,
    "secondOk": 11,
    "seconds": 1407,
-   "success": true
-  },
-  {
-   "at": "2026-11-13T02:05:58Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 246,
-   "failed": 5,
-   "cells": 7382,
-   "priced": 7276,
-   "changes": 4493,
-   "errors": [
-    "DPS-CNX-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "DPS-HKG-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-BKK-Y 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Bangkok BKK DMK Filters A",
-    "SGN-BJS-Y 5d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Ho Chi Minh City SGN Beijing PEK PKX Fi",
-    "SGN-SHA-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Ho Chi Minh City SGN Shanghai PVG SHA F"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1178
-   },
-   "due": 666,
-   "pages": 6,
-   "pauses": 2,
-   "skipped": 415,
-   "secondOk": 6,
-   "seconds": 1380,
    "success": true
   }
  ]
