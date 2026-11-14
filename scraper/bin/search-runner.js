@@ -88,6 +88,9 @@ const pct = (a, q) => (a.length ? `${(a.toSorted((x, y) => x - y)[Math.floor(q *
   } finally {
     clearInterval(tick);
     save();
+    // "View more flights" (the full list): ok on the first click, ok on a later one, rejected, failed.
+    const t = await b.tally().catch(() => null);
+    if (t) console.log(`search runner: more flights ${JSON.stringify(t.more)}; replies ${JSON.stringify(t.bgr)}`);
     await b.close();
   }
   const secs = (Date.now() - started) / 1000;

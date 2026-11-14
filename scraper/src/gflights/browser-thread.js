@@ -40,6 +40,12 @@ if (isMainThread || !workerData?.browserThread) { // required anywhere but the b
           waiting.set(id, { ok, fail });
           worker.postMessage({ id, renew: true });
         }),
+        // The thread's RPC tallies (browser.js bgrTally, moreTally).
+        tally: () => new Promise((ok, fail) => {
+          const id = next++;
+          waiting.set(id, { ok, fail });
+          worker.postMessage({ id, tally: true });
+        }),
         close: async () => { worker.postMessage({ close: true }); await new Promise((r) => worker.once('exit', r)); },
       });
       if (m.fatal) return reject(new Error(m.fatal));
@@ -51,13 +57,14 @@ if (isMainThread || !workerData?.browserThread) { // required anywhere but the b
     worker.on('exit', () => { for (const w of waiting.values()) w.fail(new Error('browser thread exited')); waiting.clear(); });
   });
 } else {
-  const { openBrowser, newContext, shoppingResults } = require('./browser');
+  const { openBrowser, newContext, shoppingResults, bgrTally, moreTally } = require('./browser');
   const { bookingSellers } = require('./booking');
   const { browserThread, ...opts } = workerData;
   openBrowser(opts).then(({ browser, ctx: first }) => {
     let ctx = first;
     parentPort.on('message', async (m) => {
       if (m.close) { await browser.close().catch(() => {}); parentPort.close(); return; }
+      if (m.tally) { parentPort.postMessage({ id: m.id, payloads: { bgr: bgrTally, more: moreTally } }); return; }
       // A new session: pages from here on in a new context; the old one closed once its pages are done.
       if (m.renew) {
         try {
