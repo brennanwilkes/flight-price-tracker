@@ -572,7 +572,7 @@ async function main() {
       const list = graphTickets(dataDir, homes, { skip: (t) => queued.has(fareKey(t)) || (recent(t) && !dropped(t)) });
       const drops = list.filter(dropped);
       list.sort((a, b) => dropped(b) - dropped(a)); // stable: the graph's order otherwise
-      console.log(`unchecked dates: ${drops.length} due early, their graph price lower than when tried${drops.length ? ` (e.g. ${drops[0].from}⇄${drops[0].to} ${drops[0].date}/${drops[0].ret} $${tried[fareKey(drops[0])].graph} → $${drops[0].price})` : ''}`);
+      console.log(`unchecked dates beside the scrape: ${drops.length} due early, their graph price lower than when tried${drops.length ? ` (e.g. ${drops[0].from}⇄${drops[0].to} ${drops[0].date}/${drops[0].ret} $${tried[fareKey(drops[0])].graph} → $${drops[0].price})` : ''}`);
       const b = await openBrowserThread({ lean: true });
       try {
         const t1 = Date.now();
