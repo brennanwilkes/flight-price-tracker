@@ -181,6 +181,43 @@ function landings(rows) {
   }
   return out;
 }
+/**
+ * Searches under SEARCH_HOURS old this build never looked up, by why: the cache held 20,644 fresh
+ * at 2:05 pm Vancouver Nov 14 while the build used 7,576 of them. Kinds: a full list (`full `),
+ * a window (`after`), a round trip's returns with an outbound chosen (`selected`), else plain.
+ * Each unused one is matched to what the build did use: the same search's other form (its plain
+ * or full list), the same trip with another outbound chosen, the same route and cabin on other
+ * dates, or nothing on that route.
+ */
+function searchWaste(at, used, now) {
+  const base = (k) => k.replace(/^full /, '');
+  const strip = (q) => { const { selected, after, ...rest } = q; return rest; };
+  const usedBase = new Set(), usedTrip = new Set(), usedRoute = new Set();
+  for (const k of used.keys()) {
+    const q = JSON.parse(base(k));
+    usedBase.add(base(k));
+    usedTrip.add(JSON.stringify(strip(q)));
+    usedRoute.add(JSON.stringify([q.from, q.to, q.cabin, !!q.ret, !!q.selected]));
+  }
+  const kinds = {};
+  let fresh = 0, unused = 0;
+  for (const [k, when] of at) {
+    if (now - Date.parse(when) >= SEARCH_HOURS * 3600e3) continue;
+    fresh++;
+    if (used.has(k)) continue;
+    unused++;
+    const q = JSON.parse(base(k));
+    const kind = k.startsWith('full ') ? 'full' : q.after ? 'window' : q.selected ? 'return' : 'plain';
+    const why = usedBase.has(base(k)) && !q.selected && !q.after ? 'other form used'
+      : usedTrip.has(JSON.stringify(strip(q))) ? (q.selected ? 'trip used, other outbound' : 'search used, no window')
+        : usedRoute.has(JSON.stringify([q.from, q.to, q.cabin, !!q.ret, !!q.selected])) ? 'route used, other dates' : 'route unused';
+    const m = (kinds[kind] ??= {});
+    m[why] = (m[why] ?? 0) + 1;
+  }
+  const parts = Object.entries(kinds).map(([kind, m]) => `${kind} ${Object.values(m).reduce((a, b) => a + b, 0)} (${Object.entries(m).sort((a, b) => b[1] - a[1]).map(([w, c]) => `${w} ${c}`).join(', ')})`);
+  return `search waste: ${unused} of ${fresh} searches under ${SEARCH_HOURS} h old not looked up this build: ${parts.join('; ')}`;
+}
+
 /** The saved cache's rows: a row per line, or (an older file) one JSON array. */
 function* readRows(buf) {
   if (buf.indexOf(10) < 0) { if (buf.length) yield* JSON.parse(buf); return; }
@@ -709,6 +746,7 @@ async function main() {
         if (state === 'fresh' && when) age[Math.min(3, Math.floor((Date.parse(generatedAt) - Date.parse(when)) / (6 * 3600e3)))]++;
       }
       console.log(`search demand: ${used.size} searches used, ${n.fresh} fresh at load (by age: ${age[0]} under 6 h, ${age[1]} 6-12 h, ${age[2]} 12-18 h, ${age[3]} 18-24 h), ${n.stale} stale (served), ${n.none} never searched; kept fresh at ${SEARCH_HOURS} h that takes ${Math.round(used.size / SEARCH_HOURS)} a run (hourly), made this build ${(t.plain ?? 0) - (t.errors ?? 0) - (t.timeouts ?? 0)} plain + ${t.pages ?? 0} browser pages here, plus the search runner's (its newer rows above)`);
+      try { console.log(searchWaste(searches.at, used, Date.parse(generatedAt))); } catch (e) { console.log(`search waste: not worked out (${e.message})`); }
     }
     await saveSearches(arg('search-cache'), searches, generatedAt);
     // The browser searches left out of time, most wanted first, for the search runner (bin/search-runner.js).
