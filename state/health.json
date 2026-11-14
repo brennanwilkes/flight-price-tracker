@@ -1,7 +1,33 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-14T07:06:32Z",
+ "lastSuccess": "2026-11-14T08:06:14Z",
  "runs": [
+  {
+   "at": "2026-11-14T08:06:14Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 252,
+   "failed": 2,
+   "cells": 8535,
+   "priced": 8125,
+   "changes": 2022,
+   "errors": [
+    "HUI-DLI-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Hue HUI Da Lat DLI Filters All filters Sto",
+    "HUI-CXR-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Hue HUI Nha Trang CXR Filters All filters "
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 258,
+   "pages": 3,
+   "skipped": 4,
+   "secondOk": 3,
+   "seconds": 1461,
+   "success": true
+  },
   {
    "at": "2026-11-14T07:06:32Z",
    "egress": "vpn",
@@ -553,29 +579,6 @@
    "skipped": 193,
    "secondOk": 7,
    "seconds": 1284,
-   "success": true
-  },
-  {
-   "at": "2026-11-13T07:44:14Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 300,
-   "failed": 0,
-   "cells": 8265,
-   "priced": 8092,
-   "changes": 4110,
-   "errors": [],
-   "network": {
-    "checked": 100,
-    "kept": 90,
-    "failed": 6,
-    "routes": 1177
-   },
-   "due": 521,
-   "pages": 6,
-   "skipped": 221,
-   "secondOk": 21,
-   "seconds": 1348,
    "success": true
   }
  ]
