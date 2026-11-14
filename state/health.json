@@ -1,7 +1,28 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-14T09:06:27Z",
+ "lastSuccess": "2026-11-14T10:06:11Z",
  "runs": [
+  {
+   "at": "2026-11-14T10:06:11Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 217,
+   "failed": 0,
+   "cells": 6142,
+   "priced": 5784,
+   "changes": 809,
+   "errors": [],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 217,
+   "pages": 3,
+   "seconds": 626,
+   "success": true
+  },
   {
    "at": "2026-11-14T09:06:27Z",
    "egress": "vpn",
@@ -529,32 +550,6 @@
    "skipped": 237,
    "secondOk": 10,
    "seconds": 1359,
-   "success": true
-  },
-  {
-   "at": "2026-11-13T10:14:57Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 219,
-   "failed": 2,
-   "cells": 6419,
-   "priced": 5576,
-   "changes": 3584,
-   "errors": [
-    "HUI-TPE-Y 10d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Taipei City TPE Filters All fil",
-    "HUI-TPE-Y 6d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Taipei City TPE Filters All fil"
-   ],
-   "network": {
-    "checked": 100,
-    "kept": 74,
-    "failed": 6,
-    "routes": 1184
-   },
-   "due": 373,
-   "pages": 3,
-   "skipped": 152,
-   "secondOk": 10,
-   "seconds": 1390,
    "success": true
   }
  ]
