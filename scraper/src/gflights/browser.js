@@ -19,11 +19,13 @@ const PAGE_LOADS = 3;
 const SHOP_LOADS = 2;
 const SHOP_TRY_MS = 25_000;
 const REJECT_GRACE_MS = 4_000;
-// "View more flights": clicks at most, and how long after a rejected reply to wait for the page's own retry.
+// "View more flights": page loads at most to get its reply, and how long after a rejected reply to
+// wait for the page's own retry.
 const MORE_TRIES = 3;
 const MORE_REJECT_MS = 2_000;
-// Per process: how the "View more flights" replies went (ok first click, ok on a later one, rejected, failed).
-const moreTally = { ok: 0, okAgain: 0, again: 0, rejected: 0, failed: 0 };
+// Per process: "View more flights" replies (ok on the first load, ok after a reload, rejected, no
+// reply in 15 s), reloads made for it, and pages left with the top flights only after reloads.
+const moreTally = { ok: 0, okReload: 0, rejected: 0, failed: 0, reloads: 0, lost: 0 };
 // Google computes uncached graphs on demand: YYJ ones take 2-22s+ where YVR's come back in 0.1s.
 // So wait long for a reply once the request is out, but re-click quickly if none went out.
 const GRAPH_TIMEOUT_MS = 60_000;
@@ -272,18 +274,28 @@ async function shoppingResults(ctx, query, { timeout = 30_000 } = {}) {
     // The first reply is only Google's "top flights"; the rest (often the cheapest) load behind
     // "View more flights".
     // Its reply is now and then rejected (a null payload) and the page doesn't ask again: waited out
-    // for 15 s, the full list was lost (2 of 8 to 3 of 4 pages, locally 2026-11-13). Given up on
-    // MORE_REJECT_MS after a rejection and clicked again, a second later.
+    // for 15 s, the full list was lost (2 of 8 to 3 of 4 pages, locally 2026-11-13). The button is
+    // gone after a rejected reply (8:05 pm Vancouver run: 267 of 750 rejected, none clickable again),
+    // so the page is loaded again (Google has the search cached by then: ~2-3 s) and clicked again.
     const more = page.getByRole('button', { name: /more flights/i }).first();
-    for (let n = 0; n < MORE_TRIES && await more.isVisible().catch(() => false); n++) {
-      if (n) { moreTally.again++; await page.waitForTimeout(1000); }
+    for (let n = 0; n < MORE_TRIES; n++) {
+      if (n) {
+        moreTally.reloads++;
+        try {
+          payloads = await capture(page, 'GetShoppingResults', (p) => [p],
+            () => page.goto(pageUrl(query), { waitUntil: 'domcontentloaded', timeout: PAGE_TIMEOUT_MS }), `${label} again`,
+            SHOP_TRY_MS, REJECT_GRACE_MS, true);
+        } catch { moreTally.lost++; break; } // the first load's top flights kept
+      }
+      if (!await more.isVisible().catch(() => false)) { if (n) moreTally.lost++; break; }
       try {
         payloads.push(...await capture(page, 'GetShoppingResults', (p) => [p], () => more.click(), `${label} more`, 15_000, MORE_REJECT_MS));
-        moreTally[n ? 'okAgain' : 'ok']++;
+        moreTally[n ? 'okReload' : 'ok']++;
         break;
       } catch (e) {
         moreTally[e instanceof Rejected ? 'rejected' : 'failed']++;
         if (!(e instanceof Rejected)) break; // no reply in 15 s: not waited out again
+        if (n === MORE_TRIES - 1) moreTally.lost++;
       }
     }
     return payloads;
