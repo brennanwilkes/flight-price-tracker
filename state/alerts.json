@@ -5,46 +5,6 @@
    "tier": "buy",
    "at": "2026-11-11T21:31:39Z"
   },
-  "YVR,hybrid,KUL,KUL+BKI": {
-   "total": 3475,
-   "tier": "buy",
-   "at": "2026-11-11T21:31:39Z"
-  },
-  "YVR,hybrid,SIN,SIN+KUL": {
-   "total": 3416,
-   "tier": "buy",
-   "at": "2026-11-12T18:35:38Z"
-  },
-  "YVR,hybrid,SIN,SIN+MNL": {
-   "total": 3477,
-   "tier": "buy",
-   "at": "2026-11-12T18:35:38Z"
-  },
-  "YVR,hybrid,SIN,SIN+DPS": {
-   "total": 3485,
-   "tier": "buy",
-   "at": "2026-11-12T18:35:38Z"
-  },
-  "YVR,hybrid,SIN,SIN+PEN": {
-   "total": 3438,
-   "tier": "buy",
-   "at": "2026-11-13T05:33:00Z"
-  },
-  "YVR,hybrid,SIN,SIN+KBV": {
-   "total": 3478,
-   "tier": "buy",
-   "at": "2026-11-13T05:33:00Z"
-  },
-  "YVR,hybrid,KUL,KUL+PEN": {
-   "total": 3454,
-   "tier": "buy",
-   "at": "2026-11-13T06:28:38Z"
-  },
-  "YVR,hybrid,KUL,KUL+DPS": {
-   "total": 3420,
-   "tier": "buy",
-   "at": "2026-11-13T07:19:11Z"
-  },
   "YVR,hybrid,DAD,DAD": {
    "total": 3491,
    "tier": "buy",
@@ -55,170 +15,15 @@
    "tier": "buy",
    "at": "2026-11-13T11:29:39Z"
   },
-  "YVR,hybrid,KUL,KUL+LGK": {
-   "total": 3321,
-   "tier": "buy",
-   "at": "2026-11-13T11:29:39Z"
-  },
-  "YVR,hybrid,KUL,KUL+SIN": {
-   "total": 3399,
-   "tier": "buy",
-   "at": "2026-11-13T11:29:39Z"
-  },
-  "YVR,hybrid,KUL,KUL+KBV": {
-   "total": 3461,
-   "tier": "buy",
-   "at": "2026-11-13T11:29:39Z"
-  },
-  "YVR,hybrid,KUL,KUL+MNL": {
-   "total": 3477,
-   "tier": "buy",
-   "at": "2026-11-13T11:29:39Z"
-  },
-  "YVR,hybrid,HKG,HKG+SIN": {
-   "total": 3165,
-   "tier": "buy",
-   "at": "2026-11-13T12:28:31Z"
-  },
-  "YVR,hybrid,HKG,HKG+JKT": {
-   "total": 3200,
-   "tier": "buy",
-   "at": "2026-11-13T12:28:31Z"
-  },
-  "YVR,hybrid,HKG,HKG+ICN": {
-   "total": 3274,
-   "tier": "buy",
-   "at": "2026-11-13T12:28:31Z"
-  },
-  "YVR,hybrid,HKG,HKG+CNX": {
-   "total": 3342,
-   "tier": "buy",
-   "at": "2026-11-13T12:28:31Z"
-  },
-  "YVR,hybrid,HKG,HKG+OSA": {
-   "total": 3421,
-   "tier": "buy",
-   "at": "2026-11-13T12:28:31Z"
-  },
-  "YVR,hybrid,HKG,HKG+TYO": {
-   "total": 3478,
-   "tier": "buy",
-   "at": "2026-11-13T12:28:31Z"
-  },
-  "YVR,hybrid,CEB,CEB+SIN": {
-   "total": 3472,
-   "tier": "buy",
-   "at": "2026-11-13T13:30:22Z"
-  },
-  "YVR,hybrid,CEB,CEB+PPS": {
-   "total": 3475,
-   "tier": "buy",
-   "at": "2026-11-13T13:30:22Z"
-  },
   "YVR,hybrid,HKG,HKG": {
    "total": 2997,
    "tier": "buy",
    "at": "2026-11-13T14:31:43Z"
   },
-  "YVR,hybrid,HKG,HKG+BKK": {
-   "total": 3137,
+  "YVR,hybrid,CEB,CEB": {
+   "total": 3472,
    "tier": "buy",
-   "at": "2026-11-13T14:31:43Z"
-  },
-  "YVR,hybrid,HKG,HKG+CEB": {
-   "total": 3179,
-   "tier": "buy",
-   "at": "2026-11-13T14:31:43Z"
-  },
-  "YVR,hybrid,HKG,HKG+KUL": {
-   "total": 3209,
-   "tier": "buy",
-   "at": "2026-11-13T14:31:43Z"
-  },
-  "YVR,hybrid,HKG,HKG+LGK": {
-   "total": 3285,
-   "tier": "buy",
-   "at": "2026-11-13T14:31:43Z"
-  },
-  "YVR,hybrid,HKG,HKG+SIN+SYX": {
-   "total": 3305,
-   "tier": "buy",
-   "at": "2026-11-13T14:31:43Z"
-  },
-  "YVR,hybrid,HKG,HKG+KHH": {
-   "total": 3347,
-   "tier": "buy",
-   "at": "2026-11-13T14:31:43Z"
-  },
-  "YVR,hybrid,HKG,HKG+HKT": {
-   "total": 3400,
-   "tier": "buy",
-   "at": "2026-11-13T14:31:43Z"
-  },
-  "YVR,hybrid,KUL,KUL+LOP": {
-   "total": 3495,
-   "tier": "buy",
-   "at": "2026-11-13T14:31:43Z"
-  },
-  "YVR,hybrid,HKG,HKG+FUK": {
-   "total": 3512,
-   "tier": "great",
-   "at": "2026-11-13T14:31:43Z"
-  },
-  "YVR,hybrid,HKG,HKG+BWN": {
-   "total": 3550,
-   "tier": "great",
-   "at": "2026-11-13T14:31:43Z"
-  },
-  "YVR,hybrid,HKG,HKG+CJU+SIN": {
-   "total": 3722,
-   "tier": "great",
-   "at": "2026-11-13T14:31:43Z"
-  },
-  "YVR,hybrid,KUL,KUL+JKT": {
-   "total": 3345,
-   "tier": "buy",
-   "at": "2026-11-13T15:32:10Z"
-  },
-  "YVR,hybrid,KUL,KUL+HKG": {
-   "total": 3492,
-   "tier": "buy",
-   "at": "2026-11-13T15:32:10Z"
-  },
-  "YVR,hybrid,KUL,KUL+REP": {
-   "total": 3495,
-   "tier": "buy",
-   "at": "2026-11-13T17:30:01Z"
-  },
-  "YVR,hybrid,HKG,HKG+MNL": {
-   "total": 3151,
-   "tier": "buy",
-   "at": "2026-11-13T18:30:46Z"
-  },
-  "YVR,hybrid,HKG,HKG+MPH": {
-   "total": 3265,
-   "tier": "buy",
-   "at": "2026-11-13T18:30:46Z"
-  },
-  "YVR,hybrid,HKG,HKG+PPS": {
-   "total": 3287,
-   "tier": "buy",
-   "at": "2026-11-13T18:30:46Z"
-  },
-  "YVR,hybrid,HKG,HKG+TPE": {
-   "total": 3137,
-   "tier": "buy",
-   "at": "2026-11-13T19:30:38Z"
-  },
-  "YVR,hybrid,HKG,HKG+BKI": {
-   "total": 3196,
-   "tier": "buy",
-   "at": "2026-11-13T19:30:38Z"
-  },
-  "YVR,hybrid,HKG,HKG+CJU": {
-   "total": 3801,
-   "tier": "great",
-   "at": "2026-11-13T19:30:38Z"
+   "at": "2026-11-13T13:30:22Z"
   }
  }
 }
