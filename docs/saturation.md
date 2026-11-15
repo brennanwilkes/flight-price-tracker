@@ -9,11 +9,95 @@ more runners or VPN configs. Times are Vancouver (UTC−7).
 | Job | IP | Does |
 |---|---|---|
 | `sweep` | .135 | scrape (price graphs), warm checks (search pages ≤ 300 days out, inline), off-board date pairs, build, alerts |
-| `booking` | .74 | booking runner (booking pages, 2 s gap, new session every 300 pages) and search runner (browser search pages > 300 days out, from the build's queue) side by side |
+| `booking` | .74 (4 vCPUs, ~2 physical cores) | booking runner (`--pages 3 --gap 1500 --session-pages 300`) and search runner (`--pages 5 --gap 1500 --session-pages 300`: browser searches the build ran out of time for, mostly > 300 days out, from the build's queue) side by side, 43 min each |
 
 The build writes `.booking-queue.json` (board, then filters) and `.search-queue.json` (most
-wanted first, at most 8,000). The next run's booking job works through them; the next build merges
-the search runner's rows (`--search-extra`).
+wanted first, at most 8,000, plus the build's lookups as `used`). The next run's booking job works
+through them; the next build merges the search runner's rows (`--search-extra`) and leaves the
+first 1,000 of the queue the runner is working to it (`--runner-queue`, RUNNER_REACH).
+
+## Handoff: state and open bugs (9 pm Nov 14)
+
+Standing rules (from Brennan): no guessed prices, everything proven; a saturation shortfall is a
+bug, never accepted as a trade-off; catch every sale (filters may run on a looser schedule, never
+less coverage); two runners only, no more runners or VPN configs; quote runs and ETAs in Vancouver
+time, from `node scripts/run-stats.mjs N` over several runs on one config, never one run's delta;
+add telemetry before tuning or estimating (wrong ETAs and wrong root causes came from guessing
+without it, more than once, including on Nov 14).
+
+### Where it stands (`run-stats.mjs 8`, 1:05-8:05 pm Nov 14)
+
+| Measure | Now | Trend a run | Done at this rate |
+|---|---|---|---|
+| Board cells booking-checked | 100% every run (427-666) | | |
+| Board tickets fresh (booking page < 12 h) | 3,186 of 4,039 | flat | never |
+| Filter tickets fresh | 4,783 of 14,304 | +30 | ~Nov 28 |
+| Search backlog (browser searches left out of time) | 9,868 (~12,000 the morning of Nov 14) | −94 to −131 | ~Nov 18-19 |
+| Hidden board cells (return not searched) | 1,526 | −16 to +11 by window | not reliably falling |
+| Searches looked up a build / fresh at lookup | ~19,300 / ~7,700 | flat | |
+| Booking pages a run | ~1,600 (board ~580, unchecked dates ~230, filters ~790) | | needs board ~340 + filters 590-1,180 + unchecked dates |
+| Search runner pages a run | 630-890 (median page 14.6-18.7 s) | | |
+| Lost "more flights" lists a run | 0-31 | | |
+
+### Open bugs, most important first
+
+1. **Hidden board cells don't converge (~1,500).** A round trip's return is searched with the
+   chosen outbound (`details.js` returnQuery, key includes `selected` flight numbers) as a
+   browser page. Returns run at RETURN_PRIO (5e5), after every check's search in the build
+   (`returnsFor` at the cell's rank × TRIES + TRIES − 0.5; long-haul filter caps FAST_PRIO after),
+   so most go out of time into the search runner's queue; ~920-1,000 attempted a build, 560-760
+   skipped out of time. Each time a cell's cheapest outbound flight changes, its return key changes
+   (~1,300-1,400 fresh returns a day unused because the trip's outbound changed). Untried: priority
+   for board cells' returns over via/filter cells' checks; a return search keyed less tightly (but
+   the return's price depends on the outbound chosen: proven per outbound).
+2. **The build's lookups turn over ~6% an hour** (`search churn`: 17,959 of 19,297 again, ~1,000
+   new a build, ~70% of the new 300+ days out, most served stale). So a search made now is often
+   no longer looked up when it expires at 24 h, and only ~7,700 of ~19,300 are fresh at once.
+   Not wasted work: the runner's queue head is 92-99% looked up next build. Cause: cells walk
+   candidate dates in graph-price order (`build-trips.js` verify, TRIES = 10, rankOf/scoreOf), and
+   far-out graphs are flat (~13 dates within 1% of a route's cheapest), so small real moves change
+   which dates are walked. Ranking by a 2%-banded price would cut top-5 date churn only 17-23%
+   (simulated on the data branch's CSVs, 48 h) and could skip a date up to 2% cheaper: not done.
+   Effective search demand is therefore higher than used / 24 h ≈ 800 a run. Untried: stable
+   tie-breaks among dates within noise (deterministic, preferring a fresh search when prices tie
+   exactly or within the scraper's rounding); measuring how often a new lookup becomes the cell's
+   shown trip (whether the churn finds cheaper trips or just walks past them).
+3. **Filter tickets are capped by booking pages.** ~790 filter pages a run against 590-1,180
+   needed; +30 fresh a run. Booking slots: 60% in pages, 40% in the 1.5 s gap. The 1.2 s gap with
+   7 search slots (1:05 pm Nov 14) pinned the machine (load ~16) and made no more pages of either
+   kind: reverted. A 1.2 s gap with the search runner at 5 slots is untried.
+4. **The board takes ~580 booking pages a run against ~340 at steady state** (4,039-4,200 tickets
+   at a 12 h hold). The rest are new tickets (a cell's trip or its flights changed: same churn as
+   #2) and listed-price moves (1% tolerance, `bookings.js` near). Holds can't be longer: of ~350
+   board rechecks with the listed price unmoved after 12 h, 50 booked lower.
+5. **The booking machine is CPU-bound for search pages.** A search page: 14.6 s, 91% waiting on
+   Google (reply 55%, "more flights" 36%), 3.4-4.0 renderer CPU-s; booking page 2.3 s, 1.0 CPU-s.
+   Load 8-12 on 4 vCPUs at 5 search + 3 booking slots; more slots slowed every page. The 1024×640
+   lean window saved no CPU. Untried: blocking images (28 a page) and fonts in lean search pages
+   (check the results still parse), fewer requests per page.
+6. **Lost "more flights" lists: 0-31 a run** (up to 5 loads, MORE_TRIES; tallied `lost`).
+7. **Searches on the sweep IP degrade over a run** (pages listing nothing climb).
+
+### Fixed or ruled out on Nov 14 (don't redo)
+
+- Builds and the search runner made the same searches (518 of 1,177 runner rows older than the
+  sweep's): builds leave the runner's queue head to it (`runnerKeys`, from 12:05 pm). Runner rows
+  newer than the cache's: 56% → 66-70%.
+- "More flights" lost about 1 in 3 lists: reload up to 5 loads; now 0-31 a run.
+- Graph-price noise outdating searches: real (118,217 graph changes in 48 h, median 0.3%, a
+  quarter flipping back) but it outdated only 7-42 fresh searches a build. Moves under 2% (summed
+  from the last bigger one) no longer mark a fare changed (`store/routes.js` MOVE, `base` in
+  current.json, from 8:05 pm). Not the cause of low freshness.
+- 7 search slots / 1.2 s booking gap / 200-page sessions: no gain, machine pinned. Reverted.
+- Lean 1024×640 window: no CPU saved (kept, harmless).
+
+### Telemetry to read each run
+
+`node scripts/run-stats.mjs 8 --detail` (logs cached in `~/.cache/flight-run-logs`). Lines in the
+build log: `search demand`, `search waste` (fresh searches not looked up, by kind and why),
+`search churn` (lookups again vs new, new by kind/state/days out, runner queue head looked up),
+`search mix` (incl. `outdated by a graph price change`), `booking demand`, page phase/CPU lines
+and slot-time lines for both runners, `CPU averages`, `load (1 min) average`.
 
 ## Recheck schedule
 
@@ -52,7 +136,7 @@ the search runner's rows (`--search-extra`).
 | 8:05 pm Nov 13 | 671/671 checked, 0 left | 3,236 of 13,000 | 778 searches, 16.0 s median; "more flights" 469 ok, 267 rejected | 11,510 | rejected "more flights" lost the full list (button gone): reload added for 9:05 pm |
 | 6:05 pm Nov 13 | 531 in 18 min | 2,968 | 732 searches | ~12,190 | |
 
-## Known limits and what's being done
+## Known limits as found, oldest first (history; current state in the Handoff above)
 
 - **Search pages are Google-latency-bound:** first load of an uncached date pair takes 8–16 s.
   More pages at once is capped by rejections (Google's throttle signal; the local IP was cut off
