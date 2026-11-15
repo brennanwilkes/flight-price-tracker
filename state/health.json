@@ -1,7 +1,35 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-15T07:06:25Z",
+ "lastSuccess": "2026-11-15T08:06:28Z",
  "runs": [
+  {
+   "at": "2026-11-15T08:06:28Z",
+   "egress": "direct",
+   "control": 7,
+   "ok": 105,
+   "failed": 3,
+   "cells": 3124,
+   "priced": 3062,
+   "changes": 873,
+   "errors": [
+    "YYJ-CAN-J 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-CEB-Y 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Cebu City CEB Filters All ",
+    "YYJ-CEB-Y 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Cebu City CEB Filters All "
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 499,
+   "pages": 6,
+   "pauses": 1,
+   "skipped": 391,
+   "secondOk": 17,
+   "seconds": 1551,
+   "success": true
+  },
   {
    "at": "2026-11-15T07:06:25Z",
    "egress": "vpn",
@@ -533,32 +561,6 @@
    "pages": 3,
    "skipped": 79,
    "seconds": 1212,
-   "success": true
-  },
-  {
-   "at": "2026-11-14T08:06:14Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 252,
-   "failed": 2,
-   "cells": 8535,
-   "priced": 8125,
-   "changes": 2022,
-   "errors": [
-    "HUI-DLI-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Hue HUI Da Lat DLI Filters All filters Sto",
-    "HUI-CXR-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Hue HUI Nha Trang CXR Filters All filters "
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 258,
-   "pages": 3,
-   "skipped": 4,
-   "secondOk": 3,
-   "seconds": 1461,
    "success": true
   }
  ]
