@@ -218,6 +218,21 @@ function searchWaste(at, used, now) {
   return `search waste: ${unused} of ${fresh} searches under ${SEARCH_HOURS} h old not looked up this build: ${parts.join('; ')}`;
 }
 
+/**
+ * Hour to hour: of the last build's lookups, how many this build looked up again; of the search
+ * runner's queue head (what it searched this hour), how many this build looked up.
+ */
+function searchChurn({ head, used: lastUsed }, used) {
+  const parts = [];
+  if (lastUsed) {
+    const again = lastUsed.filter((k) => used.has(k)).length;
+    parts.push(`${again} of the last build's ${lastUsed.length} lookups looked up again, ${used.size - again} new`);
+  }
+  const looked = head.filter((s) => s.keys.some((k) => used.has(k))).length;
+  parts.push(`${looked} of the search runner's ${head.length} queue head looked up`);
+  return `search churn: ${parts.join('; ')}`;
+}
+
 /** The saved cache's rows: a row per line, or (an older file) one JSON array. */
 function* readRows(buf) {
   if (buf.indexOf(10) < 0) { if (buf.length) yield* JSON.parse(buf); return; }
@@ -579,8 +594,10 @@ async function main() {
   // last build's): not paged here too (details.js runnerKeys).
   if (arg('runner-queue')) {
     try {
-      const head = (JSON.parse(fs.readFileSync(arg('runner-queue'), 'utf8')).searches ?? []).slice(0, RUNNER_REACH);
+      const last = JSON.parse(fs.readFileSync(arg('runner-queue'), 'utf8'));
+      const head = (last.searches ?? []).slice(0, RUNNER_REACH);
       searches.cache.runnerKeys = new Set(head.flatMap((s) => s.keys));
+      searches.last = { head, used: last.used ?? null };
       console.log(`search runner's queue: ${head.length} searches left to it`);
     } catch (e) { console.log(`search runner's queue unread: ${e.message}`); }
   }
@@ -747,13 +764,15 @@ async function main() {
       }
       console.log(`search demand: ${used.size} searches used, ${n.fresh} fresh at load (by age: ${age[0]} under 6 h, ${age[1]} 6-12 h, ${age[2]} 12-18 h, ${age[3]} 18-24 h), ${n.stale} stale (served), ${n.none} never searched; kept fresh at ${SEARCH_HOURS} h that takes ${Math.round(used.size / SEARCH_HOURS)} a run (hourly), made this build ${(t.plain ?? 0) - (t.errors ?? 0) - (t.timeouts ?? 0)} plain + ${t.pages ?? 0} browser pages here, plus the search runner's (its newer rows above)`);
       try { console.log(searchWaste(searches.at, used, Date.parse(generatedAt))); } catch (e) { console.log(`search waste: not worked out (${e.message})`); }
+      try { if (searches.last) console.log(searchChurn(searches.last, used)); } catch (e) { console.log(`search churn: not worked out (${e.message})`); }
     }
     await saveSearches(arg('search-cache'), searches, generatedAt);
     // The browser searches left out of time, most wanted first, for the search runner (bin/search-runner.js).
     if (!warm && arg('search-queue')) {
       const wanted = [...(searches.cache.wanted?.values() ?? [])].filter((w) => !w.keys.every((k) => searches.cache.has(k)));
       const list = wanted.sort((a, b) => a.prio - b.prio).slice(0, SEARCH_QUEUE_MAX).map(({ q, keys, had }) => ({ q, keys, had }));
-      fs.writeFileSync(arg('search-queue'), JSON.stringify({ at: generatedAt, searches: list }));
+      // used: this build's lookups, for the next build's churn line (searchChurn).
+      fs.writeFileSync(arg('search-queue'), JSON.stringify({ at: generatedAt, searches: list, used: [...(searches.cache.used?.keys() ?? [])] }));
       console.log(`search queue: ${list.length} browser searches for the search runner (${wanted.length} left out of time, ${wanted.filter((w) => w.had).length} of them served stale)`);
     }
     await warmBooking;
