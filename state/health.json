@@ -1,7 +1,35 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-15T12:06:07Z",
+ "lastSuccess": "2026-11-15T13:06:14Z",
  "runs": [
+  {
+   "at": "2026-11-15T13:06:14Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 206,
+   "failed": 3,
+   "cells": 5463,
+   "priced": 5449,
+   "changes": 418,
+   "errors": [
+    "YVR-SIN-Y 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-HAN-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-DAD-Y 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 360,
+   "pages": 3,
+   "pauses": 1,
+   "skipped": 151,
+   "secondOk": 11,
+   "seconds": 1524,
+   "success": true
+  },
   {
    "at": "2026-11-15T12:06:07Z",
    "egress": "vpn",
@@ -552,34 +580,6 @@
    "skipped": 241,
    "secondOk": 17,
    "seconds": 1351,
-   "success": true
-  },
-  {
-   "at": "2026-11-14T13:06:24Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 227,
-   "failed": 4,
-   "cells": 7453,
-   "priced": 7239,
-   "changes": 382,
-   "errors": [
-    "LGK-HAN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "SGN-CNX-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "SGN-BWN-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Ho Chi Minh City SGN Bandar Seri Begawan B",
-    "YYJ-SHA-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 337,
-   "pages": 3,
-   "skipped": 106,
-   "secondOk": 15,
-   "seconds": 1471,
    "success": true
   }
  ]
