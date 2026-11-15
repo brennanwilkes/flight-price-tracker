@@ -29,6 +29,8 @@ the search runner's rows (`--search-extra`).
 
 | Run | Board | Filters fresh (< 12 h) | Search runner | Search backlog | Notes |
 |---|---|---|---|---|---|
+| 8:05 pm Nov 14 | 464/464 | 4,783 of 14,304 (953) | 665, 3 lost | 9,868 | search churn: 17,959 of the last build's 19,297 lookups again, 1,186 new (824 of them 300+ days out, most served stale); graph moves outdated 7-13 fresh searches a build (not the cause); 1,526 hidden |
+| 7:05 pm Nov 14 | 427/427 | 4,709 of 14,279 (955) | 744, 13 lost | 10,508 | lookups turn over ~6% an hour: a search made now is often not looked up by the time it expires, so ~7,700 stay fresh of ~19,300; the search runner's queue head is 92% looked up; 1,703 hidden |
 | 2:05 pm Nov 14 | 626/626 | 4,556 of 14,205 (786) | 813, 7 lost | 10,701 | back to 5 slots / 1.5 s gap, lean 1024×640 pages: load 8.2 avg (max 11.7), search page 14.6 s, renderer 4.0 CPU-s (3.4 at 11:05 am: the smaller window saved nothing), booking 2.3 s / 1.0 CPU-s, 1,695 booking pages; runner rows newer 963 of 1,385 (70%); ~1,200 searches made against 813 needed, yet only 7,576 of 19,502 fresh: searches go to keys the builds don't keep; 1,497 hidden |
 | 1:05 pm Nov 14 | 666/666 | 4,541 of 14,346 (553) | 811, 0 lost | 11,305 | search 7 at once, booking gap 1.2 s / 200-page sessions: load ~16 on 4 vCPUs, search page 20.7 s (main thread 9.4 CPU-s, was 2.8), booking page 4.4 s (was 2.5), no more pages done (1,591 booking): reverted for 3:05 pm, lean pages 1024×640 instead; 1,605 hidden |
 | 12:05 pm Nov 14 | 677/677 | 4,517 of 14,689 (681) | 896, 1 lost | 11,900 | builds left the runner's queue head to it: runner rows newer than the cache's 1,034 of 1,569 (66%, was 56%); 1,586 hidden |
@@ -75,6 +77,16 @@ the search runner's rows (`--search-extra`).
   runner's 1,177 rows older than the sweep's). From 1:05 pm Nov 14 the builds leave the runner's
   first 1,000 to it (`--runner-queue`, logged as "left to the search runner").
 - **Searches on the sweep IP degrade** over the run (pages without results climb).
+- **Why only ~7,700 of ~19,300 searches looked up are fresh, Nov 14:** not wasted searches. The
+  search runner's queue head is 92-99% looked up by the next build. The build's lookups turn over
+  ~6% an hour (`search churn`): cells walk different candidate dates as prices move, ~70% of the
+  new ones 300+ days out, where ~13 dates sit within 1% of a route's cheapest. A search made now
+  is often no longer looked up when it expires. Graph wiggles (median 0.3%, a quarter flipping
+  back) explain little: ranking by a 2%-banded price would cut top-5 date churn only 17-23%
+  (and could skip a date up to 2% cheaper), and graph moves outdated only 7-42 fresh searches a
+  build. Moves under 2% no longer mark a fare changed (`store/routes.js`, from 8:05 pm Nov 14).
+  The search backlog is falling (~94 a run over 3-8 pm) since the builds stopped duplicating the
+  runner's searches.
 
 ## Telemetry (from 11:05 am Nov 14)
 
@@ -95,10 +107,10 @@ least-squares trends and capacity against demand. The estimates below come from 
 
 ## Estimates
 
-(`scripts/run-stats.mjs 10`, 12:05-9:05 am Nov 14; the earlier "3 pm / 1 pm Nov 14" estimates were wrong.)
+(`scripts/run-stats.mjs 6`, 3:05-8:05 pm Nov 14, one config; the earlier "3 pm / 1 pm Nov 14" estimates were wrong.)
 
-- Filters fresh: 4,509 of 14,134, +132 a run → all fresh ~10 am Nov 17 at this rate.
-- Search backlog: 11,798, −64 a run → ~Nov 22. Too slow: the search runner is the bottleneck.
-- Hidden board cells: 1,519, −35 a run → ~5 am Nov 16.
+- Filters fresh: 4,783 of 14,304, +33 a run → ~Nov 27. Too slow: booking pages are the limit.
+- Search backlog: 9,868, −94 a run → ~5 am Nov 19.
+- Hidden board cells: 1,526, −16 a run → ~8 pm Nov 18.
 - Booking pages ~1,590 a run: the board takes ~610 (steady state ~350 at 12 h, so ~260 a run
   are due early on price moves), unchecked dates ~290, filters ~690 (steady state 575-1,150).
