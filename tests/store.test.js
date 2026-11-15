@@ -27,8 +27,8 @@ test('recordCells: rows only on change (incl. to/from empty); first-priced time 
     `${at(3)},2027-09-02,2027-09-15,17,4817,vpn`,
   ]);
   const cur = JSON.parse(fs.readFileSync(path.join(dir, 'routes/YVR-ICN-J/current.json'), 'utf8'));
-  assert.deepStrictEqual(cur['2027-09-01|14'], { ret: '2027-09-15', price: 3999, seen: at(3), first: at(3), changed: at(3) });
-  assert.deepStrictEqual(cur['2027-09-02|14'], { ret: '2027-09-15', price: null, seen: at(3), first: at(1), changed: at(3) });
+  assert.deepStrictEqual(cur['2027-09-01|14'], { ret: '2027-09-15', price: 3999, seen: at(3), first: at(3), changed: at(3), base: 3999 });
+  assert.deepStrictEqual(cur['2027-09-02|14'], { ret: '2027-09-15', price: null, seen: at(3), first: at(1), changed: at(3), base: null });
 
   // A cell from before `changed` existed takes its last CSV row's time; an unchanged price keeps it.
   const curFile = path.join(dir, 'routes/YVR-ICN-J/current.json');
@@ -36,6 +36,29 @@ test('recordCells: rows only on change (incl. to/from empty); first-priced time 
   fs.writeFileSync(curFile, JSON.stringify(cur));
   recordCells(dir, 'YVR-ICN-J', 14, [cell('2027-09-01', 3999)], opts(5));
   assert.strictEqual(JSON.parse(fs.readFileSync(curFile, 'utf8'))['2027-09-01|14'].changed, at(3));
+});
+
+test('recordCells: changed only on a move of 2% or more from the last one (summed), or to/from empty', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'store-'));
+  const at = (h) => `2026-10-31T0${h}:00:00Z`;
+  const rec = (price, h) => {
+    recordCells(dir, 'YVR-ICN-J', 14, [{ out: '2027-09-01', ret: '2027-09-15', price }], { observedAt: at(h), egress: 'vpn' });
+    return JSON.parse(fs.readFileSync(path.join(dir, 'routes/YVR-ICN-J/current.json'), 'utf8'))['2027-09-01|14'];
+  };
+  assert.strictEqual(rec(4000, 1).changed, at(1));
+  assert.strictEqual(rec(4013, 2).changed, at(1)); // 0.3%: noise
+  assert.strictEqual(rec(4000, 3).changed, at(1));
+  assert.strictEqual(rec(3950, 4).changed, at(1)); // 1.25% under the base
+  const c = rec(3915, 5); // 2.1% under the base, in two small steps
+  assert.strictEqual(c.changed, at(5));
+  assert.strictEqual(c.base, 3915);
+  assert.strictEqual(rec(null, 6).changed, at(6));
+  assert.strictEqual(rec(3915, 7).changed, at(7));
+  // A cell from before `base`: its last price is the base.
+  const cur = JSON.parse(fs.readFileSync(path.join(dir, 'routes/YVR-ICN-J/current.json'), 'utf8'));
+  delete cur['2027-09-01|14'].base;
+  fs.writeFileSync(path.join(dir, 'routes/YVR-ICN-J/current.json'), JSON.stringify(cur));
+  assert.strictEqual(rec(3920, 8).changed, at(7));
 });
 
 test('packJson/unpack: a ticket shared by several trips is stored once and comes back in place', async () => {

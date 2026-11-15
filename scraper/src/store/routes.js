@@ -6,10 +6,15 @@
  *
  * <ID> is <O>-<D>-<cabin>, e.g. YVR-TYO-J. A CSV row is written only when a cell's price changes,
  * including to/from empty (price null = Google lists no fare for that date pair). `first` is when
- * the cell first had a price: the fare-loading log. `changed` is when its price last changed (a
- * listed price checked before then is outdated: fares.js, details.js); cells from before it existed
- * take their last CSV row's time.
+ * the cell first had a price: the fare-loading log. `changed` is when its price last moved by
+ * MOVE or more from `base` (the price then), or to or from empty: a listed price checked before
+ * then is outdated (fares.js, details.js). Cells from before it existed take their last CSV row's
+ * time. Smaller moves are noise: over 48 h to 7 pm Vancouver Nov 14, 118,217 graph price changes,
+ * median 0.3%, 75% under 0.9%, a quarter back to a price the cell had a few rows before; each one
+ * threw out a search under 24 h old, which went back in the search queue.
  */
+const MOVE = 0.02;
+const moved = (base, price) => base == null || price == null ? base !== price : Math.abs(price - base) / base >= MOVE;
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -40,8 +45,11 @@ function recordCells(dataDir, routeId, tripLen, cells, { observedAt, egress }) {
     const prev = current[key];
     const price = c.price ?? null;
     if (!prev || prev.price !== price) rows.push(`${observedAt},${c.out},${c.ret ?? ''},${tripLen},${price ?? ''},${egress}`);
-    const changed = !prev || prev.price !== price ? observedAt : prev.changed ?? (lastRow ??= lastRows(dir))[key] ?? prev.first;
-    current[key] = { ret: c.ret, price, seen: observedAt, first: prev?.first ?? (price != null ? observedAt : null), changed };
+    // A cell from before `base` existed: its last price is the base.
+    const base = prev && ('base' in prev ? prev.base : prev.price);
+    const move = !prev || moved(base, price);
+    const changed = move ? observedAt : prev.changed ?? (lastRow ??= lastRows(dir))[key] ?? prev.first;
+    current[key] = { ret: c.ret, price, seen: observedAt, first: prev?.first ?? (price != null ? observedAt : null), changed, base: move ? price : base };
   }
   if (rows.length) {
     const csv = path.join(dir, `${observedAt.slice(0, 7)}.csv`);
