@@ -222,8 +222,20 @@ function searchWaste(at, used, now) {
  * Hour to hour: of the last build's lookups, how many this build looked up again; of the search
  * runner's queue head (what it searched this hour), how many this build looked up.
  */
-function searchChurn({ head, used: lastUsed }, used) {
+function searchChurn({ head, used: lastUsed }, used, { fareKeys = new Map(), expired = new Set() } = {}) {
   const parts = [];
+  // Is the turnover a 24 h loop? A date lists above its graph price, the plan leaves it, its listed
+  // price runs out at CHECKED_HOURS, the graph's is back and the date is walked again.
+  if (lastUsed) {
+    const last = new Set(lastUsed);
+    let n = 0, all = 0;
+    for (const k of used.keys()) {
+      if (k.startsWith('full ') || !expired.has(fareKeys.get(k))) continue;
+      all++;
+      if (!last.has(k)) n++;
+    }
+    parts.push(`${expired.size} fares' listed prices ran out at ${CHECKED_HOURS} h since the last build: ${all} of them looked up, ${n} of those new lookups`);
+  }
   if (lastUsed) {
     const again = lastUsed.filter((k) => used.has(k)).length;
     parts.push(`${again} of the last build's ${lastUsed.length} lookups looked up again, ${used.size - again} new`);
@@ -584,8 +596,10 @@ async function main() {
   const deadline = warm ?? (arg('deadline') ? Number(arg('deadline')) * 1000 : Infinity);
   const generatedAt = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   const checkedFile = path.join(dataDir, 'state', 'checked.json');
-  const checkedLog = Object.fromEntries(Object.entries(fs.existsSync(checkedFile) ? JSON.parse(fs.readFileSync(checkedFile, 'utf8')) : {})
-    .filter(([, c]) => Date.parse(generatedAt) - Date.parse(c.at) < CHECKED_HOURS * 3600e3));
+  const checkedAll = Object.entries(fs.existsSync(checkedFile) ? JSON.parse(fs.readFileSync(checkedFile, 'utf8')) : {});
+  const checkedLog = Object.fromEntries(checkedAll.filter(([, c]) => Date.parse(generatedAt) - Date.parse(c.at) < CHECKED_HOURS * 3600e3));
+  // Telemetry (searchChurn): the fares whose listed price ran out since the last build.
+  const expiredChecked = new Set(checkedAll.filter(([k]) => !(k in checkedLog)).map(([k]) => k));
   // Prices the booking runner proved on date pairs the board never checked (bin/booking-runner.js,
   // trips/ties.js), from its last run: taken where newer.
   try {
@@ -777,7 +791,7 @@ async function main() {
       }
       console.log(`search demand: ${used.size} searches used, ${n.fresh} fresh at load (by age: ${age[0]} under 6 h, ${age[1]} 6-12 h, ${age[2]} 12-18 h, ${age[3]} 18-24 h), ${n.stale} stale (served), ${n.none} never searched; kept fresh at ${SEARCH_HOURS} h that takes ${Math.round(used.size / SEARCH_HOURS)} a run (hourly), made this build ${(t.plain ?? 0) - (t.errors ?? 0) - (t.timeouts ?? 0)} plain + ${t.pages ?? 0} browser pages here, plus the search runner's (its newer rows above)`);
       try { console.log(searchWaste(searches.at, used, Date.parse(generatedAt))); } catch (e) { console.log(`search waste: not worked out (${e.message})`); }
-      try { if (searches.last) console.log(searchChurn(searches.last, used)); } catch (e) { console.log(`search churn: not worked out (${e.message})`); }
+      try { if (searches.last) console.log(searchChurn(searches.last, used, { fareKeys: searches.cache.fareKeys, expired: expiredChecked })); } catch (e) { console.log(`search churn: not worked out (${e.message})`); }
     }
     await saveSearches(arg('search-cache'), searches, generatedAt);
     // The browser searches left out of time, most wanted first, for the search runner (bin/search-runner.js).

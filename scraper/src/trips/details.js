@@ -293,12 +293,22 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
   // Demand telemetry (build-trips.js "search demand"): each distinct search this build looked up,
   // and whether it was fresh, stale or missing then.
   const used = (cache.used ??= new Map());
-  const once = (key, run, p) => {
+  // `want` ({ q, keys }): the search as the search runner would make it. A search never made and
+  // asked for past the deadline went nowhere (only inPage filled cache.wanted, and it wasn't
+  // reached): of 9,868 queued at 8:05 pm Vancouver Nov 14, 9,855 were refreshes of stale searches,
+  // while 596 returns and 374 checks never searched were dropped that build, their cells hidden.
+  const once = (key, run, p, want = null) => {
     if (!used.has(key)) used.set(key, cache.has(key) ? 'fresh' : stale.has(key) ? 'stale' : 'none');
     if (cache.has(key)) return cache.get(key);
     const old = stale.get(key);
     if (old) { STALE.add(old); refresh(key, run); return Promise.resolve(old); }
-    if (Date.now() > deadline) return Promise.resolve(LATE);
+    if (Date.now() > deadline) {
+      if (want && browser && !(cache.wanted ??= new Map()).has(want.keys[0])) {
+        cache.wanted.set(want.keys[0], { q: want.q, keys: want.keys, prio: p ?? prio, had: false });
+        tally.wantedLate = (tally.wantedLate ?? 0) + 1;
+      }
+      return Promise.resolve(LATE);
+    }
     return settle0(key, run(p));
   };
   // A search loaded from an earlier build (cache.at) made before the fare's graph price last changed.
@@ -328,16 +338,17 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
   cache.searchReturn = (q, p = RETURN_PRIO + prio) => {
     const key = JSON.stringify(q);
     if (!cache.has(key) && !stale.has(key) && Date.now() > deadline) tally.returnLate++;
-    return once(key, (pp) => { tally.returns++; return inPage(pp, q, { timeout: SLOW_PAGE_MS }, [key]); }, p);
+    return once(key, (pp) => { tally.returns++; return inPage(pp, q, { timeout: SLOW_PAGE_MS }, [key]); }, p, { q, keys: [key] });
   };
-  const searchOnce = (q, key = JSON.stringify(q), p = prio) => once(key, (pp) => plainThenPage(q, pp, key), p);
+  // A window (q.after) is a plain search only: not the runner's.
+  const searchOnce = (q, key = JSON.stringify(q), p = prio) => once(key, (pp) => plainThenPage(q, pp, key), p, q.after ? null : { q, keys: [key, `full ${key}`] });
   const hasFull = (key) => cache.has(`full ${key}`) || stale.has(`full ${key}`);
   // A plain search lists only Google's top flights (the cheapest among them); when none of those
   // connects, or the search failed, the page's full list ("View more flights").
   const fullOnce = (q) => {
     const key = `full ${JSON.stringify(q)}`;
     if (!cache.has(key) && !stale.has(key)) { stats.full++; tally.full++; }
-    return once(key, (pp) => inPage(pp, q, { timeout: SLOW_PAGE_MS }, [key]), prio);
+    return once(key, (pp) => inPage(pp, q, { timeout: SLOW_PAGE_MS }, [key]), prio, { q, keys: [key] });
   };
 
   // Each trip's flights and their search keys worked out once; every search not made yet started
@@ -394,6 +405,8 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
       f.ticket.flights ??= {};
       // Its listed prices from an earlier day, or from before the graph's price last changed: the
       // fare's own price stands (and the outdated search is made again, after the rest).
+      // Telemetry (build-trips.js searchChurn): which fare each outbound search prices.
+      if (f.dir === 'out' && (f.ticket.kind === 'ow' || f.ticket.kind === 'rt')) (cache.fareKeys ??= new Map()).set(f.key, fareKey(f.ticket));
       const old = STALE.has(lists[i]) || outdated(f, lists[i]);
       if (listed && !old && f.dir === 'out' && !lists[i].error && lists[i].length && (f.ticket.kind === 'ow' || f.ticket.kind === 'rt')) {
         listed.set(fareKey(f.ticket), cheapest(lists[i]).price);
@@ -429,7 +442,7 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
       cache.returns.set(trip, jobs);
       jobs.push((p = RETURN_PRIO + prio) => {
         if (!cache.has(key) && !stale.has(key) && Date.now() > deadline) tally.returnLate++;
-        return once(key, (pp) => { tally.returns++; return inPage(pp, q, { timeout: SLOW_PAGE_MS }, [key]); }, p).then((list) => {
+        return once(key, (pp) => { tally.returns++; return inPage(pp, q, { timeout: SLOW_PAGE_MS }, [key]); }, p, { q, keys: [key] }).then((list) => {
           if (!Array.isArray(list) || !list.length || f.ticket.flights.back !== s.picks[i]) return;
           const back = chosenReturn(trip, flights, s.picks, i, list);
           if (!back) return;

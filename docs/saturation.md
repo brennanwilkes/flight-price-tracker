@@ -39,6 +39,25 @@ without it, more than once, including on Nov 14).
 | Search runner pages a run | 630-890 (median page 14.6-18.7 s) | | |
 | Lost "more flights" lists a run | 0-31 | | |
 
+### Review, Nov 15 (read before the list below)
+
+- **Fixed: searches never made and asked for past the search deadline were dropped, not queued.**
+  `details.js` `once()` returned "out of time" without reaching `inPage`, the only place that
+  filled `cache.wanted` (the runner's queue). Six runs to 8:05 pm Nov 14: the queue was 97.6-99.96%
+  refreshes of stale searches (9,855 of 9,868), while 477-764 returns and 287-418 checks never
+  searched were dropped a build. Hidden cells could only be searched by the sweep's own 105-141
+  pages before the deadline. Now queued at their own priority (ahead of refreshes), tallied
+  `wantedLate`. This is bug 1 below; its "returns run at RETURN_PRIO" is wrong: a kept cell's
+  returns already run at the cell's rank (`build-trips.js` returnsFor call).
+- **The cell walk outruns the deadline:** the build's checks take 650-750 s, 210-500 s of it past
+  the search deadline (warm pass 650-975 s more), single-threaded over ~247,000 cells. Open.
+- **Hypothesis for bug 2, being measured:** a listed price replaces the graph's for 24 h
+  (`CHECKED_HOURS`), renewed only while its search is fresh and looked up. A date that lists above
+  its graph price is left by the plan, its listed price runs out 24 h on, the graph's is back and
+  the date is walked again (stale by then). `search churn` now starts with how many fares' listed
+  prices ran out since the last build and how many of them were new lookups. If confirmed, the
+  decision (Brennan's) is whether a listed price stands while its search is still served.
+
 ### Open bugs, most important first
 
 1. **Hidden board cells don't converge (~1,500).** A round trip's return is searched with the
