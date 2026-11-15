@@ -296,20 +296,25 @@ function dropUnlisted(byHome) {
   let dropped = 0;
   const why = {};
   const ok = (t) => { const w = unlistedWhy(t); if (!w) return true; dropped++; why[w] = (why[w] ?? 0) + 1; return false; };
-  for (const rows of byHome.values()) {
+  // Where the hidden ones are: the board or a via view; an overall, month or trip-length cell, or
+  // a long-haul filter's trip (the count was read as "board cells" and covers every view).
+  const where = {};
+  const hid = (view, kind) => { const w = `${view.endsWith('|') ? 'board' : 'via'} ${kind}`; where[w] = (where[w] ?? 0) + 1; };
+  for (const [view, rows] of byHome) {
     for (const r of rows) {
-      const holders = [r, ...Object.values(r.months ?? {}), ...Object.values(r.bands ?? {})];
-      for (const h of holders) {
+      const months = Object.values(r.months ?? {});
+      const holders = [r, ...months, ...Object.values(r.bands ?? {})];
+      for (const [i, h] of holders.entries()) {
         for (const cls of CLASSES) {
           const c = h[cls];
           if (!c) continue;
-          if (!ok(c)) { h[cls] = null; continue; }
-          for (const [k, t] of Object.entries(c.fast ?? {})) if (t && !ok(t)) c.fast[k] = null;
+          if (!ok(c)) { h[cls] = null; hid(view, !i ? 'overall' : i <= months.length ? 'month' : 'length'); continue; }
+          for (const [k, t] of Object.entries(c.fast ?? {})) if (t && !ok(t)) { c.fast[k] = null; hid(view, 'long-haul cap'); }
         }
       }
     }
   }
-  return { dropped, why };
+  return { dropped, why, where };
 }
 
 function arg(name, def) {
@@ -800,7 +805,7 @@ async function main() {
       const list = wanted.sort((a, b) => a.prio - b.prio).slice(0, SEARCH_QUEUE_MAX).map(({ q, keys, had }) => ({ q, keys, had }));
       // used: this build's lookups, for the next build's churn line (searchChurn).
       fs.writeFileSync(arg('search-queue'), JSON.stringify({ at: generatedAt, searches: list, used: [...(searches.cache.used?.keys() ?? [])] }));
-      console.log(`search queue: ${list.length} browser searches for the search runner (${wanted.length} left out of time, ${wanted.filter((w) => w.had).length} of them served stale)`);
+      console.log(`search queue: ${list.length} browser searches for the search runner (${wanted.length} left out of time, ${wanted.filter((w) => w.had).length} of them served stale; never searched: ${wanted.filter((w) => !w.had && w.prio < 5 * TRIES).length} for board cells, ${wanted.filter((w) => !w.had && w.prio >= 5 * TRIES && w.prio < FAST_PRIO).length} for via cells, ${wanted.filter((w) => !w.had && w.prio >= FAST_PRIO).length} for long-haul caps)`);
     }
     await warmBooking;
     if (warm) { console.log(`checks beside the scrape: ${details.searches} searches (${details.browser} in a browser, ${details.failed} failed, ${details.late} left)`); return; }
@@ -820,7 +825,7 @@ async function main() {
   console.log(`multi-city: ${m.searched} searched (${m.failed} failed), ${m.proofs ?? 0} searched again with the trip's flights chosen, ${m.merged} trips on one ticket (${m.self ?? 0} self-transfers joined); ${m.ms}ms`);
   if (details) details.multi = m;
   const unlisted = dropUnlisted(byHome);
-  console.log(`priced as listed: ${unlisted.dropped} cells hidden with a price their flights weren't listed at (${Object.entries(unlisted.why).sort((a, b) => b[1] - a[1]).map(([w, n]) => `${n} ${w}`).join(', ') || 'none'})`);
+  console.log(`priced as listed: ${unlisted.dropped} cells hidden with a price their flights weren't listed at (${Object.entries(unlisted.why).sort((a, b) => b[1] - a[1]).map(([w, n]) => `${n} ${w}`).join(', ') || 'none'}); where: ${Object.entries(unlisted.where).sort((a, b) => b[1] - a[1]).map(([w, n]) => `${w} ${n}`).join(', ') || 'none'}`);
   if (details) details.unlisted = unlisted;
   // Stay ranges on every shown trip; lowest-ever marks.
   for (const rows of byHome.values()) {

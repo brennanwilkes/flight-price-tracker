@@ -58,6 +58,18 @@ without it, more than once, including on Nov 14).
   prices ran out since the last build and how many of them were new lookups. If confirmed, the
   decision (Brennan's) is whether a listed price stands while its search is still served.
 
+- **After the fix, 12:05-2:05 pm Nov 15:** the queue holds ~1,000 never-searched searches (was
+  4-259) and the runner's rows are 100% newer than the cache's (was 66-70%). Hidden cells did not
+  fall in two runs (1,643 → 1,910 → 1,954): too early to read, since a search queued by build N is
+  made in run N+1 and merged in run N+2, and a cell needs its check and then its return, so ~4
+  runs from first wanted to shown. Never-searched lookups stay ~1,100-1,300 a build although the
+  runner makes ~600 of them a run: about as many new ones arrive an hour as the runner can make.
+- **The 24 h listed-price loop is ruled out:** 133-241 fares' listed prices ran out a build, 5-10
+  of them new lookups, of 1,400-1,800 new lookups.
+- **"Hidden board cells" covers every view** (`dropUnlisted` walks the board and all via views,
+  month and length cells, long-haul caps). From 4:05 pm Nov 15 `priced as listed` ends with where
+  they are, and `search queue` splits its never-searched by board cells, via cells, long-haul caps.
+
 ### Open bugs, most important first
 
 1. **Hidden board cells don't converge (~1,500).** A round trip's return is searched with the
