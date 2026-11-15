@@ -1,7 +1,32 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-15T21:06:17Z",
+ "lastSuccess": "2026-11-15T22:05:58Z",
  "runs": [
+  {
+   "at": "2026-11-15T22:05:58Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 290,
+   "failed": 1,
+   "cells": 8644,
+   "priced": 6624,
+   "changes": 3889,
+   "errors": [
+    "PQC-HUI-Y 11d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Phú Quốc PQC Hue HUI Filters All filter"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 436,
+   "pages": 6,
+   "skipped": 145,
+   "secondOk": 4,
+   "seconds": 1361,
+   "success": true
+  },
   {
    "at": "2026-11-15T21:06:17Z",
    "egress": "vpn",
@@ -580,29 +605,6 @@
    "pages": 6,
    "skipped": 307,
    "seconds": 1224,
-   "success": true
-  },
-  {
-   "at": "2026-11-14T22:06:20Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 322,
-   "failed": 0,
-   "cells": 9176,
-   "priced": 8929,
-   "changes": 2775,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 703,
-   "pages": 6,
-   "skipped": 381,
-   "secondOk": 2,
-   "seconds": 1258,
    "success": true
   }
  ]
