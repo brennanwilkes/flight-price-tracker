@@ -227,6 +227,19 @@ function searchChurn({ head, used: lastUsed }, used) {
   if (lastUsed) {
     const again = lastUsed.filter((k) => used.has(k)).length;
     parts.push(`${again} of the last build's ${lastUsed.length} lookups looked up again, ${used.size - again} new`);
+    // The new ones: kind, fresh/stale/never searched at lookup, and how far out they leave.
+    const last = new Set(lastUsed);
+    const by = {};
+    const now = Date.now();
+    for (const [k, state] of used) {
+      if (last.has(k)) continue;
+      const q = JSON.parse(k.replace(/^full /, ''));
+      const kind = k.startsWith('full ') ? 'full' : q.after ? 'window' : q.selected ? 'return' : 'plain';
+      const days = (Date.parse(q.out) - now) / 864e5;
+      const out = days < 60 ? '<60 d' : days < 180 ? '60-180 d' : days < 300 ? '180-300 d' : '300+ d';
+      for (const label of [`${kind} ${state}`, out]) by[label] = (by[label] ?? 0) + 1;
+    }
+    parts.push(`new by kind: ${Object.entries(by).sort((a, b) => b[1] - a[1]).map(([w, n]) => `${w} ${n}`).join(', ')}`);
   }
   const looked = head.filter((s) => s.keys.some((k) => used.has(k))).length;
   parts.push(`${looked} of the search runner's ${head.length} queue head looked up`);
