@@ -307,6 +307,15 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
     const changed = cache.changed.get(fareKey(f.ticket));
     const ats = [cache.at?.get(f.key), cache.at?.get(`full ${f.key}`)].filter(Boolean);
     if (!changed || !ats.length || ats.every((at) => at >= changed)) return false;
+    // Telemetry: how many fresh searches graph moves throw out, and which way the graph moved
+    // against what the search listed.
+    if (Date.now() - Math.min(...ats.map(Date.parse)) < 24 * 3600e3) {
+      tally.outdated = (tally.outdated ?? 0) + 1;
+      const graph = f.ticket.graph ?? f.ticket.price;
+      const was = Array.isArray(list) && list.length ? cheapest(list).price : null;
+      if (was != null && graph > was) tally.outdatedUp = (tally.outdatedUp ?? 0) + 1;
+      else if (was != null && graph < was) tally.outdatedDown = (tally.outdatedDown ?? 0) + 1;
+    }
     // Served as a stale search from here on (its flights stand, not its prices) until made again.
     if (!stale.has(f.key) && Array.isArray(list) && list.length) { STALE.add(list); stale.set(f.key, list); }
     for (const k of [f.key, `full ${f.key}`]) { cache.delete(k); cache.at?.delete(k); }
