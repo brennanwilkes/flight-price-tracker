@@ -113,6 +113,30 @@ Seen, not acted on: the sweep's own build makes ~87 booking pages a run from the
 runner is working (likely duplicates).
 Watchers print these lines after each run; `node scripts/run-stats.mjs 8` for the table.
 
+Read at the 11:05 pm and 12:05 am runs, and what was done (3896bf46b, live from 2:05 am Nov 16):
+
+- **2, the cause of the flat backlog: each search runner made the last runner's searches again.**
+  Runner N works the queue build N-1 wrote; build N-1 ran beside runner N-1, so that queue's head
+  is what runner N-1 was searching. ~800 pages a run, about half of them repeats: ~8,700 searches
+  fresh of ~19,700 used, where 800 × 24 h would keep ~19,000. Fix: the booking job restores the
+  last run's `.search-extra.json.gz`; the runner skips queue items it holds (under 3 h old) and
+  keeps their rows. `RUNNER_REACH` 1,000 → 2,000. Log: `search runner: N of the queue searched
+  by the last run, skipped`.
+- **1: hidden floored at 419** (via overall 195, via month 194, board ~30); `hidden with no
+  flights checked` back up 7 → 210. Never-searched searches for via views (303) and long-haul caps
+  (189) sat behind the board's 4,872 refreshes in rank order. Fix: the queue is never-searched
+  first (any view), then refreshes by view, oldest day first, then rank.
+  `outbounds passed over` 8,400-8,900 a build, 0-4 the trip's last: nearly every one has a next
+  outbound.
+- 2: board demand 10,687 lookups: 5,643 fresh, 4,970 stale (1,511 at 1-2 d, 602 at 2-4 d, 619 at
+  4-7 d); via only 8,966: 3,018 fresh, 5,635 stale.
+- 3: new lookups 1,315-1,968 a build: 359-458 for the board, 956-1,202 for a via view.
+- 5: the reorder works: the first 900 filters were 779 never checked + 121 listed at a new price.
+  7,768 never checked in 48 h, ~900 a run.
+- 6: a measurement lag. Board due at the build 915 (276 hold ran out, 221 never checked, 65 lacked
+  the listed offer); the runner checks all due each run (621 of 621).
+- 4: one cycle only so far. Board: 79 first time, 59 second time running, 59 over 30% above listed.
+
 ### Open bugs, most important first
 
 1. **Hidden board cells don't converge (~1,500).** A round trip's return is searched with the
