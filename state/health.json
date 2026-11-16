@@ -1,7 +1,32 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-16T18:06:25Z",
+ "lastSuccess": "2026-11-16T19:07:22Z",
  "runs": [
+  {
+   "at": "2026-11-16T19:07:22Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 361,
+   "failed": 1,
+   "cells": 12294,
+   "priced": 11792,
+   "changes": 5021,
+   "errors": [
+    "DLI-BKI-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Da Lat DLI Kota Kinabalu BKI Filters All f"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 578,
+   "pages": 6,
+   "skipped": 216,
+   "secondOk": 1,
+   "seconds": 1367,
+   "success": true
+  },
   {
    "at": "2026-11-16T18:06:25Z",
    "egress": "vpn",
@@ -593,27 +618,6 @@
    "skipped": 45,
    "secondOk": 5,
    "seconds": 1259,
-   "success": true
-  },
-  {
-   "at": "2026-11-15T19:06:00Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 157,
-   "failed": 0,
-   "cells": 5178,
-   "priced": 4806,
-   "changes": 2995,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 157,
-   "pages": 3,
-   "seconds": 859,
    "success": true
   }
  ]
