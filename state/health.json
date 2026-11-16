@@ -1,7 +1,38 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-16T13:06:12Z",
+ "lastSuccess": "2026-11-16T14:06:17Z",
  "runs": [
+  {
+   "at": "2026-11-16T14:06:17Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 77,
+   "failed": 6,
+   "cells": 2121,
+   "priced": 1952,
+   "changes": 549,
+   "errors": [
+    "YVR-SGN-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-SGN-Y 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-SGN-Y 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-ICN-J 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "BJS-HKT-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-BKK-Y 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 108,
+   "pages": 3,
+   "pauses": 6,
+   "skipped": 25,
+   "secondOk": 16,
+   "seconds": 1545,
+   "success": true
+  },
   {
    "at": "2026-11-16T13:06:12Z",
    "egress": "vpn",
@@ -584,41 +615,6 @@
    "skipped": 234,
    "secondOk": 10,
    "seconds": 1350,
-   "success": true
-  },
-  {
-   "at": "2026-11-15T14:06:01Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 163,
-   "failed": 9,
-   "cells": 4853,
-   "priced": 2260,
-   "changes": 895,
-   "errors": [
-    "YYJ-TPE-Y 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-ICN-Y 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "HUI-MNL-Y 5d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "MFM-SGN-Y 8d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "MNL-HUI-Y 8d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "HUI-MNL-Y 9d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "MFM-SGN-Y 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Macao MFM Ho Chi Minh City SGN Filters ",
-    "MFM-SGN-Y 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Macao MFM Ho Chi Minh City SGN Filters ",
-    "SGN-BWN-Y 5d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Ho Chi Minh City SGN Bandar Seri Begawa"
-   ],
-   "controlTries": 2,
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 474,
-   "pages": 6,
-   "pauses": 2,
-   "skipped": 302,
-   "secondOk": 9,
-   "seconds": 1579,
    "success": true
   }
  ]
