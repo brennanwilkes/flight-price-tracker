@@ -136,13 +136,13 @@ function loadSearches(file, now, extraFile = null) {
   const cache = new Map(), at = new Map(), stale = new Map(), rows = [];
   // The search cache, then the search runner's (--search-extra, bin/search-runner.js): the newer row wins.
   const newest = new Map();
-  let extra = 0, newer = 0;
+  let extra = 0, newer = 0, extraTo = ''; // extraTo: the runner's newest row read here
   for (const [f, isExtra] of [[file, false], [extraFile, true]]) {
     if (!f || !fs.existsSync(f)) continue;
     try {
       for (const [k, when, v] of readRows(zlib.gunzipSync(fs.readFileSync(f)))) {
         const had = newest.get(k);
-        if (isExtra) { extra++; if (!had || had[0] < when) newer++; }
+        if (isExtra) { extra++; if (!had || had[0] < when) newer++; if (when > extraTo) extraTo = when; }
         if (!had || had[0] < when) newest.set(k, [when, v]);
       }
     } catch (e) {
@@ -160,7 +160,7 @@ function loadSearches(file, now, extraFile = null) {
   if (extraFile) console.log(`search runner's searches: ${extra} rows, ${newer} newer than the cache's`);
   cache.at = at;
   cache.stale = stale;
-  return { cache, at, stale, lands: landings(rows) };
+  return { cache, at, stale, lands: landings(rows), extraTo };
 }
 
 /**
@@ -844,7 +844,7 @@ async function main() {
         console.log(`search queue in order: ${Object.entries(by).map(([w, n]) => `${w} ${n}`).join(', ') || 'none'}`);
       }
       // used: this build's lookups, for the next build's churn line (searchChurn).
-      fs.writeFileSync(arg('search-queue'), JSON.stringify({ at: generatedAt, searches: list, used: [...(searches.cache.used?.keys() ?? [])] }));
+      fs.writeFileSync(arg('search-queue'), JSON.stringify({ at: generatedAt, extraTo: searches.extraTo || null, searches: list, used: [...(searches.cache.used?.keys() ?? [])] }));
       console.log(`search queue: ${list.length} browser searches for the search runner (${wanted.length} left out of time, ${wanted.filter((w) => w.had).length} of them served stale; never searched: ${wanted.filter((w) => !w.had && w.prio < 5 * TRIES).length} for board cells, ${wanted.filter((w) => !w.had && w.prio >= 5 * TRIES && w.prio < FAST_PRIO).length} for via cells, ${wanted.filter((w) => !w.had && w.prio >= FAST_PRIO).length} for long-haul caps)`);
     }
     await warmBooking;

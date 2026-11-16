@@ -33,8 +33,8 @@ const pct = (a, q) => (a.length ? `${(a.toSorted((x, y) => x - y)[Math.floor(q *
   const gap = Number(arg('gap', 1500));
   const sessionMax = Number(arg('session-pages', 300));
   const out = arg('out');
-  let queue = [];
-  try { queue = JSON.parse(fs.readFileSync(arg('queue'), 'utf8')).searches ?? []; } catch (e) { console.log(`search runner: no queue (${e.message})`); }
+  let queue = [], seenTo = '';
+  try { const file = JSON.parse(fs.readFileSync(arg('queue'), 'utf8')); queue = file.searches ?? []; seenTo = file.extraTo ?? ''; } catch (e) { console.log(`search runner: no queue (${e.message})`); }
   console.log(`search runner: ${queue.length} browser searches queued (${queue.filter((s) => s.had).length} served stale meanwhile)`);
   if (!queue.length) return;
 
@@ -50,10 +50,13 @@ const pct = (a, q) => (a.length ? `${(a.toSorted((x, y) => x - y)[Math.floor(q *
       if (Date.parse(r[1]) >= cut) rows.push(r);
     }
   } catch (e) { if (e.code !== 'ENOENT') console.log(`search runner: last run's searches unread (${e.message})`); }
-  const done = new Set(rows.map((r) => r[0]));
+  // Only rows the queue's build hadn't read (newer than `extraTo`, the newest it had): one it read
+  // and still queued it has thrown out (searched before the fare's price moved: details.js
+  // outdated) and needs made again. Skipping those hid their cells: 158 → 603, 4:05-7:05 am Nov 16.
+  const done = new Set(rows.filter((r) => r[1] > seenTo).map((r) => r[0]));
   const queued = queue.length;
   queue = queue.filter((s) => !s.keys.every((k) => done.has(k)));
-  console.log(`search runner: ${queued - queue.length} of the queue searched by the last run (under ${DONE_HOURS} h ago), skipped; ${rows.length} of its rows kept`);
+  console.log(`search runner: ${queued - queue.length} of the queue searched by the last run since its build read the runner's rows (to ${seenTo || 'none read'}), skipped; ${rows.length} rows kept`);
   if (!queue.length) return;
   const save = () => {
     fs.writeFileSync(`${out}.tmp`, zlib.gzipSync(rows.map((r) => JSON.stringify(r)).join('\n')));
