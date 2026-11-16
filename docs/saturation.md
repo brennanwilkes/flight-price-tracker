@@ -88,10 +88,30 @@ without it, more than once, including on Nov 14).
   chosen, all leave before the flight before lands (e.g. YVR-JKT J out PR117+PR535: its 3 returns
   leave CGK 01:20, the hop in lands 12:30); 63 an Asia return landing too late for the next flight.
   The check had passed the trip on a return guessed from the one-way list home.
-- **Fixed from 11:05 pm Nov 15:** such an outbound is passed over for the next that connects
+- **Fixed from 10:05 pm Nov 15** (first build: hidden 1,056 → 380, board overall 6)**:** such an outbound is passed over for the next that connects
   (`details.js` pickFlights, OUT_TRIES; its returns searched in turn, each step a search the
   runner makes: ~2 runs); none left, the trip doesn't connect and the cell walks on. Logged as
   `outbounds passed over`. Not done for the long-haul filter's trips (`capped`).
+
+### In progress, night of Nov 15-16 (Brennan: read the runs through the night, then make the fixes)
+
+Pushed 11:36-11:45 pm Nov 15, live from the 12:05 am Nov 16 run; nothing below measured yet.
+
+| # | Open issue | Known at 10:05 pm Nov 15 | Log line to read | Fix if it shows |
+|---|---|---|---|---|
+| 1 | Hidden cells | 380 (board overall 6), 181 never-searched queued | `priced as listed … where:`, `outbounds passed over`, `return searches for kept trips ended` | should fall ~2 runs a step; if it floors, read `returns with none that fits` |
+| 2 | Stale searches | ~10,300 of ~19,700 used are > 24 h old, flat | `search demand by view` (board / via only / caps only, stale ages), `search queue in order`, `search runner, started by view` (from 1:05 am) | if the board's stale is small and the runner reaches all board refreshes: the board is saturated on searches and the rest is via demand (looser schedule allowed for filters); if the board's refreshes exceed a run's pages: order refreshes oldest first within a view, then cut demand |
+| 3 | New lookups, 1,000-1,800 a build | 24 h listed-price loop ruled out | `search churn … new by kind` now ends with `for the board / a via view / a long-haul cap` | board share decides whether the board's candidate walk needs stabilising |
+| 4 | Booking pages without the listed offer | 126 of 554 board pages, 260 of 875 filter pages a run; held 3 h, never a booking price | `N without the listed offer (… time running, sellers, % above listed)` in `booking runner, board:` / `filters:`; streaks need ~3 cycles (9 h) | same tickets 3+ times running on full seller lists: the listed price is not bookable. Decision for Brennan (shown price would become the dearer booked one, or the hold lengthens): do not change what is shown without asking |
+| 5 | Filter tickets never reached | 8,184 of 14,554 not checked in 48 h | `booking runner, filters due:` and `filters in order, the first 900:` | reordered already (listed moved, never checked, oldest first); "not checked in 48 h" in `booking demand` should fall ~900 a run |
+| 6 | Board bookings "3,125 of 4,010 fresh, flat" | runner checks every due board ticket each run (554/554) | `booking runner, board due:` | likely measured before the run's own results merge: if due = hold ran out + new itineraries + 3 h re-asks, count freshness after the merge; new itineraries ~350 a build would be the churn of #3 |
+
+Also pushed then: the long-haul filter's trips pass over an outbound with no return that fits
+(`capped`, logged `in long-haul filter trips N`); expired booking checks of every kind are kept
+48 h (`bookings.js` loadBookings `keep`), so "not checked in 48 h" drops for that reason alone.
+Seen, not acted on: the sweep's own build makes ~87 booking pages a run from the queue the
+runner is working (likely duplicates).
+Watchers print these lines after each run; `node scripts/run-stats.mjs 8` for the table.
 
 ### Open bugs, most important first
 
