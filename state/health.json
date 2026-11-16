@@ -1,7 +1,35 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-16T05:06:12Z",
+ "lastSuccess": "2026-11-16T06:06:26Z",
  "runs": [
+  {
+   "at": "2026-11-16T06:06:26Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 263,
+   "failed": 3,
+   "cells": 8856,
+   "priced": 8693,
+   "changes": 2438,
+   "errors": [
+    "YVR-DAD-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "JKT-YYJ-J-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Business Jakarta CGK Victoria YYJ Filters All filt",
+    "DLI-LGK-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Da Lat DLI Langkawi LGK Filters All filter"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 493,
+   "pages": 6,
+   "pauses": 2,
+   "skipped": 227,
+   "secondOk": 11,
+   "seconds": 1594,
+   "success": true
+  },
   {
    "at": "2026-11-16T05:06:12Z",
    "egress": "vpn",
@@ -598,29 +626,6 @@
    "skipped": 336,
    "secondOk": 5,
    "seconds": 1288,
-   "success": true
-  },
-  {
-   "at": "2026-11-15T06:06:17Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 320,
-   "failed": 0,
-   "cells": 10072,
-   "priced": 9959,
-   "changes": 1482,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 790,
-   "pages": 6,
-   "skipped": 470,
-   "secondOk": 6,
-   "seconds": 1251,
    "success": true
   }
  ]
