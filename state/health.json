@@ -1,7 +1,30 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-16T20:06:34Z",
+ "lastSuccess": "2026-11-16T21:07:18Z",
  "runs": [
+  {
+   "at": "2026-11-16T21:07:18Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 365,
+   "failed": 0,
+   "cells": 10336,
+   "priced": 10239,
+   "changes": 3800,
+   "errors": [],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 577,
+   "pages": 6,
+   "skipped": 212,
+   "secondOk": 4,
+   "seconds": 1321,
+   "success": true
+  },
   {
    "at": "2026-11-16T20:06:34Z",
    "egress": "vpn",
@@ -588,35 +611,6 @@
    "skipped": 145,
    "secondOk": 4,
    "seconds": 1361,
-   "success": true
-  },
-  {
-   "at": "2026-11-15T21:06:17Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 243,
-   "failed": 4,
-   "cells": 7249,
-   "priced": 7015,
-   "changes": 2200,
-   "errors": [
-    "DAD-SYX-Y 3d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Sanya SYX · Haikou HAK Filt",
-    "DAD-SYX-Y 6d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Sanya SYX · Haikou HAK Filt",
-    "DAD-SYX-Y 8d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Sanya SYX · Haikou HAK Filt",
-    "DAD-SYX-Y 10d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Sanya SYX · Haikou HAK Filt"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 642,
-   "pages": 6,
-   "pauses": 3,
-   "skipped": 395,
-   "secondOk": 7,
-   "seconds": 1612,
    "success": true
   }
  ]
