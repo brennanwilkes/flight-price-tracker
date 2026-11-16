@@ -1,7 +1,32 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-16T11:06:04Z",
+ "lastSuccess": "2026-11-16T12:07:17Z",
  "runs": [
+  {
+   "at": "2026-11-16T12:07:17Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 338,
+   "failed": 1,
+   "cells": 11929,
+   "priced": 11460,
+   "changes": 4043,
+   "errors": [
+    "HUI-SYX-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Hue HUI Sanya SYX · Haikou HAK Filters All"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 493,
+   "pages": 6,
+   "skipped": 154,
+   "secondOk": 2,
+   "seconds": 1348,
+   "success": true
+  },
   {
    "at": "2026-11-16T11:06:04Z",
    "egress": "vpn",
@@ -600,34 +625,6 @@
    "skipped": 151,
    "secondOk": 11,
    "seconds": 1524,
-   "success": true
-  },
-  {
-   "at": "2026-11-15T12:06:07Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 283,
-   "failed": 3,
-   "cells": 8170,
-   "priced": 6600,
-   "changes": 2293,
-   "errors": [
-    "YVR-HAN-J 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-HAN-Y 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-SGN-J 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 641,
-   "pages": 6,
-   "pauses": 1,
-   "skipped": 355,
-   "secondOk": 12,
-   "seconds": 1342,
    "success": true
   }
  ]
