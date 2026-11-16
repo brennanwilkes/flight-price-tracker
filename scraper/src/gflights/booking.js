@@ -91,8 +91,12 @@ function inCabin(o, cabin, legs) {
  * PR117/PR318 + PR311/PR116. The full view's cheapest is an agency's ~$3,450 (Trip.com, Globehunters;
  * 6-15 sellers), the short one's $4,612 at best (5 sellers). Asked every few minutes, it says which
  * view an IP is getting. By price, not seller count: haleiwa saw 6 sellers and $3,469 at 9:05 pm.
+ * Or by a long list: from 1:30 am Vancouver Nov 16 the page read $4,613-4,618 with 15 sellers on a
+ * rested IP's first page (the ~$3,450 fare gone, not the view: the short one had 5 sellers), and
+ * the booking runner held every page for two runs. Few sellers at the dear price is still short.
  */
 const CANARY_FULL_BELOW = 4000;
+const CANARY_FULL_SELLERS = 10;
 const L = (code, from, to, depDate) => ({ code, from, to, depDate });
 const CANARY = { kind: 'rt', from: 'YVR', to: 'HKG', date: '2027-09-10', ret: '2027-09-25', cabin: 'J',
   flights: { out: { legs: [L('PR117', 'YVR', 'MNL', '2027-09-10'), L('PR318', 'MNL', 'HKG', '2027-09-12')] }, back: { legs: [L('PR311', 'HKG', 'MNL', '2027-09-25'), L('PR116', 'MNL', 'YVR', '2027-09-26')] } } };
@@ -101,7 +105,7 @@ const CANARY = { kind: 'rt', from: 'YVR', to: 'HKG', date: '2027-09-10', ret: '2
 async function canary(sellers) {
   try {
     const got = await sellers(CANARY);
-    return `${got[0]?.price < CANARY_FULL_BELOW ? 'full' : 'short'}: ${got.length} sellers, $${got[0]?.price} ${got[0]?.sellerName ?? ''}`.trim();
+    return `${got[0]?.price < CANARY_FULL_BELOW || got.length >= CANARY_FULL_SELLERS ? 'full' : 'short'}:${got.length} sellers, $${got[0]?.price} ${got[0]?.sellerName ?? ''}`.trim();
   } catch (e) { return `failed: ${String(e.message).slice(0, 50)}`; }
 }
 
