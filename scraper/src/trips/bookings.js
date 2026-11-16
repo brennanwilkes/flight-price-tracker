@@ -46,16 +46,18 @@ function loadBookings(files, now = Date.now()) {
     try { o = JSON.parse(fs.readFileSync(f, 'utf8')); } catch { continue; }
     for (const [k, b] of Object.entries(o)) {
       // `hours`: a filter view's ticket booked at its listed price is held longer (bookingPass listedHours).
-      if (now - Date.parse(b.at) >= (b.hours ?? BOOKING_HOURS) * 3600e3) {
-        if (now - Date.parse(b.at) < PREV_HOURS * 3600e3 && b.price != null && !b.partial && !b.short && b.n != null && (!prev.has(k) || prev.get(k).at < b.at)) prev.set(k, b);
-        continue;
-      }
+      // Every expired check is kept in prev (a page without the listed offer, short, or with no
+      // seller in its cabin too: users test for those): why a ticket is due again (dueWhy), and how
+      // many times running its page lacked the listed offer (partialN). They used to be dropped,
+      // so a ticket asked again every 3 h read as never checked.
+      const keep = () => { if (now - Date.parse(b.at) < PREV_HOURS * 3600e3 && b.n != null && (!prev.has(k) || prev.get(k).at < b.at)) prev.set(k, b); };
+      if (now - Date.parse(b.at) >= (b.hours ?? BOOKING_HOURS) * 3600e3) { keep(); continue; }
       // "No seller in its cabin" only stands when judged by flight length (byLength): the 5:05 pm
       // run (2026-11-12) read a queue without lengths and wrote off 1,332 of 1,802 pages.
       if (b.price == null && !b.byLength) continue;
-      if (b.partial && now - Date.parse(b.at) >= PARTIAL_HOURS * 3600e3) continue;
+      if (b.partial && now - Date.parse(b.at) >= PARTIAL_HOURS * 3600e3) { keep(); continue; }
       // Checked while the IP got the short seller list (the canary, gflights/booking.js): asked again sooner.
-      if (b.short && now - Date.parse(b.at) >= SHORT_HOURS * 3600e3) continue;
+      if (b.short && now - Date.parse(b.at) >= SHORT_HOURS * 3600e3) { keep(); continue; }
       // From before pages were told apart (no seller count `n`): a price off the listed one may be a
       // fare without cabins (BudgetAir's $615 "business") or a page without the listed offer; asked again.
       if (b.n == null && b.price != null && b.listed && Math.abs(b.price - b.listed) > b.listed * (LISTED_GONE - 1)) continue;
@@ -164,7 +166,7 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gat
   // Telemetry: sellers a page (by count: few looks like the short view), fares without cabins, and
   // why a price came out dearer than listed (mixed: the listed fare is in another cabin; partial:
   // the listed offer isn't on the page at all).
-  const s = { checked: 0, cheaper: 0, dearer: 0, mixed: 0, partial: 0, none: 0, noCabins: 0, short: 0, failed: 0, left: 0, ms: 0, sellers: { '1-5': 0, '6-10': 0, '11+': 0 }, again: {}, againHours: [], quietDrop: null };
+  const s = { checked: 0, cheaper: 0, dearer: 0, mixed: 0, partial: 0, none: 0, noCabins: 0, short: 0, failed: 0, left: 0, ms: 0, sellers: { '1-5': 0, '6-10': 0, '11+': 0 }, partialBy: {}, again: {}, againHours: [], quietDrop: null };
   let i = 0;
   await Promise.all(Array.from({ length: pages }, async () => {
     while (i < itins.length && Date.now() < until) {
@@ -186,11 +188,22 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gat
       if (seen.short) s.short++;
       const L = listedOf(t);
       // `guess`: a return guessed, not listed with its outbound (trips/ties.js): no listed price to hold the page to.
+      const last = map.get(keyOf(t)) ?? map.prev?.get(keyOf(t));
       if (any && L && !t.guess && any.price > L * LISTED_GONE) {
         s.partial++;
-        map.set(keyOf(t), { price: best?.price ?? null, seller: best?.sellerName ?? null, at: now(), listed: L, partial: true, ...seen });
+        // Telemetry: is it the same tickets every 3 h (times running), a thin page (sellers), and
+        // how far over the listed price is the cheapest seller? A ticket whose every page lacks
+        // the listed offer never gets a booking price and takes a page every PARTIAL_HOURS.
+        const partialN = last?.partial ? (last.partialN ?? 1) + 1 : 1;
+        const over = any.price / L - 1;
+        for (const w of [`${partialN === 1 ? '1st' : partialN === 2 ? '2nd' : partialN <= 5 ? '3rd-5th' : '6th+'} time running`,
+          `${got.length <= 5 ? '1-5' : got.length <= 10 ? '6-10' : '11+'} sellers`,
+          `cheapest ${over <= 0.1 ? '3-10%' : over <= 0.3 ? '10-30%' : 'over 30%'} above listed`,
+          seen.short ? 'on the short list' : null].filter(Boolean)) s.partialBy[w] = (s.partialBy[w] ?? 0) + 1;
+        map.set(keyOf(t), { price: best?.price ?? null, seller: best?.sellerName ?? null, at: now(), listed: L, partial: true, partialN, ...seen });
         continue;
       }
+      if (last?.partial) s.partialBy['had the listed offer this time'] = (s.partialBy['had the listed offer this time'] ?? 0) + 1;
       // None in its cabin: kept too (price null, never applied), so the page isn't asked again
       // every run until BOOKING_HOURS.
       // Without flight lengths (a queue saved before they were kept) every leg had to be in the
@@ -237,8 +250,26 @@ function listedOf(t) {
   return row ?? t.price;
 }
 
+/** Why a ticket bookingCandidates queued is due (telemetry): from its last check, fresh or kept in map.prev. */
+function dueWhy(t, map) {
+  const k = keyOf(t);
+  if (map.has(k)) return 'listed price moved since its check';
+  const p = map.prev?.get(k);
+  if (!p) return 'never checked (48 h)';
+  if (p.partial) return 'last page lacked the listed offer';
+  if (p.short) return 'last checked on the short list';
+  if (p.price == null) return 'no seller in its cabin last time';
+  return 'hold ran out';
+}
+/** dueWhy counted over a list, as text. */
+const dueLine = (itins, map) => {
+  const by = {};
+  for (const t of itins) { const w = dueWhy(t, map); by[w] = (by[w] ?? 0) + 1; }
+  return Object.entries(by).sort((a, b) => b[1] - a[1]).map(([w, n]) => `${n} ${w}`).join(', ') || 'none';
+};
+
 /** One line of a pass's telemetry (bookingPass's returned stats). */
-const passLine = (s) => `sellers a page ${s.sellers['1-5']} with 1-5, ${s.sellers['6-10']} with 6-10, ${s.sellers['11+']} with 11+; ${s.partial} without the listed offer (held ${PARTIAL_HOURS} h, unapplied), ${s.mixed} dearer in the cabin than the listed fare (listed in another cabin), ${s.noCabins} fares without cabins (not counted), ${s.short} checked while the IP got the short list (held ${SHORT_HOURS} h)${againLine(s)}`;
+const passLine = (s) => `sellers a page ${s.sellers['1-5']} with 1-5, ${s.sellers['6-10']} with 6-10, ${s.sellers['11+']} with 11+; ${s.partial} without the listed offer (held ${PARTIAL_HOURS} h, unapplied${Object.keys(s.partialBy ?? {}).length ? `: ${Object.entries(s.partialBy).sort((a, b) => b[1] - a[1]).map(([w, n]) => `${n} ${w}`).join(', ')}` : ''}),${s.mixed} dearer in the cabin than the listed fare (listed in another cabin), ${s.noCabins} fares without cabins (not counted), ${s.short} checked while the IP got the short list (held ${SHORT_HOURS} h)${againLine(s)}`;
 // Rechecks against their last check (bookingPass s.again): what scheduling by listed-price moves would miss.
 function againLine(s) {
   const n = Object.values(s.again ?? {}).reduce((a, b) => a + b, 0);
@@ -247,4 +278,4 @@ function againLine(s) {
   return `; rechecked ${n} (median ${h.toFixed(0)} h on): ${Object.entries(s.again).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${v} ${k}`).join(', ')}${s.quietDrop ? `; biggest drop with the listed price unmoved ${s.quietDrop.what}` : ''}`;
 }
 
-module.exports = { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass, passLine, listedOf, keyOf, BOOKING_HOURS };
+module.exports = { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass, passLine, dueWhy, dueLine, listedOf, keyOf, BOOKING_HOURS };

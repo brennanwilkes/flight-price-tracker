@@ -61,7 +61,7 @@ const { graphTickets, searchTies, TRIED_HOURS } = require('../src/trips/ties');
 const { similarCount, scoreOf, rowId, bandOf } = require('../../frontend/app/build.js');
 const { CITIES, airportsOf, isPacific } = require('../../frontend/app/cities.js');
 const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
-const { addDetails, returnsDone, returnsFor, capped, longestOf, listedOnly, unlistedWhy, useBookings } = require('../src/trips/details');
+const { viewOf, addDetails, returnsDone, returnsFor, capped, longestOf, listedOnly, unlistedWhy, useBookings } = require('../src/trips/details');
 const { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass, passLine, listedOf, keyOf: bookingKey, BOOKING_HOURS } = require('../src/trips/bookings');
 const { inCabin, bookingUrl, canary } = require('../src/gflights/booking');
 const { openBrowserThread } = require('../src/gflights/browser-thread');
@@ -222,7 +222,7 @@ function searchWaste(at, used, now) {
  * Hour to hour: of the last build's lookups, how many this build looked up again; of the search
  * runner's queue head (what it searched this hour), how many this build looked up.
  */
-function searchChurn({ head, used: lastUsed }, used, { fareKeys = new Map(), expired = new Set() } = {}) {
+function searchChurn({ head, used: lastUsed }, used, { fareKeys = new Map(), expired = new Set(), usedTier = new Map() } = {}) {
   const parts = [];
   // Is the turnover a 24 h loop? A date lists above its graph price, the plan leaves it, its listed
   // price runs out at CHECKED_HOURS, the graph's is back and the date is walked again.
@@ -249,7 +249,8 @@ function searchChurn({ head, used: lastUsed }, used, { fareKeys = new Map(), exp
       const kind = k.startsWith('full ') ? 'full' : q.after ? 'window' : q.selected ? 'return' : 'plain';
       const days = (Date.parse(q.out) - now) / 864e5;
       const out = days < 60 ? '<60 d' : days < 180 ? '60-180 d' : days < 300 ? '180-300 d' : '300+ d';
-      for (const label of [`${kind} ${state}`, out]) by[label] = (by[label] ?? 0) + 1;
+      const view = `for ${['the board', 'a via view', 'a long-haul cap'][usedTier.get(k) ?? 2]}`;
+      for (const label of [`${kind} ${state}`, out, view]) by[label] = (by[label] ?? 0) + 1;
     }
     parts.push(`new by kind: ${Object.entries(by).sort((a, b) => b[1] - a[1]).map(([w, n]) => `${w} ${n}`).join(', ')}`);
   }
@@ -806,14 +807,34 @@ async function main() {
         if (state === 'fresh' && when) age[Math.min(3, Math.floor((Date.parse(generatedAt) - Date.parse(when)) / (6 * 3600e3)))]++;
       }
       console.log(`search demand: ${used.size} searches used, ${n.fresh} fresh at load (by age: ${age[0]} under 6 h, ${age[1]} 6-12 h, ${age[2]} 12-18 h, ${age[3]} 18-24 h), ${n.stale} stale (served), ${n.none} never searched; kept fresh at ${SEARCH_HOURS} h that takes ${Math.round(used.size / SEARCH_HOURS)} a run (hourly), made this build ${(t.plain ?? 0) - (t.errors ?? 0) - (t.timeouts ?? 0)} plain + ${t.pages ?? 0} browser pages here, plus the search runner's (its newer rows above)`);
+      {
+        // The same by whose searches they are (the most important view that looked each up), with
+        // the stale ones' ages: is the board's own demand fresh, and how old is what it's served?
+        const tiers = [0, 1, 2].map(() => ({ fresh: 0, stale: 0, none: 0, age: [0, 0, 0] }));
+        for (const [k, state] of used) {
+          const v = tiers[searches.cache.usedTier?.get(k) ?? 2];
+          v[state]++;
+          const when = searches.at.get(k);
+          if (state === 'stale' && when) v.age[Math.min(2, Math.floor(Math.log2(Math.max(1, (Date.parse(generatedAt) - Date.parse(when)) / 864e5))))]++;
+        }
+        console.log(`search demand by view: ${tiers.map((v, i) => `${['board', 'via only', 'long-haul caps only'][i]} ${v.fresh + v.stale + v.none} (${v.fresh} fresh, ${v.stale} stale: ${v.age[0]} 1-2 d, ${v.age[1]} 2-4 d, ${v.age[2]} 4-7 d; ${v.none} never searched)`).join('; ')}`);
+      }
       try { console.log(searchWaste(searches.at, used, Date.parse(generatedAt))); } catch (e) { console.log(`search waste: not worked out (${e.message})`); }
-      try { if (searches.last) console.log(searchChurn(searches.last, used, { fareKeys: searches.cache.fareKeys, expired: expiredChecked })); } catch (e) { console.log(`search churn: not worked out (${e.message})`); }
+      try { if (searches.last) console.log(searchChurn(searches.last, used, { fareKeys: searches.cache.fareKeys, expired: expiredChecked, usedTier: searches.cache.usedTier })); } catch (e) { console.log(`search churn: not worked out (${e.message})`); }
     }
     await saveSearches(arg('search-cache'), searches, generatedAt);
     // The browser searches left out of time, most wanted first, for the search runner (bin/search-runner.js).
     if (!warm && arg('search-queue')) {
       const wanted = [...(searches.cache.wanted?.values() ?? [])].filter((w) => !w.keys.every((k) => searches.cache.has(k)));
-      const list = wanted.sort((a, b) => a.prio - b.prio).slice(0, SEARCH_QUEUE_MAX).map(({ q, keys, had }) => ({ q, keys, had }));
+      // `view`: whose search it is, for the runner's tally (which views a run's pages reach).
+      const VIEWS = ['board', 'via', 'long-haul cap'];
+      const label = (w) => `${VIEWS[viewOf(w.prio)]} ${w.had ? 'refresh' : 'never searched'}`;
+      const list = wanted.sort((a, b) => a.prio - b.prio).slice(0, SEARCH_QUEUE_MAX).map((w) => ({ q: w.q, keys: w.keys, had: w.had, view: label(w) }));
+      {
+        const by = {};
+        for (const w of wanted) by[label(w)] = (by[label(w)] ?? 0) + 1;
+        console.log(`search queue in order: ${Object.entries(by).map(([w, n]) => `${w} ${n}`).join(', ') || 'none'}`);
+      }
       // used: this build's lookups, for the next build's churn line (searchChurn).
       fs.writeFileSync(arg('search-queue'), JSON.stringify({ at: generatedAt, searches: list, used: [...(searches.cache.used?.keys() ?? [])] }));
       console.log(`search queue: ${list.length} browser searches for the search runner (${wanted.length} left out of time, ${wanted.filter((w) => w.had).length} of them served stale; never searched: ${wanted.filter((w) => !w.had && w.prio < 5 * TRIES).length} for board cells, ${wanted.filter((w) => !w.had && w.prio >= 5 * TRIES && w.prio < FAST_PRIO).length} for via cells, ${wanted.filter((w) => !w.had && w.prio >= FAST_PRIO).length} for long-haul caps)`);

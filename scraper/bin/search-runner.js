@@ -60,9 +60,11 @@ const pct = (a, q) => (a.length ? `${(a.toSorted((x, y) => x - y)[Math.floor(q *
   // limit binds: the gap, Google's page time, or neither.
   const slot = { page: 0, gap: 0, renew: 0 };
   let i = 0;
+  const byView = {}; // searches started, by whose they are (the build's label: build-trips.js search queue)
   const worker = async () => {
     while (i < queue.length && Date.now() + PAGE_MS / 2 < until) {
       const s = queue[i++];
+      byView[s.view ?? 'unlabelled'] = (byView[s.view ?? 'unlabelled'] ?? 0) + 1;
       // Paced: a page started every `gap` ms at most, across the slots.
       const wait = next - Date.now();
       next = Math.max(next, Date.now()) + gap;
@@ -107,6 +109,7 @@ const pct = (a, q) => (a.length ? `${(a.toSorted((x, y) => x - y)[Math.floor(q *
   const slotMs = slots * secs * 1000;
   const share = (ms) => `${Math.round((100 * ms) / slotMs)}%`;
   console.log(`search runner, slot time (${slots} slots × ${Math.round(secs)} s): pages ${share(slot.page)}, held by the ${gap} ms gap ${share(slot.gap)}, waiting on a new session ${share(slot.renew)}, idle ${share(slotMs - slot.page - slot.gap - slot.renew)}`);
+  console.log(`search runner, started by view: ${Object.entries(byView).map(([w, n]) => `${w} ${n}`).join(', ') || 'none'}`);
   console.log(`search runner: ${all.pages} of ${queue.length} searched in ${Math.round(secs)} s (${(all.pages / secs).toFixed(2)} a second), ${all.rows} with flights, ${all.empty} listing nothing (${all.emptyHad} of them listed flights before), ${all.errors} errors; page ${pct(all.ms, 0.5)} median, ${pct(all.ms, 0.9)} p90; ${sessions} new sessions; ${rows.length} cache rows to ${out}`);
   const why = Object.entries(all.why).sort((a, b) => b[1] - a[1]);
   if (why.length) console.log(`search runner: errors by kind: ${why.slice(0, 6).map(([w, n]) => `${n}× ${w}`).join('; ')}`);

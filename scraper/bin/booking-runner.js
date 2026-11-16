@@ -22,7 +22,7 @@
  */
 const fs = require('node:fs');
 const path = require('node:path');
-const { loadBookings, saveBookings, bookingCandidates, bookingPass, passLine, listedOf, keyOf, BOOKING_HOURS } = require('../src/trips/bookings');
+const { loadBookings, saveBookings, bookingCandidates, bookingPass, passLine, dueLine, listedOf, keyOf, BOOKING_HOURS } = require('../src/trips/bookings');
 const { useBookings } = require('../src/trips/details');
 const { provenPrice, TRIED_HOURS } = require('../src/trips/ties');
 const { fareKey } = require('../src/trips/fares');
@@ -58,6 +58,10 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   const all = bookingCandidates(tiers, () => null, bookings, homes);
   const nBoard = tiers.length > 1 ? bookingCandidates([tiers[0]], () => null, bookings, homes).length : all.length;
   console.log(`booking runner: ${bookings.size} prices under the age limit, ${tiers.map((l) => l.length).join(' + ')} queued, ${all.length} to check (${nBoard} the board's)`);
+  // Why each is due, and for the filters' the ones a run reaches (the first ~900, in queue order):
+  // are the same tickets asked again while others wait?
+  console.log(`booking runner, board due: ${dueLine(all.slice(0, nBoard), bookings)}`);
+  console.log(`booking runner, filters due: ${dueLine(all.slice(nBoard), bookings)}; the first 900 of them: ${dueLine(all.slice(nBoard, nBoard + 900), bookings)}`);
 
   const egress = await fetch('https://api.ipify.org').then((r) => r.text()).catch(() => '?');
   const b = await openBrowserThread({ lean: true });

@@ -30,6 +30,10 @@ const REFRESH_PRIO = 1e6;
 // A round trip's returns with its outbound chosen (returnQuery): after every check's search, before
 // the refreshes. Only the flights shown depend on it, not whether the trip connects.
 const RETURN_PRIO = 5e5;
+// Telemetry: whose search a priority is. build-trips.js gives a cell rank × 10 + try: ranks 0-4 the
+// board's cells, 5-9 a via view's, 1000 up the long-haul filter's trips; refreshes and unkept
+// returns add REFRESH_PRIO / RETURN_PRIO on top. 0 board, 1 via, 2 long-haul caps.
+const viewOf = (p) => { const x = p % RETURN_PRIO; return x < 50 ? 0 : x < 100 ? 1 : 2; };
 // Lists served from cache.stale: their flights and times hold, their prices are only a hint.
 const STALE = new WeakSet();
 // Booking-page prices (bookings.js), applied to every search's rows as they come in (useBookings).
@@ -301,8 +305,11 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
   // asked for past the deadline went nowhere (only inPage filled cache.wanted, and it wasn't
   // reached): of 9,868 queued at 8:05 pm Vancouver Nov 14, 9,855 were refreshes of stale searches,
   // while 596 returns and 374 checks never searched were dropped that build, their cells hidden.
+  const usedTier = (cache.usedTier ??= new Map()); // key → the most important view that looked it up (viewOf)
   const once = (key, run, p, want = null) => {
     if (!used.has(key)) used.set(key, cache.has(key) ? 'fresh' : stale.has(key) ? 'stale' : 'none');
+    const tr = viewOf(p ?? prio);
+    if (!(usedTier.get(key) <= tr)) usedTier.set(key, tr);
     if (cache.has(key)) return cache.get(key);
     const old = stale.get(key);
     if (old) { STALE.add(old); refresh(key, run); return Promise.resolve(old); }
@@ -671,4 +678,4 @@ function unlistedWhy(trip) {
   return trip.total === trip.tickets.reduce((sum, t) => sum + t.price, 0) ? null : 'total not the tickets\' sum';
 }
 
-module.exports = { useBookings, listedPrice, listedOnly, unlistedWhy, addDetails, returnsDone, returnsFor, flightsOf, capped, longestOf, slots, Late, STALE };
+module.exports = { viewOf, useBookings, listedPrice, listedOnly, unlistedWhy, addDetails, returnsDone, returnsFor, flightsOf, capped, longestOf, slots, Late, STALE };
