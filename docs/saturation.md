@@ -135,6 +135,18 @@ Read at the 11:05 pm and 12:05 am runs, and what was done (3896bf46b, live from 
   7,768 never checked in 48 h, ~900 a run.
 - 6: a measurement lag. Board due at the build 915 (276 hold ran out, 221 never checked, 65 lacked
   the listed offer); the runner checks all due each run (621 of 621).
+- Results, 2:05-4:05 am Nov 16: the runner skipped 684, then 1,057 searches its last runs had
+  made (the repeats were real). Hidden cells 433 → 319 → 158 (via overall 70, via month 66, board
+  length 20, board overall 1); via never-searched queued 303 → 29. Backlog 10,979 → 10,831 → 10,511.
+- Booking runner made 0 pages at 2:05 am (575 of 700 at 1:05): the canary's ~$3,450 fare went at
+  1:30 am ($4,613-4,618, 15 sellers) and it read "short" by price. Fixed fb04fa750: 10+ sellers is
+  full too. 3:05 am 1,053 of 1,053 board, 4:05 am 625 of 625.
+- Next limit, search pages: the booking job's 4 cores are full (load ~11; search 209%, booking
+  120%), 630-730 search pages a run at 15-17 s (renderer CPU 4.8 s a page; "View more flights"
+  36% of page time, 300 of ~800 rejected and reloaded). Inflow is never-searched ~200-600 a build
+  plus ~375 an hour going stale, so refreshes get ~300-500 pages a run. The page's CPU, and why
+  1,300-2,000 lookups a build are new, are what's left.
+- Long-haul caps: 184-298 never searched every build though ~95 are made a run: not yet explained.
 - 4: one cycle only so far. Board: 79 first time, 59 second time running, 59 over 30% above listed.
 
 ### Open bugs, most important first
