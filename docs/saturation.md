@@ -177,7 +177,22 @@ Start: `node scripts/run-stats.mjs 48` (trend, needs the logs fetched), then the
 | Do the sweep's booking pages duplicate the runner's? | `booking pages made twice within 2 h` | large share of the sweep's ~200: give the sweep the queue's tail |
 | Canary | `canary full|short: N sellers, $X`, `held N min for the short list` | full now means under $4,000 or 10+ sellers; held for whole runs again: the test ticket needs replacing |
 | Search runner errors | `search runner: errors by kind` | 48-117 a run "GetShoppingResults rejected … not asked again": if they are the same searches each run they hold the queue's head |
+| Why don't the filters' never-checked fall? | `booking queue turnover:` (from the 5:05 pm Nov 16 run) | filters' "not in the last build's … not checked in 48 h" near the ~830 never-checked pages a run: the queue's tickets turn over as fast as they are checked; find what changes them (searches refreshed, ~700 a run) before adding pages |
 - 4: one cycle only so far. Board: 79 first time, 59 second time running, 59 over 30% above listed.
+
+Read at 4:20 pm Nov 16 (runs 8:05 am-3:05 pm), every line above printing:
+
+- Backlog 9,839 → 8,204, about -430 a run over the last three (the never-searched are done within
+  each run: 23-42 started in the last two, 687-762 refreshes). Hidden 870 (11:05 am, after a burst
+  of ~250 new via cells a build 10:05 am-12:05 pm) → 286; new hidden a build now 30-55.
+- Hidden cells clear after 1-2 h mostly (155-560 a build), some after 3-6 h (19-42); ~60 via and
+  ~5 board cells are 3-6 h hidden. None can read over 6 h before the 5:05 pm run (the line began 10:05 am).
+- Runner skip: 462-803 a run, `extraTo` a time each run.
+- "View more flights" stays: 23-32% of pages with later replies had a row cheaper than the first
+  list's cheapest (112-157 of 438-495).
+- Booking pages made twice: 51-146 a run of ~1,600.
+- Filters: fresh flat (4,161 of 15,317); never checked 7,308 → 6,961 with 836 of the first 900
+  never checked each run. Search runner errors 1-16 a run since 10:05 am (82 at 8:05 am). Canary full, held 0 min.
 
 ### Open bugs, most important first
 

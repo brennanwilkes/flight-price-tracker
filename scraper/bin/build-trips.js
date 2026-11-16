@@ -765,6 +765,13 @@ async function main() {
         // With the date pairs searched beside the scrape (--booking-ties), for the booking runner.
         let ties = null;
         try { ties = JSON.parse(fs.readFileSync(arg('booking-ties'), 'utf8')); } catch {}
+        // Telemetry: how much of the queue is new each build. The filters' "never checked" stayed at
+        // ~7,000 through Nov 16 with ~830 of them checked a run: as many came in as were checked?
+        try {
+          const last = JSON.parse(fs.readFileSync(queueFile, 'utf8')).tiers ?? [];
+          const turn = (l, was) => { const a = new Set(l.map(bookingKey)); const b = new Set((was ?? []).map(bookingKey)); const added = [...a].filter((k) => !b.has(k)); return `${added.length} of ${a.size} not in the last build's (${added.filter((k) => !bookings.has(k) && !bookings.prev?.has(k)).length} of them not checked in 48 h), ${[...b].filter((k) => !a.has(k)).length} of its ${b.size} gone`; };
+          console.log(`booking queue turnover: board ${turn(tiers[0], last[0])}; filters' ${turn(tiers[1], last[1])}`);
+        } catch (e) { console.log(`booking queue turnover: not worked out (${e.message})`); }
         if (queueFile) fs.writeFileSync(queueFile, JSON.stringify({ tiers: tiers.map((l) => l.map(slim)), ...(ties ? { ties } : {}) }));
         const fresh = (l) => l.filter((t) => bookings.has(bookingKey(t))).length;
         console.log(`booking queue: ${tiers[0].length} board itineraries (${fresh(tiers[0])} with a booking price under ${BOOKING_HOURS} h), ${tiers[1].length} filters' (${fresh(tiers[1])}); ${tickets.length} shown tickets, ${others.length} others the checks priced`);
