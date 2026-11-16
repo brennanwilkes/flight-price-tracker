@@ -450,7 +450,21 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
           if (!list.length) return ended('listed nothing');
           if (f.ticket.flights.back !== s.picks[i]) return ended('return already set');
           const back = chosenReturn(trip, flights, s.picks, i, list);
-          if (!back) return ended(STALE.has(list) ? 'no return fits (stale list)' : 'no return fits');
+          if (!back) {
+            // Why none fits (the cell stays hidden with nothing left to search): which test fails.
+            const from = [f.query.from].flat();
+            const day = list.filter((o) => from.includes(o.legs[0].from) && o.legs[0].depDate === f.query.out);
+            const [prev, next] = [s.picks[i - 1], s.picks[i + 1]].map((p) => (p?.legs ? p : null));
+            const w = !day.length ? (list.some((o) => o.legs[0].depDate === f.query.out) ? 'none from that airport' : 'none on that day')
+              : prev && !day.some((o) => fits(trip.stay, i, prev, o)) ? (trip.stay?.after === i - 1 ? 'all leave too soon after the flight before (Hoi An stay)' : 'all leave too soon after the flight before')
+                : next && !day.some((o) => fits(trip.stay, i + 1, o, next)) ? 'all land too late for the next flight' : 'none fits both sides';
+            const kind = `${isLong(f.ticket.from, f.ticket.to, cache.homes ?? []) ? 'long' : 'Asia'} return, ${w}`;
+            (tally.returnMiss ??= {})[kind] = (tally.returnMiss[kind] ?? 0) + 1;
+            if ((tally.returnMissEx ??= []).length < 8 && !tally.returnMissEx.some((x) => x.startsWith(kind))) {
+              tally.returnMissEx.push(`${kind}: ${f.ticket.from}-${f.ticket.to} ${f.ticket.cabin} ${f.ticket.date}/${f.ticket.ret}, out ${out.legs.map((l) => l.code).join('+')}, ${list.length} rows (${day.length} that day), first row ${list[0].legs.map((l) => `${l.code} ${l.from}-${l.to} ${l.depDate} ${l.dep}`).join(' + ')}${prev ? `, before: lands ${prev.legs.at(-1).arrDate} ${prev.legs.at(-1).arr}` : ''}${next ? `, next: leaves ${next.legs[0].depDate} ${next.legs[0].dep}` : ''}`);
+            }
+            return ended(STALE.has(list) ? 'no return fits (stale list)' : 'no return fits');
+          }
           ended('shown');
           tally.returnHit++;
           f.ticket.flights.back = back;

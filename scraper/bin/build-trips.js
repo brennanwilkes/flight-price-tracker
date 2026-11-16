@@ -710,6 +710,7 @@ async function main() {
   if (details0) {
     // Searches whose page inlines no results are asked again in a real page (gflights/flights.js).
     const chrome = await openBrowserThread({ lean: true });
+    searches.cache.homes = config.origins; // telemetry (details.js returnMiss)
     const session = { cache: searches.cache, browser: (q, opts) => { details.browser++; return chrome.shoppingResults(q, opts); }, listed: new Map(), deadline: warm ?? deadline - DETAILS_RESERVE, pages: warm ? PAGES.warm : PAGES.build, warm: !!warm };
     details = { browser: 0, rounds: 0, searches: 0, failed: 0, late: 0, ms: 0 };
     try {
@@ -778,6 +779,8 @@ async function main() {
     const pct = (a, q) => (a.length ? `${(a.toSorted((x, y) => x - y)[Math.floor(q * (a.length - 1))] / 1000).toFixed(1)} s` : '-');
     console.log(`search mix: ${why}`);
     console.log(`return searches for kept trips ended: ${Object.entries(t.returnEnd ?? {}).sort((a, b) => b[1] - a[1]).map(([w, n]) => `${w} ${n}`).join(', ') || 'none'}`);
+    console.log(`returns with none that fits: ${Object.entries(t.returnMiss ?? {}).sort((a, b) => b[1] - a[1]).map(([w, n]) => `${w} ${n}`).join('; ') || 'none'}`);
+    for (const x of t.returnMissEx ?? []) console.log(`  e.g. ${x}`);
     {
       // Why the board cells' never-searched searches weren't made in this build.
       const by = {};
