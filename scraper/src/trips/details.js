@@ -258,7 +258,7 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
       const t0 = Date.now();
       try { return await browser(q, opts); } finally { tally.pageMs.push(Date.now() - t0); }
     })).catch((e) => {
-      if (e instanceof Late && keys) (cache.wanted ??= new Map()).set(keys[0], { q, keys, prio: p, had: keys.some((k) => stale.has(k)) });
+      if (e instanceof Late && keys) (cache.wanted ??= new Map()).set(keys[0], { q, keys, prio: p, had: keys.some((k) => stale.has(k)), why: skip ? 'left to the runner' : 'no page free before the deadline' });
       throw e;
     });
     return dedupe(r.flatMap(parseResults));
@@ -304,7 +304,7 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
     if (old) { STALE.add(old); refresh(key, run); return Promise.resolve(old); }
     if (Date.now() > deadline) {
       if (want && browser && !(cache.wanted ??= new Map()).has(want.keys[0])) {
-        cache.wanted.set(want.keys[0], { q: want.q, keys: want.keys, prio: p ?? prio, had: false });
+        cache.wanted.set(want.keys[0], { q: want.q, keys: want.keys, prio: p ?? prio, had: false, why: 'asked past the deadline' });
         tally.wantedLate = (tally.wantedLate ?? 0) + 1;
       }
       return Promise.resolve(LATE);
@@ -443,9 +443,15 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
       jobs.push((p = RETURN_PRIO + prio) => {
         if (!cache.has(key) && !stale.has(key) && Date.now() > deadline) tally.returnLate++;
         return once(key, (pp) => { tally.returns++; return inPage(pp, q, { timeout: SLOW_PAGE_MS }, [key]); }, p, { q, keys: [key] }).then((list) => {
-          if (!Array.isArray(list) || !list.length || f.ticket.flights.back !== s.picks[i]) return;
+          // Telemetry: how each kept trip's return search ended (a trip left `likely` is hidden as
+          // "return not searched" whatever the reason).
+          const ended = (w) => { (tally.returnEnd ??= {})[w] = (tally.returnEnd[w] ?? 0) + 1; };
+          if (!Array.isArray(list)) return ended(list?.late ? 'out of time' : 'failed');
+          if (!list.length) return ended('listed nothing');
+          if (f.ticket.flights.back !== s.picks[i]) return ended('return already set');
           const back = chosenReturn(trip, flights, s.picks, i, list);
-          if (!back) return;
+          if (!back) return ended(STALE.has(list) ? 'no return fits (stale list)' : 'no return fits');
+          ended('shown');
           tally.returnHit++;
           f.ticket.flights.back = back;
           // A return row is priced as the whole round trip with it (seen: $3,857 or $4,817 by

@@ -70,6 +70,16 @@ without it, more than once, including on Nov 14).
   month and length cells, long-haul caps). From 4:05 pm Nov 15 `priced as listed` ends with where
   they are, and `search queue` splits its never-searched by board cells, via cells, long-haul caps.
 
+- **3:05-5:05 pm Nov 15, the fix four runs in:** cells hidden with no flights checked 1,403 →
+  849 → 213 → 267; never-searched in the queue 1,018 → 536-695 (the runner makes 733-811 a run,
+  so all of them, then refreshes); backlog 11,187 → 10,073. Hidden as "return not searched" still
+  1,461-1,607, and now split: **board overall 49-50** (month 49-50, length 143-159), via 1,200-1,370.
+  The board's queue share is 43-50 never-searched a build. Open questions, logged from 6:05 pm:
+  why those board searches weren't made in the build itself (`board searches never made, left for
+  the runner`: asked past the deadline, no page free, or left to the runner), and how each kept
+  trip's return search ended (`return searches for kept trips ended`: a list that came back with
+  no return that fits leaves the cell hidden as "return not searched" with nothing queued).
+
 ### Open bugs, most important first
 
 1. **Hidden board cells don't converge (~1,500).** A round trip's return is searched with the
