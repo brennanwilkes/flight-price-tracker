@@ -1,7 +1,32 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-16T10:06:12Z",
+ "lastSuccess": "2026-11-16T11:06:04Z",
  "runs": [
+  {
+   "at": "2026-11-16T11:06:04Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 121,
+   "failed": 1,
+   "cells": 4055,
+   "priced": 3884,
+   "changes": 1515,
+   "errors": [
+    "MPH-OSA-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 306,
+   "pages": 3,
+   "skipped": 184,
+   "secondOk": 3,
+   "seconds": 1271,
+   "success": true
+  },
   {
    "at": "2026-11-16T10:06:12Z",
    "egress": "vpn",
@@ -603,37 +628,6 @@
    "skipped": 355,
    "secondOk": 12,
    "seconds": 1342,
-   "success": true
-  },
-  {
-   "at": "2026-11-15T11:06:32Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 324,
-   "failed": 6,
-   "cells": 9364,
-   "priced": 9191,
-   "changes": 3045,
-   "errors": [
-    "DAD-HUI-Y 5d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Hue HUI Filters All filters",
-    "DAD-HUI-Y 3d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Hue HUI Filters All filters",
-    "DAD-HUI-Y 6d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Hue HUI Filters All filters",
-    "DAD-HUI-Y 4d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Hue HUI Filters All filters",
-    "DAD-HUI-Y 2d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Hue HUI Filters All filters",
-    "DAD-HUI-Y 7d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Hue HUI Filters All filters"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 610,
-   "pages": 6,
-   "pauses": 3,
-   "skipped": 280,
-   "secondOk": 1,
-   "seconds": 1585,
    "success": true
   }
  ]
