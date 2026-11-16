@@ -165,6 +165,9 @@ function flightsOf(trip) {
  * one-way search home showed CI via TPE for a PR-via-MNL outbound whose real returns are PR401/403 +
  * PR116). Its rows are returns priced as the whole round trip.
  */
+// A returnQuery key's ticket: the key up to its chosen outbound.
+const SELECTED = ',"selected":[';
+const ticketOf = (key) => key.slice(0, key.indexOf(SELECTED));
 function returnQuery(t, out) {
   return {
     from: airportsOf(t.from), to: airportsOf(t.to), out: t.date, ret: t.ret, cabin: t.cabin,
@@ -431,6 +434,7 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
         const j = flights.findIndex((g) => g.ticket === f.ticket && g.dir === 'out');
         const rest = lists[j].filter((o) => o !== out);
         tally.outDropped = (tally.outDropped ?? 0) + 1;
+        (cache.passedOver ??= new Set()).add(ticketOf(key));
         if (!rest.length) { s = { ...s, connects: false }; tally.outNone = (tally.outNone ?? 0) + 1; n = OUT_TRIES; break; }
         if (STALE.has(lists[j])) STALE.add(rest);
         lists[j] = rest;
@@ -480,7 +484,21 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
       const key = JSON.stringify(q);
       const jobs = (cache.returns ??= new Map()).get(trip) ?? [];
       cache.returns.set(trip, jobs);
+      // Telemetry: why a return search never made is asked for (its cell is hidden until it lands).
+      // Counted as the job runs: for a trip its cell keeps.
+      const whyNew = () => {
+        if (cache.has(key) || stale.has(key) || (cache.returnNew ??= new Set()).has(key)) return;
+        cache.returnNew.add(key);
+        if (!cache.returnTickets) {
+          cache.returnTickets = new Set();
+          for (const m of [cache, stale]) for (const k of m.keys()) if (k.includes(SELECTED)) cache.returnTickets.add(ticketOf(k));
+        }
+        const w = cache.passedOver?.has(ticketOf(key)) ? 'its outbound before was passed over (no return that fits)'
+          : cache.returnTickets.has(ticketOf(key)) ? 'the ticket has returns searched with another outbound' : 'the ticket has no return search';
+        (tally.returnNew ??= {})[w] = (tally.returnNew[w] ?? 0) + 1;
+      };
       jobs.push((p = RETURN_PRIO + prio) => {
+        whyNew();
         if (!cache.has(key) && !stale.has(key) && Date.now() > deadline) tally.returnLate++;
         return once(key, (pp) => { tally.returns++; return inPage(pp, q, { timeout: SLOW_PAGE_MS }, [key]); }, p, { q, keys: [key] }).then((list) => {
           // Telemetry: how each kept trip's return search ended (a trip left `likely` is hidden as

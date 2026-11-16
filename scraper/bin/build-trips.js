@@ -781,6 +781,7 @@ async function main() {
     const pct = (a, q) => (a.length ? `${(a.toSorted((x, y) => x - y)[Math.floor(q * (a.length - 1))] / 1000).toFixed(1)} s` : '-');
     console.log(`search mix: ${why}`);
     console.log(`return searches for kept trips ended: ${Object.entries(t.returnEnd ?? {}).sort((a, b) => b[1] - a[1]).map(([w, n]) => `${w} ${n}`).join(', ') || 'none'}`);
+    console.log(`return searches never made, asked for kept trips: ${Object.entries(t.returnNew ?? {}).sort((a, b) => b[1] - a[1]).map(([w, n]) => `${w} ${n}`).join(', ') || 'none'}`);
     console.log(`returns with none that fits: ${Object.entries(t.returnMiss ?? {}).sort((a, b) => b[1] - a[1]).map(([w, n]) => `${w} ${n}`).join('; ') || 'none'}`);
     for (const x of t.returnMissEx ?? []) console.log(`  e.g. ${x}`);
     console.log(`outbounds passed over (their returns hold none that fits): ${t.outDropped ?? 0}, ${t.outNone ?? 0} of them the trip's last (doesn't connect); in long-haul filter trips ${t.capOutDropped ?? 0}`);
