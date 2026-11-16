@@ -147,6 +147,15 @@ Read at the 11:05 pm and 12:05 am runs, and what was done (3896bf46b, live from 
   plus ~375 an hour going stale, so refreshes get ~300-500 pages a run. The page's CPU, and why
   1,300-2,000 lookups a build are new, are what's left.
 - Long-haul caps: 184-298 never searched every build though ~95 are made a run: not yet explained.
+- 5:05-7:05 am Nov 16: hidden back up 158 → 290 → 624 → 603 (via overall 270, via month 268,
+  board length 39, board overall 13); backlog 10,719 → 10,096 → 9,998 (board stale 4-7 d 362 → 81).
+  Never-searched for via views 29 → ~250 a build, long-haul caps ~220, all started by the runner
+  the next run (485 of its 691 pages at 7:05). So hidden ≈ new return searches a build × the ~2
+  runs each takes to land. One cause fixed (fbc7a8971, from 8:05 am): the runner skipped any
+  search in its last rows, also one the build had read and queued again; it now skips only rows
+  newer than the build's newest (`extraTo` in the queue file). Not shown to be the whole rise.
+  Open: where ~250 new outbound-chosen return searches a build come from (a refreshed outbound
+  list with a new cheapest outbound needs a new return search, and its cell hides meanwhile).
 - 4: one cycle only so far. Board: 79 first time, 59 second time running, 59 over 30% above listed.
 
 ### Open bugs, most important first
