@@ -156,6 +156,27 @@ Read at the 11:05 pm and 12:05 am runs, and what was done (3896bf46b, live from 
   newer than the build's newest (`extraTo` in the queue file). Not shown to be the whole rise.
   Open: where ~250 new outbound-chosen return searches a build come from (a refreshed outbound
   list with a new cheapest outbound needs a new return search, and its cell hides meanwhile).
+- 8:05 am Nov 16: hidden 416, backlog 9,839. New return searches for kept trips ~140-170 a
+  build: about a third each "the ticket has no return search", "returns searched with another
+  outbound", "its outbound before was passed over".
+
+#### Left running Nov 16, to read on return (Brennan back in ~2 days; goal then: close every bug)
+
+Start: `node scripts/run-stats.mjs 48` (trend, needs the logs fetched), then the newest log in
+`~/.cache/flight-run-logs` for the lines below. All live from the 10:05 am Nov 16 run.
+
+| Question | Log line | Reading → fix |
+|---|---|---|
+| Is the backlog draining (9,839 at 8:05 am; -200 a run projected ~10 am Nov 18)? | run-stats `backlog`; `search demand by view` | flat above ~2,000: throughput is short, see the two rows below |
+| Does the runner still repeat searches? | `search runner: N of the queue searched by the last run since its build read the runner's rows (to <time>)` | "to none read" after 9:05 am means `extraTo` isn't reaching the queue file |
+| Is "View more flights" worth 36% of page time? | `search runner, replies after the first list: … with a row cheaper than the first list's cheapest` | rarely cheaper: skip it for refreshes (≈ +50% pages); the booking job's 4 cores are the limit |
+| Are hidden cells transient or stuck? | `hidden cells by time hidden:` (new / 1-2 h / 3-6 h / 7-24 h / over a day, by where) and `hidden N h: <view#in-out#set#holder#class>` | 1-2 h only: it's the ~2-run latency, cut inflow or latency; 7 h+: a stuck cell, trace the id |
+| Where do new return searches come from? | `return searches never made, asked for kept trips:` | "another outbound" large: keep the searched outbound while the new one's returns are fetched (needs Brennan: shows a proven but maybe not cheapest trip); "passed over" large: search the next outbound's returns ahead |
+| Do filters recover? | run-stats `filt.fresh`; `booking runner, filters due:` | never checked (48 h) should fall from 7,308; if "hold ran out" keeps the first 900, the 24 h hold is too short for ~750 pages a run |
+| Tickets whose page never has the listed offer | `N without the listed offer (… 3rd-5th time running …)` | board had 68 at 3rd-5th time by 7:05 am: bring Brennan the numbers (changes the shown price) |
+| Do the sweep's booking pages duplicate the runner's? | `booking pages made twice within 2 h` | large share of the sweep's ~200: give the sweep the queue's tail |
+| Canary | `canary full|short: N sellers, $X`, `held N min for the short list` | full now means under $4,000 or 10+ sellers; held for whole runs again: the test ticket needs replacing |
+| Search runner errors | `search runner: errors by kind` | 48-117 a run "GetShoppingResults rejected … not asked again": if they are the same searches each run they hold the queue's head |
 - 4: one cycle only so far. Board: 79 first time, 59 second time running, 59 over 30% above listed.
 
 ### Open bugs, most important first
