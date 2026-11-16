@@ -80,6 +80,7 @@ const pct = (a, q) => (a.length ? `${(a.toSorted((x, y) => x - y)[Math.floor(q *
   // limit binds: the gap, Google's page time, or neither.
   const slot = { page: 0, gap: 0, renew: 0 };
   let i = 0;
+  const more = { pages: 0, rows: 0, added: 0, cheaper: 0, none: 0 };
   const byView = {}; // searches started, by whose they are (the build's label: build-trips.js search queue)
   const worker = async () => {
     while (i < queue.length && Date.now() + PAGE_MS / 2 < until) {
@@ -99,7 +100,18 @@ const pct = (a, q) => (a.length ? `${(a.toSorted((x, y) => x - y)[Math.floor(q *
       }
       const t1 = Date.now();
       try {
-        const list = dedupe((await b.shoppingResults(s.q, { timeout: PAGE_MS })).flatMap(parseResults));
+        const replies = (await b.shoppingResults(s.q, { timeout: PAGE_MS })).map(parseResults);
+        const list = dedupe(replies.flat());
+        // Telemetry: what "View more flights" (36% of page time, 4:05 am Vancouver Nov 16) adds to
+        // the first list: more rows, and is any of them cheaper than the first list's cheapest?
+        if (replies.length > 1 && replies[0].length) {
+          const low = (l) => Math.min(...l.map((o) => o.price).filter(Number.isFinite));
+          const first = dedupe(replies[0]);
+          more.pages++;
+          more.rows += list.length - first.length;
+          if (list.length > first.length) more.added++;
+          if (low(list) < low(first)) more.cheaper++;
+        } else if (replies.length <= 1) more.none++;
         const when = stamp();
         if (list.length) { for (const k of s.keys) rows.push([k, when, list]); all.rows++; }
         else { all.empty++; win.empty++; if (s.had) { all.emptyHad++; win.emptyHad++; } }
@@ -129,6 +141,7 @@ const pct = (a, q) => (a.length ? `${(a.toSorted((x, y) => x - y)[Math.floor(q *
   const slotMs = slots * secs * 1000;
   const share = (ms) => `${Math.round((100 * ms) / slotMs)}%`;
   console.log(`search runner, slot time (${slots} slots × ${Math.round(secs)} s): pages ${share(slot.page)}, held by the ${gap} ms gap ${share(slot.gap)}, waiting on a new session ${share(slot.renew)}, idle ${share(slotMs - slot.page - slot.gap - slot.renew)}`);
+  console.log(`search runner, replies after the first list: ${more.pages} pages had them, ${more.added} of those with rows the first list lacked (${more.rows} rows), ${more.cheaper} with a row cheaper than the first list's cheapest; ${more.none} pages with one reply or none`);
   console.log(`search runner, started by view: ${Object.entries(byView).map(([w, n]) => `${w} ${n}`).join(', ') || 'none'}`);
   console.log(`search runner: ${all.pages} of ${queue.length} searched in ${Math.round(secs)} s (${(all.pages / secs).toFixed(2)} a second), ${all.rows} with flights, ${all.empty} listing nothing (${all.emptyHad} of them listed flights before), ${all.errors} errors; page ${pct(all.ms, 0.5)} median, ${pct(all.ms, 0.9)} p90; ${sessions} new sessions; ${rows.length} cache rows to ${out}`);
   const why = Object.entries(all.why).sort((a, b) => b[1] - a[1]);

@@ -40,11 +40,17 @@ function loadBookings(files, now = Date.now()) {
   const map = new Map();
   // Past BOOKING_HOURS, up to PREV_HOURS: not used, kept to compare a recheck with (map.prev; saved with the map).
   const prev = new Map();
+  const seen = new Map(), twice = new Set();
   for (const f of files) {
     if (!f || !fs.existsSync(f)) continue;
     let o;
     try { o = JSON.parse(fs.readFileSync(f, 'utf8')); } catch { continue; }
     for (const [k, b] of Object.entries(o)) {
+      // Telemetry: the same ticket's page made twice within 2 h (the sweep's pages beside the
+      // scrape and the booking runner work the same queue).
+      const t = Date.parse(b.at);
+      if (seen.has(k) && seen.get(k) !== t && Math.abs(seen.get(k) - t) < 2 * 3600e3 && now - Math.max(seen.get(k), t) < 3 * 3600e3) twice.add(k);
+      if (!seen.has(k) || seen.get(k) < t) seen.set(k, t);
       // `hours`: a filter view's ticket booked at its listed price is held longer (bookingPass listedHours).
       // Every expired check is kept in prev (a page without the listed offer, short, or with no
       // seller in its cabin too: users test for those): why a ticket is due again (dueWhy), and how
@@ -65,7 +71,9 @@ function loadBookings(files, now = Date.now()) {
     }
   }
   map.prev = prev;
-  return index(map);
+  const out = index(map);
+  out.twice = twice.size;
+  return out;
 }
 
 // By outbound too: a round trip's outbound row (no return chosen) is priced as its cheapest round trip.
