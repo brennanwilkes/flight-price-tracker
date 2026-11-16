@@ -743,6 +743,41 @@ test('a round trip shows its cheapest return with long stops counted as price, n
   assert.strictEqual(trip.tickets[0].flights.back.legs[0].code, 'PR592');
 });
 
+test("a round trip's outbound whose returns hold none that fits is passed over for the next; none left, the trip doesn't connect", async () => {
+  const { addDetails, returnsFor, flightsOf } = require('../scraper/src/trips/details');
+  const { airportsOf } = require('../frontend/app/cities.js');
+  const leg = (code, from, to, d, dep, arr) => ({ code, airline: code.slice(0, 2), from, to, dep, arr, depDate: d, arrDate: d, min: 0 });
+  const opt = (price, l) => ({ price, min: 0, airlines: [l.airline], stops: [], legs: [l] });
+  // Out to Jakarta, a hop landing back there at 12:30 on the day home, then the return.
+  const make = () => ({ order: [[0, 'out'], [1, 'out'], [0, 'back']], tickets: [
+    { kind: 'rt', cabin: 'J', from: 'YVR', to: 'JKT', date: '2027-09-01', ret: '2027-09-18', price: 4000 },
+    { kind: 'ow', cabin: 'Y', from: 'SIN', to: 'JKT', date: '2027-09-18', price: 100 }] });
+  const sel = (code) => ({ from: airportsOf('YVR'), to: airportsOf('JKT'), out: '2027-09-01', ret: '2027-09-18', cabin: 'J',
+    selected: [{ from: 'YVR', to: 'CGK', date: '2027-09-01', airline: code.slice(0, 2), number: code.slice(2) }] });
+  const cacheOf = (outs) => {
+    const [fo, fh, fb] = flightsOf(make());
+    return new Map([[JSON.stringify(fo.query), Promise.resolve(outs)],
+      [JSON.stringify(fh.query), Promise.resolve([opt(100, leg('TR1', 'SIN', 'CGK', '2027-09-18', '10:30', '12:30'))])],
+      [JSON.stringify(fb.query), Promise.resolve([opt(2000, leg('PR9', 'CGK', 'YVR', '2027-09-18', '20:00', '23:00'))])],
+      // Philippine's returns with PR117 chosen all leave at 01:20, before the hop lands.
+      [JSON.stringify(sel('PR117')), Promise.resolve([opt(4000, leg('PR536', 'CGK', 'YVR', '2027-09-18', '01:20', '11:00'))])],
+      [JSON.stringify(sel('CX889')), Promise.resolve([opt(4400, leg('CX718', 'CGK', 'YVR', '2027-09-18', '19:00', '23:00'))])]]);
+  };
+  const never = async () => { throw new Error('searched again'); };
+  const pr = opt(4000, leg('PR117', 'YVR', 'CGK', '2027-09-01', '08:00', '12:00')), cx = opt(4400, leg('CX889', 'YVR', 'CGK', '2027-09-01', '08:00', '12:00'));
+  const a = make();
+  const cache = cacheOf([pr, cx]);
+  await addDetails([a], cache, never, null, Date.now() + 5000);
+  await returnsFor(cache, a, 5);
+  assert.strictEqual(a.connects, true);
+  assert.strictEqual(a.tickets[0].flights.out.legs[0].code, 'CX889');
+  assert.strictEqual(a.tickets[0].flights.back.legs[0].code, 'CX718');
+  assert.strictEqual(a.tickets[0].price, 4400);
+  const b = make();
+  await addDetails([b], cacheOf([pr]), never, null, Date.now() + 5000);
+  assert.strictEqual(b.connects, false);
+});
+
 test('a long-haul capped trip whose return was never searched has no price; with search, its return is searched and priced', async () => {
   const { capped, flightsOf, listedOnly } = require('../scraper/src/trips/details');
   const leg = (code, from, to, d) => ({ code, airline: code.slice(0, 2), from, to, dep: '08:00', arr: '12:00', depDate: d, arrDate: d, min: 600 });

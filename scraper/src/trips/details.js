@@ -19,6 +19,7 @@ const { samePrice } = require('../../../frontend/app/price.js');
 const { SELF_HOURS, SELF_PEN } = require('./multi');
 
 const MIN_CONNECT_MIN = 4 * 60;
+const OUT_TRIES = 6; // outbounds of a round trip passed over in one check for returns that don't fit
 const CONCURRENCY = 12; // plain searches in flight (~2 s each)
 const PAGES = 4; // browser pages at once (10-60 s each), by default: a search waiting on one doesn't hold up the plain ones
 // Google refusing plain searches (HTTP 429, or a redirect to its "unusual traffic" page): none
@@ -212,6 +213,9 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
     const r = p.catch((e) => (e instanceof Late ? LATE : { error: e.message }))
       .then((v) => { if (v === LATE && cache.get(key) === r) cache.delete(key); return applyBookings(bookings, key, v); });
     cache.set(key, r);
+    const done = () => cache.pending.delete(key);
+    (cache.pending ??= new Set()).add(key); // in flight (pickFlights doesn't wait on a return's)
+    r.then(done, done);
     return r;
   };
   const fetchPlain = (p, q, tries) => plain(p, deadline, async () => {
@@ -400,16 +404,45 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
       const all = await fullOnce(flights[i].query);
       if (!all.error && all.length) lists[i] = all;
     }
-    const s = settle(trip, flights, lists, picks);
+    let s = settle(trip, flights, lists, picks);
+    // A round trip's outbound whose returns (the search with it chosen, already made) hold none
+    // that fits the flights either side can't be flown in this trip: the next outbound that
+    // connects is picked (its returns searched in turn), and with none left the trip doesn't
+    // connect, so its cell walks on. Left as picked, the cell stayed hidden as "return not
+    // searched" with nothing left to search: 1,056 cells, 9:05 pm Vancouver Nov 15 (934 of 997
+    // such returns: a long-haul ticket whose returns all leave before the flight before lands).
+    const full = lists.slice(); // every outbound listed: the fare's listed price is from these
+    for (let n = 0; n < OUT_TRIES; n++) {
+      let dropped = false;
+      for (const [i, f] of flights.entries()) {
+        const out = f.dir === 'back' && s.picks[i]?.likely && outPick(flights, s.picks, f.ticket);
+        if (!out?.legs) continue;
+        const key = JSON.stringify(returnQuery(f.ticket, out));
+        if (cache.pending?.has(key)) continue; // being searched now: not waited for here
+        const list = cache.has(key) ? await cache.get(key) : stale.get(key);
+        if (!Array.isArray(list) || !list.length || chosenReturn(trip, flights, s.picks, i, list)) continue;
+        const j = flights.findIndex((g) => g.ticket === f.ticket && g.dir === 'out');
+        const rest = lists[j].filter((o) => o !== out);
+        tally.outDropped = (tally.outDropped ?? 0) + 1;
+        if (!rest.length) { s = { ...s, connects: false }; tally.outNone = (tally.outNone ?? 0) + 1; n = OUT_TRIES; break; }
+        if (STALE.has(lists[j])) STALE.add(rest);
+        lists[j] = rest;
+        dropped = true;
+        break;
+      }
+      if (!dropped) break;
+      picks = choose(trip, flights, lists);
+      s = settle(trip, flights, lists, picks);
+    }
     for (const [i, f] of flights.entries()) {
       f.ticket.flights ??= {};
       // Its listed prices from an earlier day, or from before the graph's price last changed: the
       // fare's own price stands (and the outdated search is made again, after the rest).
       // Telemetry (build-trips.js searchChurn): which fare each outbound search prices.
       if (f.dir === 'out' && (f.ticket.kind === 'ow' || f.ticket.kind === 'rt')) (cache.fareKeys ??= new Map()).set(f.key, fareKey(f.ticket));
-      const old = STALE.has(lists[i]) || outdated(f, lists[i]);
-      if (listed && !old && f.dir === 'out' && !lists[i].error && lists[i].length && (f.ticket.kind === 'ow' || f.ticket.kind === 'rt')) {
-        listed.set(fareKey(f.ticket), cheapest(lists[i]).price);
+      const old = STALE.has(full[i]) || outdated(f, full[i]);
+      if (listed && !old && f.dir === 'out' && !full[i].error && full[i].length && (f.ticket.kind === 'ow' || f.ticket.kind === 'rt')) {
+        listed.set(fareKey(f.ticket), cheapest(full[i]).price);
         // When the listing was searched (an earlier build's search: its time; else now).
         const ats = [cache.at?.get(f.key), cache.at?.get(`full ${f.key}`)].filter(Boolean).sort();
         (listed.at ??= new Map()).set(fareKey(f.ticket), ats[0] ?? new Date().toISOString().replace(/\.\d+Z$/, 'Z'));

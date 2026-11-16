@@ -80,6 +80,19 @@ without it, more than once, including on Nov 14).
   trip's return search ended (`return searches for kept trips ended`: a list that came back with
   no return that fits leaves the cell hidden as "return not searched" with nothing queued).
 
+- **6:05-9:05 pm Nov 15:** hidden with no flights checked 6-58; never-searched in the queue
+  31-62 (1 for the board); the walk 12-111 s past the deadline (was 400-700). The ~1,050 cells
+  still hidden as "return not searched" all had their return searched: the list held none that
+  fits (`return searches for kept trips ended`: ~1,000 "no return fits" a build). Why
+  (`returns with none that fits`): 934 a long-haul ticket whose returns, with that outbound
+  chosen, all leave before the flight before lands (e.g. YVR-JKT J out PR117+PR535: its 3 returns
+  leave CGK 01:20, the hop in lands 12:30); 63 an Asia return landing too late for the next flight.
+  The check had passed the trip on a return guessed from the one-way list home.
+- **Fixed from 11:05 pm Nov 15:** such an outbound is passed over for the next that connects
+  (`details.js` pickFlights, OUT_TRIES; its returns searched in turn, each step a search the
+  runner makes: ~2 runs); none left, the trip doesn't connect and the cell walks on. Logged as
+  `outbounds passed over`. Not done for the long-haul filter's trips (`capped`).
+
 ### Open bugs, most important first
 
 1. **Hidden board cells don't converge (~1,500).** A round trip's return is searched with the
