@@ -782,7 +782,7 @@ async function main() {
     console.log(`return searches for kept trips ended: ${Object.entries(t.returnEnd ?? {}).sort((a, b) => b[1] - a[1]).map(([w, n]) => `${w} ${n}`).join(', ') || 'none'}`);
     console.log(`returns with none that fits: ${Object.entries(t.returnMiss ?? {}).sort((a, b) => b[1] - a[1]).map(([w, n]) => `${w} ${n}`).join('; ') || 'none'}`);
     for (const x of t.returnMissEx ?? []) console.log(`  e.g. ${x}`);
-    console.log(`outbounds passed over (their returns hold none that fits): ${t.outDropped ?? 0}, ${t.outNone ?? 0} of them the trip's last (doesn't connect)`);
+    console.log(`outbounds passed over (their returns hold none that fits): ${t.outDropped ?? 0}, ${t.outNone ?? 0} of them the trip's last (doesn't connect); in long-haul filter trips ${t.capOutDropped ?? 0}`);
     {
       // Why the board cells' never-searched searches weren't made in this build.
       const by = {};

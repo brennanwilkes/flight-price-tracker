@@ -614,17 +614,33 @@ async function capped(trip, cache, maxMin, homes, { search = null } = {}) {
     if (!l.length) return null;
     lists.push(l);
   }
-  const s = settle(trip, flights, lists, choose(trip, flights, lists));
-  if (s.connects !== true || s.picks.some((p) => !p?.legs)) return null;
-  // Each round trip's return from its outbound-chosen search, where the checks made it.
-  for (const [i, f] of flights.entries()) {
-    const out = f.dir === 'back' && s.picks[i].likely && outPick(flights, s.picks, f.ticket);
-    if (!out) continue;
-    const key = JSON.stringify(returnQuery(f.ticket, out));
-    let list = cache.has(key) ? await cache.get(key) : cache.stale?.get(key);
-    if (!list && search) list = await search(returnQuery(f.ticket, out)).catch(() => null);
-    const back = Array.isArray(list) && chosenReturn(trip, flights, s.picks, i, list);
-    if (back) { s.picks[i] = back; s.seen = { ...s.seen, [i]: cache.at?.get(key) }; }
+  // Each round trip's return from its outbound-chosen search, where the checks made it. An
+  // outbound whose returns hold none that fits is passed over for the next under the cap, as in
+  // pickFlights (left as picked, the cap read "no trip" though another outbound flies it). One
+  // search a call at most: the outbounds after it only from searches already made.
+  let s;
+  let canSearch = !!search;
+  for (let n = 0; ; n++) {
+    s = settle(trip, flights, lists, choose(trip, flights, lists));
+    if (s.connects !== true || s.picks.some((p) => !p?.legs)) return null;
+    let dropped = false;
+    for (const [i, f] of flights.entries()) {
+      const out = f.dir === 'back' && s.picks[i].likely && outPick(flights, s.picks, f.ticket);
+      if (!out) continue;
+      const key = JSON.stringify(returnQuery(f.ticket, out));
+      let list = cache.has(key) ? await cache.get(key) : cache.stale?.get(key);
+      if (!list && canSearch) { canSearch = false; list = await search(returnQuery(f.ticket, out)).catch(() => null); }
+      const back = Array.isArray(list) && chosenReturn(trip, flights, s.picks, i, list);
+      if (back) { s.picks[i] = back; s.seen = { ...s.seen, [i]: cache.at?.get(key) }; continue; }
+      if (!Array.isArray(list) || !list.length || n >= OUT_TRIES) continue;
+      const j = flights.findIndex((g) => g.ticket === f.ticket && g.dir === 'out');
+      lists[j] = lists[j].filter((o) => o !== out);
+      if (!lists[j].length) return null;
+      if (cache.tally) cache.tally.capOutDropped = (cache.tally.capOutDropped ?? 0) + 1;
+      dropped = true;
+      break;
+    }
+    if (!dropped) break;
   }
   const copies = new Map(trip.tickets.map((t) => [t, { ...t, flights: {} }]));
   for (const [i, f] of flights.entries()) {

@@ -130,7 +130,16 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
     await ties(Math.min(until, Date.now() + TIES_MS));
     phase = 'filters';
     // Not those booked in this run already (the board's, the unchecked dates').
-    await pass('filters', all.slice(nBoard).filter((t) => !(bookings.get(keyOf(t))?.at >= started)), until, FILTER_LISTED_HOURS);
+    // The filters' tickets due, in order: listed at a new price since its check (where a sale
+    // shows first), then never checked, then longest since its check; the queue's order (cheapest
+    // first) within each. In queue order alone a run's ~900 pages went to the front of the queue
+    // as it came due again (every 3 h where a page lacked the listed offer), and 8,184 of 14,554
+    // tickets had no check in 48 h (10:05 pm Vancouver Nov 15) at ~21,000 filter pages a day.
+    const last = (t) => (bookings.has(keyOf(t)) ? '0' : bookings.prev?.get(keyOf(t))?.at ?? '1');
+    const filters = all.slice(nBoard).filter((t) => !(bookings.get(keyOf(t))?.at >= started))
+      .map((t, i) => [last(t), i, t]).sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : a[1] - b[1])).map((x) => x[2]);
+    console.log(`booking runner, filters in order, the first 900: ${dueLine(filters.slice(0, 900), bookings)}`);
+    await pass('filters', filters, until, FILTER_LISTED_HOURS);
   } finally {
     clearInterval(tick); clearInterval(watch);
     // Where the page slots' time went (page-stats.js lines, then the slot split): pages, waiting on a
