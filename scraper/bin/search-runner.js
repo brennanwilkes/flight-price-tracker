@@ -19,6 +19,7 @@ const zlib = require('node:zlib');
 const { parseResults, dedupe } = require('../src/gflights/flights');
 const { openBrowserThread } = require('../src/gflights/browser-thread');
 
+const DONE_HOURS = 3; // a search of the last runs' is not made again: the queue's build hadn't merged it
 const PAGE_MS = 60_000; // as details.js SLOW_PAGE_MS: some searches (YYJ business returns) take Google > 30 s
 
 const arg = (name, def) => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1] : def; };
@@ -37,7 +38,23 @@ const pct = (a, q) => (a.length ? `${(a.toSorted((x, y) => x - y)[Math.floor(q *
   console.log(`search runner: ${queue.length} browser searches queued (${queue.filter((s) => s.had).length} served stale meanwhile)`);
   if (!queue.length) return;
 
+  // The last run's searches (--out as restored, before this run writes it): the queue was written
+  // by the build that ran beside them, so its head is the searches that run just made. Skipped
+  // here, and their rows kept in --out for the build that hasn't merged them (a failed sweep).
   const rows = [];
+  try {
+    const cut = Date.now() - DONE_HOURS * 3600e3;
+    for (const line of zlib.gunzipSync(fs.readFileSync(out)).toString().split('\n')) {
+      if (!line) continue;
+      const r = JSON.parse(line);
+      if (Date.parse(r[1]) >= cut) rows.push(r);
+    }
+  } catch (e) { if (e.code !== 'ENOENT') console.log(`search runner: last run's searches unread (${e.message})`); }
+  const done = new Set(rows.map((r) => r[0]));
+  const queued = queue.length;
+  queue = queue.filter((s) => !s.keys.every((k) => done.has(k)));
+  console.log(`search runner: ${queued - queue.length} of the queue searched by the last run (under ${DONE_HOURS} h ago), skipped; ${rows.length} of its rows kept`);
+  if (!queue.length) return;
   const save = () => {
     fs.writeFileSync(`${out}.tmp`, zlib.gzipSync(rows.map((r) => JSON.stringify(r)).join('\n')));
     fs.renameSync(`${out}.tmp`, out);

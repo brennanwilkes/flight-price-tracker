@@ -124,8 +124,9 @@ const CAPS = [18, 16, 15, 14, 13, 12, 11, 10];
 const SEARCH_PER_CAP = 2; // round trips' returns searched per long-haul cap per cell
 const SEARCH_QUEUE_MAX = 8000; // the search runner's queue: more than a run of it can do
 // How far into its queue the search runner gets in a run (630-905, 12:05-11:05 am Vancouver Nov 14),
-// with room: the builds leave these to it.
-const RUNNER_REACH = 1000;
+// with room: the builds leave these to it. Doubled Nov 16: the runner skips what its last run
+// searched (the queue's head, written beside that run) and works the ~800 behind them.
+const RUNNER_REACH = 2000;
 
 /**
  * Search results from earlier builds, under SEARCH_HOURS old: { cache: key → result, at: key → ISO
@@ -829,7 +830,14 @@ async function main() {
       // `view`: whose search it is, for the runner's tally (which views a run's pages reach).
       const VIEWS = ['board', 'via', 'long-haul cap'];
       const label = (w) => `${VIEWS[viewOf(w.prio)]} ${w.had ? 'refresh' : 'never searched'}`;
-      const list = wanted.sort((a, b) => a.prio - b.prio).slice(0, SEARCH_QUEUE_MAX).map((w) => ({ q: w.q, keys: w.keys, had: w.had, view: label(w) }));
+      // Never searched first, any view's: its cell is hidden until it's made, where a refresh's is
+      // shown from the stale list meanwhile (behind the board's ~4,900 refreshes at ~800 pages a
+      // run, the via views' never-searched ones waited for good: 303 at 12:05 am Vancouver Nov 16).
+      // Refreshes by view, the oldest day first (a list 7 days old is dropped: its cell hidden), then rank.
+      const days = (w) => { const at = searches.at.get(w.keys[0]); return at ? Math.floor((Date.parse(generatedAt) - Date.parse(at)) / 864e5) : 0; };
+      const order = new Map(wanted.map((w) => [w, w.had ? [1, viewOf(w.prio), -days(w), w.prio] : [0, w.prio, 0, 0]]));
+      wanted.sort((a, b) => { const x = order.get(a), y = order.get(b); return x[0] - y[0] || x[1] - y[1] || x[2] - y[2] || x[3] - y[3]; });
+      const list = wanted.slice(0, SEARCH_QUEUE_MAX).map((w) => ({ q: w.q, keys: w.keys, had: w.had, view: label(w) }));
       {
         const by = {};
         for (const w of wanted) by[label(w)] = (by[label(w)] ?? 0) + 1;

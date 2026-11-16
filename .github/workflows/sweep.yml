@@ -251,6 +251,14 @@ jobs:
           path: .search-queue.json
           key: search-queue-${{ github.run_id }}
           restore-keys: search-queue-
+      # The last run's searches: the queue was written beside them, so its head is what they made.
+      # The search runner skips those and keeps their rows (bin/search-runner.js).
+      - name: Restore search runner's last searches
+        uses: actions/cache/restore@v4
+        with:
+          path: .search-extra.json.gz
+          key: search-extra-${{ github.run_id }}
+          restore-keys: search-extra-
       - name: Data snapshot
         run: scripts/run_sweep.sh snapshot
 
