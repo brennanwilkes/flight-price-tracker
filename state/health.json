@@ -1,7 +1,34 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-17T14:06:18Z",
+ "lastSuccess": "2026-11-17T15:07:00Z",
  "runs": [
+  {
+   "at": "2026-11-17T15:07:00Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 270,
+   "failed": 2,
+   "cells": 8442,
+   "priced": 8182,
+   "changes": 3984,
+   "errors": [
+    "YVR-DPS-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-CAN-J 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 832,
+   "pages": 6,
+   "skipped": 560,
+   "pauses": 1,
+   "secondOk": 16,
+   "seconds": 1589,
+   "success": true
+  },
   {
    "at": "2026-11-17T14:06:18Z",
    "egress": "vpn",
@@ -596,37 +623,6 @@
    "skipped": 25,
    "secondOk": 3,
    "seconds": 1216,
-   "success": true
-  },
-  {
-   "at": "2026-11-16T15:07:17Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 189,
-   "failed": 7,
-   "cells": 5612,
-   "priced": 5565,
-   "changes": 1242,
-   "errors": [
-    "YYJ-DPS-Y 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-DPS-Y 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-HAN-Y 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-HAN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "SGN-YVR-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-DAD-J 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-DAD-Y 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 226,
-   "pages": 3,
-   "skipped": 30,
-   "secondOk": 17,
-   "seconds": 1528,
    "success": true
   }
  ]
