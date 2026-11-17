@@ -156,7 +156,7 @@ function bookingCandidates(tiers, rowsOf, map, homes) {
       const mine = legsKey(t.flights.out.legs);
       const alts = [...new Map(rows.filter((o) => o.legs?.length && legsKey(o.legs) !== mine && (o.listedPrice ?? o.price) <= t.price * ALT_WITHIN)
         .map((o) => [legsKey(o.legs), o])).values()].sort((a, b) => (a.listedPrice ?? a.price) - (b.listedPrice ?? b.price)).slice(0, ALTS);
-      for (const o of alts) add({ ...t, listed: o.listedPrice ?? o.price, flights: { out: { legs: o.legs }, back: t.flights.back } });
+      for (const o of alts) add({ ...t, alt: 1, listed: o.listedPrice ?? o.price, flights: { out: { legs: o.legs }, back: t.flights.back } });
     }
   }
 }

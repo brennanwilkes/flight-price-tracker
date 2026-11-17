@@ -71,6 +71,7 @@ const { tierOf } = require('../src/alerts/rules');
 const { flexOf } = require('../../frontend/app/flex.js');
 const { packJson } = require('../../frontend/app/pack.js');
 const { markLows, cellTrips } = require('../src/trips/lows');
+const { turnover } = require('../src/trips/turnover');
 const { applyMulti, multiCache, multiSaving } = require('../src/trips/multi');
 const { buildTripsThreaded } = require('../src/trips/threads');
 
@@ -104,7 +105,7 @@ const QUEUE_MAX = 20000; // every board ticket (~9,600 on 2026-11-12) and its ot
 // `min`: the booking pass's cabin check goes by flight length (gflights/booking.js inCabin).
 const slimLegs = (f) => f && { legs: f.legs.map(({ code, from, to, depDate, min }) => ({ code, from, to, depDate, min })) };
 // `listed`: what Google listed it at, before booking prices (bookings.js listedOf): a page is judged against that.
-const slim = (t) => ({ kind: t.kind, from: t.from, to: t.to, date: t.date, ret: t.ret, cabin: t.cabin, price: t.price, listed: listedOf(t), flights: { out: slimLegs(t.flights.out), back: slimLegs(t.flights.back) } });
+const slim = (t) => ({ kind: t.kind, from: t.from, to: t.to, date: t.date, ret: t.ret, cabin: t.cabin, price: t.price, listed: listedOf(t), ...(t.alt ? { alt: 1 } : {}), flights: { out: slimLegs(t.flights.out), back: slimLegs(t.flights.back) } });
 // A day's flights and times hold for a day; their listed prices are trusted as long (CHECKED_HOURS)
 // and the fares behind them are 2-48 h old already. Every shown cell needs ~6,200 searches, a build
 // makes ~800: under SEARCH_HOURS = 3 they could never all be fresh at once.
@@ -800,7 +801,15 @@ async function main() {
           const turn = (l, was) => { const a = new Set(l.map(bookingKey)); const b = new Set((was ?? []).map(bookingKey)); const added = [...a].filter((k) => !b.has(k)); return `${added.length} of ${a.size} not in the last build's (${added.filter((k) => !bookings.has(k) && !bookings.prev?.has(k)).length} of them not checked in 48 h), ${[...b].filter((k) => !a.has(k)).length} of its ${b.size} gone`; };
           console.log(`booking queue turnover: board ${turn(tiers[0], last[0])}; filters' ${turn(tiers[1], last[1])}`);
         } catch (e) { console.log(`booking queue turnover: not worked out (${e.message})`); }
-        if (queueFile) fs.writeFileSync(queueFile, JSON.stringify({ tiers: tiers.map((l) => l.map(slim)), ...(ties ? { ties } : {}) }));
+        // What the newcomers and the leavers are, how long tickets stay, how many come back (turnover.js).
+        let seen = null;
+        try {
+          const q = JSON.parse(fs.readFileSync(queueFile, 'utf8'));
+          const r = turnover(tiers, q.tiers ?? [], q.seen, (k) => bookings.has(k) || !!bookings.prev?.has(k), Date.parse(generatedAt));
+          seen = r.seen;
+          for (const l of r.lines) console.log(l);
+        } catch (e) { console.log(`booking queue turnover, by kind: not worked out (${e.message})`); }
+        if (queueFile) fs.writeFileSync(queueFile, JSON.stringify({ tiers: tiers.map((l) => l.map(slim)), ...(ties ? { ties } : {}), ...(seen ? { seen } : {}) }));
         const fresh = (l) => l.filter((t) => bookings.has(bookingKey(t))).length;
         console.log(`booking queue: ${tiers[0].length} board itineraries (${fresh(tiers[0])} with a booking price under ${BOOKING_HOURS} h), ${tiers[1].length} filters' (${fresh(tiers[1])}); ${tickets.length} shown tickets, ${others.length} others the checks priced`);
         // Of those due (none under BOOKING_HOURS), how many were checked before (bookings.prev, up to

@@ -218,6 +218,21 @@ Read at 4:20 pm Nov 16 (runs 8:05 am-3:05 pm), every line above printing:
   tickets are new each build and as many leave (23% an hour; 1,971 of the new ones not checked in
   48 h), against ~830 checked a run. The board's turns over 825 of 4,273 (184 not checked in 48 h).
   Next: log why a filter ticket leaves the queue (its cell's cheapest moved, or the cell went).
+- That log, from the 8:05 pm Nov 16 build (`trips/turnover.js`, three lines a tier; stays are
+  counted from that build, so read the stay and time-queued parts from Nov 17 on):
+  - `booking queue turnover, filters' new (…)`: what the newcomers are against the last build:
+    `other dates on its route` (the cell moved to another trip), `same dates, other outbound /
+    return flights` (Google's cheapest flight on the date changed), `another outbound of a ticket
+    in both` (the 2 other outbounds queued with each long-haul ticket changed with its search's
+    rows), `in the board tier there`; and how many `were queued before in 48 h` (tickets that
+    flip in and out).
+  - `… gone (…)`: the same for the leavers, `stayed one build / 1-3 h / …`, and how many `had a
+    booking page in 48 h` (pages spent on tickets that then left).
+  - `… by time queued`: the queue by how long each ticket has been in it, with the not-checked of
+    each age. Mostly `under 1 h` and `1-3 h` among the not-checked: the pages go to a fringe that
+    leaves before it is reached, and the fix is to stop the flipping at its source (which kind
+    leads above) or queue a ticket once it has stayed. Mostly `25+ h`: the standing tickets are
+    starved, and the order the runner takes them in is the fix.
 
 ### Open bugs, most important first
 
