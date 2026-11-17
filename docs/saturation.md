@@ -210,6 +210,14 @@ Read at 4:20 pm Nov 16 (runs 8:05 am-3:05 pm), every line above printing:
 - Booking pages made twice: 51-146 a run of ~1,600.
 - Filters: fresh flat (4,161 of 15,317); never checked 7,308 → 6,961 with 836 of the first 900
   never checked each run. Search runner errors 1-16 a run since 10:05 am (82 at 8:05 am). Canary full, held 0 min.
+- First run with both calls (6:05 pm Nov 16, run 43992789096, both jobs passed): hidden 286 → 141;
+  191 then 139 cells showed their best proven trip (17.5-20.6% median over the best's unproven
+  price, 203% most), 22 and 17 had a stand-in picked that didn't prove. Pages without the listed
+  offer priced at the page's price: 69 of 140, 0 of 173 and 9 of 10 in the three passes.
+- Why the filters don't get fresher: `booking queue turnover` says 3,543 of the filters' 15,275
+  tickets are new each build and as many leave (23% an hour; 1,971 of the new ones not checked in
+  48 h), against ~830 checked a run. The board's turns over 825 of 4,273 (184 not checked in 48 h).
+  Next: log why a filter ticket leaves the queue (its cell's cheapest moved, or the cell went).
 
 ### Open bugs, most important first
 
