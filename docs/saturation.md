@@ -190,6 +190,11 @@ Read at 4:20 pm Nov 16 (runs 8:05 am-3:05 pm), every line above printing:
 - Runner skip: 462-803 a run, `extraTo` a time each run.
 - "View more flights" stays: 23-32% of pages with later replies had a row cheaper than the first
   list's cheapest (112-157 of 438-495).
+- Business lows up ~10-15% at the cheap end since 11 pm Nov 15 (board p10 $4,900 → $5,750; economy
+  and Google's graph fares flat): Globehunters' and Trip.com's deep discounts ended (cheapest on
+  ~5% and 1-3% of business pages → ~0%). Real, not the runner's list: Brennan's own Chrome showed
+  the canary at $4,618 AranGrant, Trip.com $4,899, Globehunters $4,871 (5 pm Nov 16), as the runner
+  sees. So the canary's price test (under $4,000) is dead; only its seller count (10+ full, 6 short) tells.
 - Booking pages made twice: 51-146 a run of ~1,600.
 - Filters: fresh flat (4,161 of 15,317); never checked 7,308 → 6,961 with 836 of the first 900
   never checked each run. Search runner errors 1-16 a run since 10:05 am (82 at 8:05 am). Canary full, held 0 min.
