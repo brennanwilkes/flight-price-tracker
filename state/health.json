@@ -1,7 +1,34 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-17T08:06:58Z",
+ "lastSuccess": "2026-11-17T09:06:15Z",
  "runs": [
+  {
+   "at": "2026-11-17T09:06:15Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 193,
+   "failed": 2,
+   "cells": 6580,
+   "priced": 6228,
+   "changes": 3392,
+   "errors": [
+    "BJS-GUM-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-GUM-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 803,
+   "pages": 6,
+   "pauses": 1,
+   "skipped": 608,
+   "secondOk": 10,
+   "seconds": 1306,
+   "success": true
+  },
   {
    "at": "2026-11-17T08:06:58Z",
    "egress": "vpn",
@@ -593,36 +620,6 @@
    "skipped": 162,
    "secondOk": 12,
    "seconds": 1351,
-   "success": true
-  },
-  {
-   "at": "2026-11-16T09:07:01Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 240,
-   "failed": 5,
-   "cells": 7965,
-   "priced": 7626,
-   "changes": 2507,
-   "errors": [
-    "YYJ-OSA-Y 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-TYO-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "KUL-MNL-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-OSA-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Osaka KIX ITM Filters All ",
-    "YYJ-OSA-Y 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Osaka KIX ITM Filters All "
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 478,
-   "pages": 6,
-   "pauses": 3,
-   "skipped": 233,
-   "secondOk": 18,
-   "seconds": 1544,
    "success": true
   }
  ]
