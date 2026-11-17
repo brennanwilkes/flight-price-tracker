@@ -787,7 +787,27 @@ async function main() {
         // can still be found cheaper on its booking page. The next run's pass beside the scrape
         // works through it after the shown tickets.
         const shown = new Set(tickets);
-        const others = [...new Set(trips.flatMap((t) => t.tickets))].filter((t) => !shown.has(t) && t.flights?.out?.legs?.length).sort((a, b) => a.price - b.price);
+        const planned = [...new Set(trips.flatMap((t) => t.tickets))];
+        const others = planned.filter((t) => !shown.has(t) && t.flights?.out?.legs?.length).sort((a, b) => a.price - b.price);
+        // Telemetry (turnover.js goneWhy): each shown ticket's cell (its first, by the label below)
+        // and that cell's total, carried in the queue's file; each cell's total and each planned
+        // itinerary's price now. Why does a ticket leave the queue: dearer, no longer planned, or
+        // its cell picked another trip at the same prices?
+        const cellOf = new Map(); const cellTotal = new Map(); const priceNow = new Map();
+        for (const [v, rows] of byHome) {
+          if (!v.endsWith('|')) continue;
+          for (const r of rows) {
+            for (const cls of CLASSES) {
+              const base = [['', r[cls]], ...Object.entries(r.months ?? {}).map(([m, x]) => [` ${m}`, x[cls]]), ...Object.entries(r.bands ?? {}).map(([b, x]) => [` band ${b}`, x[cls]])].filter(([, t]) => t);
+              for (const [l, t] of [...base, ...base.flatMap(([l, t]) => Object.entries(t.fast ?? {}).filter(([, f]) => f).map(([k, f]) => [`${l} fast ${k}`, f]))]) {
+                const cell = `${v}${rowId(r)}|${cls}${l}`;
+                cellTotal.set(cell, t.total);
+                for (const x of t.tickets ?? []) { if (!x.flights?.out?.legs?.length) continue; const k = bookingKey(x); if (!cellOf.has(k)) cellOf.set(k, { cell, cellTotal: t.total }); }
+              }
+            }
+          }
+        }
+        for (const t of planned) { if (!t.flights?.out?.legs?.length) continue; const k = bookingKey(t); if (!(priceNow.get(k) <= t.price)) priceNow.set(k, t.price); }
         const tiers = [bookingCandidates(board, lookup, new Map(), homes)];
         const boardKeys = new Map(tiers[0].map((t) => [bookingKey(t), null]));
         tiers.push(bookingCandidates([...tickets, ...others], lookup, boardKeys, homes).slice(0, Math.max(0, QUEUE_MAX - tiers[0].length)));
@@ -805,11 +825,12 @@ async function main() {
         let seen = null;
         try {
           const q = JSON.parse(fs.readFileSync(queueFile, 'utf8'));
-          const r = turnover(tiers, q.tiers ?? [], q.seen, (k) => bookings.has(k) || !!bookings.prev?.has(k), Date.parse(generatedAt));
+          const r = turnover(tiers, q.tiers ?? [], q.seen, (k) => bookings.has(k) || !!bookings.prev?.has(k), Date.parse(generatedAt), undefined, { cellTotal, priceNow });
           seen = r.seen;
           for (const l of r.lines) console.log(l);
         } catch (e) { console.log(`booking queue turnover, by kind: not worked out (${e.message})`); }
-        if (queueFile) fs.writeFileSync(queueFile, JSON.stringify({ tiers: tiers.map((l) => l.map(slim)), ...(ties ? { ties } : {}), ...(seen ? { seen } : {}) }));
+        const slimCell = (t) => ({ ...slim(t), ...(t.alt ? {} : cellOf.get(bookingKey(t)) ?? {}) });
+        if (queueFile) fs.writeFileSync(queueFile, JSON.stringify({ tiers: tiers.map((l) => l.map(slimCell)), ...(ties ? { ties } : {}), ...(seen ? { seen } : {}) }));
         const fresh = (l) => l.filter((t) => bookings.has(bookingKey(t))).length;
         console.log(`booking queue: ${tiers[0].length} board itineraries (${fresh(tiers[0])} with a booking price under ${BOOKING_HOURS} h), ${tiers[1].length} filters' (${fresh(tiers[1])}); ${tickets.length} shown tickets, ${others.length} others the checks priced`);
         // Of those due (none under BOOKING_HOURS), how many were checked before (bookings.prev, up to

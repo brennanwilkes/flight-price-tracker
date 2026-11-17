@@ -59,6 +59,23 @@ test('booking candidates: the board\'s tickets, hops too, before any filter\'s',
   assert.deepStrictEqual(got.map((t) => t.flights.out.legs[0].code), ['PR117', 'VN595', 'CX865']);
 });
 
+test('booking candidates: a recheck at the listed price, listed the same since, after the tier\'s other due tickets, until 36 h on', () => {
+  const h = 3600e3; const now = Date.parse('2027-01-10T12:00:00Z');
+  const at = (hoursAgo) => new Date(now - hoursAgo * h).toISOString();
+  const mk = (code, price) => ({ ...ticket, price, listed: price, flights: { out: { legs: [leg(code, 'YVR', 'HKG', '2027-09-10')] }, back: { legs: BACK } } });
+  const quietT = mk('AA1', 3000); const never = mk('AA2', 3100); const below = mk('AA3', 3200); const old = mk('AA4', 3300); const moved = mk('AA5', 3400); const board = mk('AA6', 5000);
+  const m = new Map();
+  m.prev = new Map([
+    [keyOf(quietT), { price: 3000, listed: 3000, at: at(14), n: 12 }],
+    [keyOf(below), { price: 2700, listed: 3200, at: at(14), n: 12 }], // a discount: rechecked in place
+    [keyOf(old), { price: 3300, listed: 3300, at: at(40), n: 12 }], // past 36 h: in place
+    [keyOf(moved), { price: 3000, listed: 3000, at: at(14), n: 12 }], // listed at 3,400 now: in place
+    [keyOf(board), { price: 5000, listed: 5000, at: at(14), n: 12 }],
+  ]);
+  const got = bookingCandidates([[board], [quietT, never, below, old, moved]], () => null, m, ['YVR'], now);
+  assert.deepStrictEqual(got.map((t) => t.flights.out.legs[0].code), ['AA6', 'AA2', 'AA3', 'AA4', 'AA5', 'AA1']);
+});
+
 test('in cabin: every flight of 6 h or more in the ticket\'s cabin or better; without lengths, every leg', () => {
   assert.ok(inCabin({ cabins: [3, 3, 3, 3] }, 'J'));
   assert.ok(!inCabin({ cabins: [3, 1, 3, 3] }, 'J'));

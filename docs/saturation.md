@@ -233,6 +233,28 @@ Read at 4:20 pm Nov 16 (runs 8:05 am-3:05 pm), every line above printing:
     leaves before it is reached, and the fix is to stop the flipping at its source (which kind
     leads above) or queue a ticket once it has stayed. Mostly `25+ h`: the standing tickets are
     starved, and the order the runner takes them in is the fix.
+- Read at 9:40 am Nov 17 (run-stats 40; run 44110251859): not converging. Filters fresh 4,358 of
+  14,788 (+27 a run); search backlog drained 11,030 → 7,106 by 6 pm Nov 16, then flat at
+  7,300-7,900; hidden 135 (falling ~4 a run).
+  - Both queues are fed by the cells moving: the filters' tier takes in 3,565 a build (1,796 of
+    them back after 1-12 h away; 1,358 of the leavers stayed one build), the search side 1,840
+    lookups a build the last didn't make (28,750 of 45,342 fresh searches unused).
+  - Both are starved at the head too: the runner's first 900 filter pages were 694 "hold ran out",
+    with 5,347 never checked waiting. Such a recheck (at listed, listed the same) found a cheaper
+    seller 137 of 1,993 times (7%, 8 runs); a first page 67 of 193 (35%).
+  - Fix (from the 10:05 am Nov 17 build): those rechecks go after the rest of their tier until 36
+    h after the check (`bookings.js` QUIET_HOURS). Due reasons now split "hold ran out, at listed
+    and unmoved". Expect the filters' never-checked to fall and fresh to rise; watch the
+    rechecks' "booked lower" share in `rechecked N` (it should stay near 7%).
+  - Telemetry: `booking queue turnover, <tier> gone, why:` per leaver, against this build: `its
+    flights no longer planned`, `dearer now (listed up / was below listed …)`, `cheaper now, still
+    not picked`, `same price, its cell found a cheaper trip`, `… its cell dearer now`, `… its cell
+    gone`, `… the same total with another trip (a flip)`, other outbounds by their ticket. Flips
+    are the bug to fix at the source (a tie-break that holds the last pick); the first build
+    after this reads `cell not known` (the last queue had no cells).
+  - Search runner: 667 searches in 43 min, slots 97% in pages, page 14.7 s (Google's reply 61%,
+    "more flights" 30%). More slots pinned the machine on Nov 14, so its ~670 a run is the cap;
+    the search side converges only if churn falls.
 
 ### Open bugs, most important first
 

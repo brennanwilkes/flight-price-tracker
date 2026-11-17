@@ -26,3 +26,23 @@ test('booking queue turnover: what the new and the gone tickets are, how long th
   assert.match(r.lines[5], /by time queued: 1-3 h 1 \(1 not checked in 48 h\)/);
   assert.strictEqual(Object.values(r.seen).filter((v) => v[2] === 2).length, 1);
 });
+
+test('booking queue turnover: why each gone ticket left (dearer, not planned, its cell cheaper, a flip)', () => {
+  const { keyOf } = require('../scraper/src/trips/bookings');
+  const cell = 'YVR|HKG|hybrid band 2027-09-01';
+  const flip = rt('2027-09-10', '2027-09-25', 'PR117', 'PR116', { cell, cellTotal: 4000 });
+  const dearer = rt('2027-09-11', '2027-09-25', 'PR117', 'PR116', { cell, cellTotal: 4000 });
+  const lost = rt('2027-09-12', '2027-09-25', 'PR117', 'PR116', { cell, cellTotal: 4000 });
+  const cheaperCell = rt('2027-09-13', '2027-09-25', 'PR117', 'PR116', { cell: 'other', cellTotal: 4000 });
+  const disc = rt('2027-09-14', '2027-09-25', 'PR117', 'PR116', { cell, cellTotal: 4000, price: 3500, listed: 4000 });
+  const priceNow = new Map([[keyOf(flip), 4000], [keyOf(dearer), 4400], [keyOf(cheaperCell), 4000], [keyOf(disc), 4000]]);
+  const cellTotal = new Map([[cell, 4000], ['other', 3600]]);
+  const r = turnover([[], []], [[], [flip, dearer, lost, cheaperCell, disc]], null, (k) => k === keyOf(flip), 1000 * 3600e3, undefined, { priceNow, cellTotal });
+  const line = r.lines.find((l) => l.includes("filters' gone, why"));
+  assert.match(line, /1 same price, its cell the same total with another trip \(a flip\)/);
+  assert.match(line, /1 dearer now \(listed up\)/);
+  assert.match(line, /1 its flights no longer planned/);
+  assert.match(line, /1 same price, its cell found a cheaper trip/);
+  assert.match(line, /1 dearer now \(was below listed: booking price gone or up\)/);
+  assert.match(line, /; 1 of the flips had a booking page/);
+});

@@ -30,6 +30,32 @@ function kind(t, other, tierName) {
   return other.routes.has(route(t)) ? 'other dates on its route' : 'a route not in the other';
 }
 
+/**
+ * Why a ticket of the last build's queue (with its `cell` and `cellTotal` then) isn't in this one:
+ * `ctx.priceNow` (key → this build's price of that itinerary, any trip planned), `ctx.cellTotal`
+ * (cell → its total now). "same prices, its cell picked another" with the cell's total unmoved is a
+ * flip between equal trips: the churn that costs pages and searches for nothing.
+ */
+function goneWhy(t, ctx, aIndex, tierName) {
+  const k = keyOf(t);
+  if (aIndex.tierOf.has(k)) return `to the ${tierName[aIndex.tierOf.get(k)]} tier`;
+  if (t.alt) return aIndex.own.has(slot(t)) ? 'other outbound, its ticket still queued' : 'other outbound, its ticket gone too';
+  const now = ctx.priceNow.get(k);
+  const was = t.price;
+  const moved = (a, b) => Math.abs(a - b) > Math.max(5, b * 0.01);
+  if (now == null) return 'its flights no longer planned';
+  if (moved(now, was)) {
+    if (now < was) return 'cheaper now, still not picked';
+    return t.listed != null && was < t.listed - Math.max(5, t.listed * 0.01) ? 'dearer now (was below listed: booking price gone or up)' : 'dearer now (listed up)';
+  }
+  if (t.cell == null) return 'same price, cell not known';
+  const total = ctx.cellTotal.get(t.cell);
+  if (total == null) return 'same price, its cell gone';
+  if (total < t.cellTotal - Math.max(5, t.cellTotal * 0.01)) return 'same price, its cell found a cheaper trip';
+  if (total > t.cellTotal + Math.max(5, t.cellTotal * 0.01)) return 'same price, its cell dearer now (another part of its trip moved)';
+  return 'same price, its cell the same total with another trip (a flip)';
+}
+
 function index(tiers) {
   const tierOf = new Map(); const own = new Map(); const routes = new Set();
   tiers.forEach((l, i) => {
@@ -48,7 +74,7 @@ function index(tiers) {
  * from the last build (kept in the queue's file), hours since the epoch. `checked(key)`: has a
  * booking page in 48 h. Returns { lines, seen } with `seen` brought up to this build.
  */
-function turnover(now, was, seen, checked, at = Date.now(), names = ['board', "filters'"]) {
+function turnover(now, was, seen, checked, at = Date.now(), names = ['board', "filters'"], ctx = null) {
   const H = Math.round(at / 360e3) / 10;
   const a = index(now); const b = index(was);
   const next = {};
@@ -78,6 +104,11 @@ function turnover(now, was, seen, checked, at = Date.now(), names = ['board', "f
     const cabins = (list) => `${list.filter((t) => t.cabin === 'J').length} business, ${list.filter((t) => t.alt).length} other outbounds`;
     lines.push(`booking queue turnover, ${names[i]} new (${added.length} of ${keys.size}; ${cabins(added)}): ${tally(added.map((t) => kind(t, b, names)))}; ${back.length} were queued before in ${KEEP_HOURS} h (away ${tally(back.map(hours))})${started ? '; first build counting stays' : ''}`);
     lines.push(`booking queue turnover, ${names[i]} gone (${gone.length} of ${(was[i] ?? []).length}; ${cabins(gone)}): ${tally(gone.map((t) => kind(t, a, names)))}; stayed ${tally(stays)}; ${goneChecked} had a booking page in ${KEEP_HOURS} h`);
+    if (ctx) {
+      const why = gone.map((t) => goneWhy(t, ctx, a, names));
+      const paged = gone.filter((t, j) => checked(keyOf(t)) && why[j].includes('flip')).length;
+      lines.push(`booking queue turnover, ${names[i]} gone, why: ${tally(why)}; ${paged} of the flips had a booking page in ${KEEP_HOURS} h`);
+    }
     lines.push(`booking queue turnover, ${names[i]} by time queued: ${['under 1 h', '1-3 h', '4-12 h', '13-24 h', '25+ h'].filter((h) => ages[h]).map((h) => `${h} ${ages[h]} (${unchecked[h] ?? 0} not checked in ${KEEP_HOURS} h)`).join(', ') || 'none'}`);
   });
   return { lines, seen: next };

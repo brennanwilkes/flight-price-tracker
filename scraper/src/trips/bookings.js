@@ -32,6 +32,11 @@ const PREV_HOURS = 48;
 const near = (a, b) => a != null && b != null && Math.abs(a - b) <= Math.max(5, b * 0.01);
 const ALTS = 2; // a long-haul ticket's other outbounds checked with its return, cheapest first
 const ALT_WITHIN = 1.4; // ... up to this many times its price
+// A ticket last booked at its listed price, listed at the same price since: checked again after
+// every other due ticket in its tier, until this long after its check. Over 8 runs to 8:05 am Nov
+// 17 such rechecks found a cheaper seller 137 times in 1,993 (7%); a first page finds one 1 time in
+// 3 (67 of 193). The filters' first 900 a run were 694 such rechecks while 5,347 waited unchecked.
+const QUIET_HOURS = 36;
 
 const legsKey = (legs) => legs.map((l) => `${l.code}@${l.depDate}`).join(',');
 const selKey = (sel) => sel.map((s) => `${s.airline}${s.number}@${s.date}`).join(',');
@@ -128,21 +133,33 @@ const stripBookings = (rows) => rows.map((o) => (o.listedPrice == null ? o : (({
  * itineraries came before the board's 1,990 hops, which were never reached (2026-11-12). A plain
  * list is one tier. `rowsOf(query key)`: that search's rows or null. Booked within BOOKING_HOURS: skipped.
  */
-function bookingCandidates(tiers, rowsOf, map, homes) {
+function bookingCandidates(tiers, rowsOf, map, homes, now = Date.now()) {
   const lists = Array.isArray(tiers[0]) ? tiers : [tiers];
   const out = []; const seen = new Set();
+  let tier = []; let later = [];
   // Booked within its hours, at the listed price it's queued at: not due. Listed at another price
   // since: due now (a fare moved; a sale shows here first).
   const known = (k, t) => { if (!map.has(k)) return false; const b = map.get(k); return b == null || b.listed == null || near(b.listed, listedOf(t)); };
-  const add = (t) => { if (!t.flights?.out?.legs?.length || (t.ret && !t.flights.back?.legs?.length)) return; const k = keyOf(t); if (!seen.has(k) && !known(k, t)) { seen.add(k); out.push(t); } };
+  const add = (t) => { if (!t.flights?.out?.legs?.length || (t.ret && !t.flights.back?.legs?.length)) return; const k = keyOf(t); if (!seen.has(k) && !known(k, t)) { seen.add(k); (quiet(k, t) ? later : tier).push(t); } };
   const long = (t) => homes.includes(t.from) || homes.includes(t.to);
   for (const tickets of lists) {
     const ok = tickets.filter((t) => (t.kind === 'rt' || t.kind === 'ow') && CABIN[t.cabin]);
     // Business first (what the board is for), each cabin's own tickets before their other outbounds.
     for (const cabin of ['J', 'Y']) addLong(ok.filter((t) => long(t) && t.cabin === cabin));
     for (const t of ok.filter((x) => !long(x))) add(t);
+    out.push(...tier, ...later);
+    tier = []; later = [];
   }
   return out;
+
+  // Its last page (expired, map.prev) had the listed offer at the listed price, on the full list,
+  // and the listed price hasn't moved since, within QUIET_HOURS: checked after the rest (QUIET_HOURS).
+  function quiet(k, t) {
+    const p = map.prev?.get(k);
+    if (!p || p.price == null || p.partial || p.gone || p.short || p.listed == null) return false;
+    if (now - Date.parse(p.at) >= QUIET_HOURS * 3600e3) return false;
+    return p.price >= p.listed - Math.max(5, p.listed * 0.01) && near(p.listed, listedOf(t));
+  }
 
   // Cheapest first, both homes together: in the trips files' order YVR's came first, and at ~150-300
   // pages a run (2026-11-12, over the VPN) YYJ's business tickets were never reached.
@@ -282,6 +299,7 @@ function dueWhy(t, map) {
   if (p.partial) return 'last page lacked the listed offer';
   if (p.short) return 'last checked on the short list';
   if (p.price == null) return 'no seller in its cabin last time';
+  if (p.listed != null && p.price >= p.listed - Math.max(5, p.listed * 0.01) && near(p.listed, listedOf(t))) return Date.now() - Date.parse(p.at) < QUIET_HOURS * 3600e3 ? `hold ran out, at listed and unmoved (after the rest until ${QUIET_HOURS} h)` : `hold ran out, at listed and unmoved, ${QUIET_HOURS} h+`;
   return 'hold ran out';
 }
 /** dueWhy counted over a list, as text. */
