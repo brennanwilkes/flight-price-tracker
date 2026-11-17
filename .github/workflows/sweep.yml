@@ -245,20 +245,6 @@ jobs:
             .booking-checked.json
           key: booking-extra-${{ github.run_id }}
           restore-keys: booking-extra-
-      - name: Restore search queue
-        uses: actions/cache/restore@v4
-        with:
-          path: .search-queue.json
-          key: search-queue-${{ github.run_id }}
-          restore-keys: search-queue-
-      # The last run's searches: the queue was written beside them, so its head is what they made.
-      # The search runner skips those and keeps their rows (bin/search-runner.js).
-      - name: Restore search runner's last searches
-        uses: actions/cache/restore@v4
-        with:
-          path: .search-extra.json.gz
-          key: search-extra-${{ github.run_id }}
-          restore-keys: search-extra-
       - name: Data snapshot
         run: scripts/run_sweep.sh snapshot
 
@@ -294,14 +280,10 @@ jobs:
           echo "$(nproc) CPUs"
           node scraper/bin/booking-runner.js --data .worktrees/warm --queue .booking-queue.json --extra .booking-extra.json --checked .booking-checked.json --until $(( $(date +%s) + 43 * 60 )) --pages 3 --gap 1500 --session-pages 300 &
           pid=$!
-          # The sweep build's browser searches left out of time (bin/search-runner.js), its own browser
-          # and sessions on this tunnel: this runner's CPU idles beside booking pages (load ~1-3 of 4).
-          node scraper/bin/search-runner.js --queue .search-queue.json --out .search-extra.json.gz --until $(( $(date +%s) + 43 * 60 )) --pages 5 --gap 1500 --session-pages 300 2>&1 | sed -u 's/^/[search] /' &
-          spid=$!
           # Load 5-9 at a 2 s booking gap, 12-18 at 1.5 s (9:05, 10:05 pm Vancouver, Nov 13): CPU by runner
           # and by Chrome process kind every minute (to cpu.log, every 5th to the log), averaged at the end.
-          (n=0; while kill -0 $pid 2>/dev/null; do sleep 60; n=$((n + 1)); l="  load: $(cut -d' ' -f1-3 /proc/loadavg); cpu now: $(scripts/cpu-split.sh booking=$pid search=$(pgrep -f bin/search-runner.js | head -1))"; echo "$l" >> cpu.log; [ $((n % 5)) = 0 ] && echo "$l"; done) &
-          wait $spid || echo "search runner failed"
+          # The search runner has its own job since Nov 17 (job `search`): this machine is booking's.
+          (n=0; while kill -0 $pid 2>/dev/null; do sleep 60; n=$((n + 1)); l="  load: $(cut -d' ' -f1-3 /proc/loadavg); cpu now: $(scripts/cpu-split.sh booking=$pid)"; echo "$l" >> cpu.log; [ $((n % 5)) = 0 ] && echo "$l"; done) &
           wait $pid
           scripts/cpu-split.sh --summary cpu.log
           awk '/load:/ { split($0, a, " "); s += a[2]; n++; if (a[2] > m) m = a[2] } END { if (n) printf "load (1 min) average %.1f, max %.1f on %d CPUs\n", s / n, m, '"$(nproc)"' }' cpu.log
@@ -318,6 +300,76 @@ jobs:
             .booking-extra.json
             .booking-checked.json
           key: booking-extra-${{ github.run_id }}
+
+  # The sweep build's browser searches left out of time (bin/search-runner.js) on a runner and
+  # ProtonVPN config of their own (CA#123, Nov 17; the third: Brennan, "sounds like we need a third
+  # one"). Beside booking pages on one 4-vCPU machine it made ~670 a run with 5 slots 97% busy, and 7
+  # slots pinned that machine (load ~16, Nov 14). Alone here: 7 slots, CPU logged to judge more.
+  search:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      PW_CHANNEL: chrome
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: scraper/package-lock.json
+
+      - name: Install
+        working-directory: scraper
+        run: |
+          npm ci --no-audit --no-fund
+          google-chrome --version || npx playwright install --with-deps chrome
+
+      - name: Restore search queue
+        uses: actions/cache/restore@v4
+        with:
+          path: .search-queue.json
+          key: search-queue-${{ github.run_id }}
+          restore-keys: search-queue-
+      # The last run's searches: the queue was written beside them, so its head is what they made.
+      # The search runner skips those and keeps their rows (bin/search-runner.js).
+      - name: Restore search runner's last searches
+        uses: actions/cache/restore@v4
+        with:
+          path: .search-extra.json.gz
+          key: search-extra-${{ github.run_id }}
+          restore-keys: search-extra-
+
+      - name: VPN up
+        id: vpn
+        timeout-minutes: 5
+        continue-on-error: true
+        env:
+          WG_CONF: ${{ secrets.PROTONVPN_WG_CONF_SEARCH }}
+        run: scripts/vpn_up.sh
+
+      - name: Network probe
+        run: nohup scripts/netprobe.sh run netprobe.log > /dev/null 2>&1 &
+
+      # Done ~47 min into the run, before the sweep job (~50), which merges its rows next run.
+      - name: Search pages
+        if: steps.vpn.outputs.vpn_ok == 'true'
+        run: |
+          echo "$(nproc) CPUs"
+          node scraper/bin/search-runner.js --queue .search-queue.json --out .search-extra.json.gz --until $(( $(date +%s) + 43 * 60 )) --pages 7 --gap 1500 --session-pages 300 2>&1 | sed -u 's/^/[search] /' &
+          pipe=$!
+          sleep 5
+          spid=$(pgrep -f bin/search-runner.js | head -1 || true)
+          (n=0; while pgrep -f bin/search-runner.js >/dev/null; do sleep 60; n=$((n + 1)); l="  search machine load: $(cut -d' ' -f1-3 /proc/loadavg); cpu now: $(scripts/cpu-split.sh search=$spid)"; echo "$l" >> cpu.log; [ $((n % 5)) = 0 ] && echo "$l"; done) &
+          wait $pipe || echo "search runner failed"
+          if [ -s cpu.log ]; then
+            scripts/cpu-split.sh --summary cpu.log | sed 's/^/search machine: /'
+            awk '{ for (i = 1; i <= NF; i++) if ($i == "load:") { v = $(i + 1); s += v; n++; if (v > m) m = v } } END { if (n) printf "search machine: load (1 min) average %.1f, max %.1f on %d CPUs\n", s / n, m, '"$(nproc)"' }' cpu.log
+          fi
+
+      - name: Network probe summary
+        if: always()
+        run: scripts/netprobe.sh summary netprobe.log
 
       - name: Save search runner's searches
         if: always() && hashFiles('.search-extra.json.gz') != ''

@@ -4,12 +4,13 @@ Goal: every board cell and every filter-view ticket proven against a real flight
 booking page, with a recheck soon after its listed price moves. Two runners only (two IPs); no
 more runners or VPN configs. Times are Vancouver (UTC−7).
 
-## The two jobs (`.github/workflows/sweep.yml`)
+## The three jobs (`.github/workflows/sweep.yml`)
 
 | Job | IP | Does |
 |---|---|---|
 | `sweep` | .135 | scrape (price graphs), warm checks (search pages ≤ 300 days out, inline), off-board date pairs, build, alerts |
-| `booking` | .74 (4 vCPUs, ~2 physical cores) | booking runner (`--pages 3 --gap 1500 --session-pages 300`) and search runner (`--pages 5 --gap 1500 --session-pages 300`: browser searches the build ran out of time for, mostly > 300 days out, from the build's queue) side by side, 43 min each |
+| `booking` | .74 (4 vCPUs, ~2 physical cores) | booking runner (`--pages 3 --gap 1500 --session-pages 300`), 43 min; the search runner shared this machine until Nov 17 |
+| `search` | ProtonVPN CA#123, secret `PROTONVPN_WG_CONF_SEARCH` (from Nov 17, 11:05 am) | search runner (`--pages 7 --gap 1500 --session-pages 300`: browser searches the build ran out of time for, mostly > 300 days out, from the build's queue), 43 min; `search machine:` CPU and load lines at the end |
 
 The build writes `.booking-queue.json` (board, then filters) and `.search-queue.json` (most
 wanted first, at most 8,000, plus the build's lookups as `used`). The next run's booking job works
