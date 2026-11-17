@@ -1,7 +1,30 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-17T00:06:28Z",
+ "lastSuccess": "2026-11-17T01:06:11Z",
  "runs": [
+  {
+   "at": "2026-11-17T01:06:11Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 237,
+   "failed": 0,
+   "cells": 8003,
+   "priced": 7761,
+   "changes": 2691,
+   "errors": [],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 351,
+   "pages": 3,
+   "skipped": 114,
+   "secondOk": 2,
+   "seconds": 1246,
+   "success": true
+  },
   {
    "at": "2026-11-17T00:06:28Z",
    "egress": "vpn",
@@ -592,34 +615,6 @@
    "skipped": 200,
    "secondOk": 14,
    "seconds": 1261,
-   "success": true
-  },
-  {
-   "at": "2026-11-16T01:05:41Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 185,
-   "failed": 4,
-   "cells": 5148,
-   "priced": 4779,
-   "changes": 1516,
-   "errors": [
-    "JKT-DAD-Y 11d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "DAD-JKT-Y 6d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "DAD-DPS-Y 4d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "DPS-DAD-Y 7d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 189,
-   "pages": 3,
-   "secondOk": 10,
-   "pauses": 1,
-   "seconds": 1425,
    "success": true
   }
  ]
