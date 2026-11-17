@@ -1,7 +1,39 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-17T06:06:26Z",
+ "lastSuccess": "2026-11-17T07:06:07Z",
  "runs": [
+  {
+   "at": "2026-11-17T07:06:07Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 261,
+   "failed": 7,
+   "cells": 9322,
+   "priced": 9042,
+   "changes": 3996,
+   "errors": [
+    "BWN-JOG-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Bandar Seri Begawan BWN Yogyakarta YIA Fil",
+    "BWN-PQC-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Bandar Seri Begawan BWN Phú Quốc PQC Filte",
+    "DLI-CNX-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Da Lat DLI Chiang Mai CNX Filters All filt",
+    "DLI-CXR-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Da Lat DLI Nha Trang CXR Filters All filte",
+    "DLI-HKT-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Da Lat DLI Phuket HKT Filters All filters ",
+    "DLI-PQC-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Da Lat DLI Phú Quốc PQC Filters All filter",
+    "DLI-SYX-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Da Lat DLI Sanya SYX · Haikou HAK Filters "
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 632,
+   "pages": 6,
+   "pauses": 2,
+   "skipped": 364,
+   "secondOk": 9,
+   "seconds": 1582,
+   "success": true
+  },
   {
    "at": "2026-11-17T06:06:26Z",
    "egress": "vpn",
@@ -592,29 +624,6 @@
    "skipped": 210,
    "secondOk": 21,
    "seconds": 1327,
-   "success": true
-  },
-  {
-   "at": "2026-11-16T07:05:52Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 152,
-   "failed": 0,
-   "cells": 5284,
-   "priced": 5071,
-   "changes": 1786,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 326,
-   "pages": 3,
-   "skipped": 174,
-   "secondOk": 15,
-   "seconds": 1351,
    "success": true
   }
  ]
