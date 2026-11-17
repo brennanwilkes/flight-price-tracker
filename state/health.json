@@ -1,7 +1,28 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-17T22:06:52Z",
+ "lastSuccess": "2026-11-17T23:06:05Z",
  "runs": [
+  {
+   "at": "2026-11-17T23:06:05Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 0,
+   "failed": 0,
+   "cells": 0,
+   "priced": 0,
+   "changes": 0,
+   "errors": [],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 0,
+   "pages": 3,
+   "seconds": 4,
+   "success": true
+  },
   {
    "at": "2026-11-17T22:06:52Z",
    "egress": "vpn",
