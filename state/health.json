@@ -1,7 +1,43 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-17T03:06:06Z",
+ "lastSuccess": "2026-11-17T04:06:13Z",
  "runs": [
+  {
+   "at": "2026-11-17T04:06:13Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 103,
+   "failed": 10,
+   "cells": 3106,
+   "priced": 3085,
+   "changes": 789,
+   "errors": [
+    "YVR-SGN-Y 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-HAN-J 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "SGN-YVR-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-ICN-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "ICN-YVR-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-ICN-Y 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-TYO-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-SHA-Y 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-SHA-Y 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Shanghai PVG SHA Filters A",
+    "YYJ-SHA-Y 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Shanghai PVG SHA Filters A"
+   ],
+   "controlTries": 2,
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 464,
+   "pages": 6,
+   "pauses": 9,
+   "skipped": 351,
+   "secondOk": 33,
+   "seconds": 1554,
+   "success": true
+  },
   {
    "at": "2026-11-17T03:06:06Z",
    "egress": "vpn",
@@ -585,35 +621,6 @@
    "skipped": 66,
    "secondOk": 18,
    "seconds": 1501,
-   "success": true
-  },
-  {
-   "at": "2026-11-16T04:06:32Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 208,
-   "failed": 4,
-   "cells": 6374,
-   "priced": 5612,
-   "changes": 1783,
-   "errors": [
-    "KUL-DAD-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "MFM-DAD-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "MFM-HAN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "HUI-DLI-Y 7d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Da Lat DLI Filters All filters "
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 376,
-   "pages": 3,
-   "pauses": 2,
-   "skipped": 164,
-   "secondOk": 27,
-   "seconds": 1457,
    "success": true
   }
  ]
