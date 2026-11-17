@@ -1,7 +1,38 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-17T13:06:11Z",
+ "lastSuccess": "2026-11-17T14:06:18Z",
  "runs": [
+  {
+   "at": "2026-11-17T14:06:18Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 184,
+   "failed": 5,
+   "cells": 6824,
+   "priced": 6247,
+   "changes": 2807,
+   "errors": [
+    "YYJ-MNL-Y 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-MNL-Y 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "DAD-OKA-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-CEB-J 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Cebu City CEB Filters All",
+    "YYJ-CEB-Y 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "controlTries": 2,
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 900,
+   "pages": 6,
+   "pauses": 1,
+   "skipped": 711,
+   "secondOk": 27,
+   "seconds": 1536,
+   "success": true
+  },
   {
    "at": "2026-11-17T13:06:11Z",
    "egress": "vpn",
@@ -596,37 +627,6 @@
    "skipped": 30,
    "secondOk": 17,
    "seconds": 1528,
-   "success": true
-  },
-  {
-   "at": "2026-11-16T14:06:17Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 77,
-   "failed": 6,
-   "cells": 2121,
-   "priced": 1952,
-   "changes": 549,
-   "errors": [
-    "YVR-SGN-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-SGN-Y 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-SGN-Y 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-ICN-J 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "BJS-HKT-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-BKK-Y 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 108,
-   "pages": 3,
-   "pauses": 6,
-   "skipped": 25,
-   "secondOk": 16,
-   "seconds": 1545,
    "success": true
   }
  ]
