@@ -1,7 +1,42 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-17T09:06:15Z",
+ "lastSuccess": "2026-11-17T10:06:07Z",
  "runs": [
+  {
+   "at": "2026-11-17T10:06:07Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 315,
+   "failed": 10,
+   "cells": 11422,
+   "priced": 11084,
+   "changes": 4956,
+   "errors": [
+    "TYO-YVR-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-HAN-J 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-MNL-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "HKG-REP-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "HKG-CAN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "HKT-CAN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "ICN-TPE-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "IAO-TPE-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "SGN-BKK-Y 10d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "SGN-BKK-Y 11d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 849,
+   "pages": 6,
+   "pauses": 1,
+   "skipped": 524,
+   "secondOk": 29,
+   "seconds": 1469,
+   "success": true
+  },
   {
    "at": "2026-11-17T09:06:15Z",
    "egress": "vpn",
@@ -591,35 +626,6 @@
    "skipped": 184,
    "secondOk": 3,
    "seconds": 1271,
-   "success": true
-  },
-  {
-   "at": "2026-11-16T10:06:12Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 174,
-   "failed": 5,
-   "cells": 5103,
-   "priced": 4645,
-   "changes": 1547,
-   "errors": [
-    "YVR-TPE-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-SGN-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "DAD-YVR-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-ICN-Y 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-SHA-J 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Shanghai PVG SHA Filters "
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 341,
-   "pages": 3,
-   "skipped": 162,
-   "secondOk": 12,
-   "seconds": 1351,
    "success": true
   }
  ]
