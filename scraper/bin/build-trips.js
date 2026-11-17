@@ -110,6 +110,12 @@ const slim = (t) => ({ kind: t.kind, from: t.from, to: t.to, date: t.date, ret: 
 // and the fares behind them are 2-48 h old already. Every shown cell needs ~6,200 searches, a build
 // makes ~800: under SEARCH_HOURS = 3 they could never all be fresh at once.
 const SEARCH_HOURS = 24;
+// Searches not touching the first home (YYJ's long hauls, the hops): fresh this long (Brennan, Nov
+// 17: they matter less than YVR's long hauls; the search runner makes ~670 a run, its cap).
+const SLOW_SEARCH_HOURS = 48;
+const searchHours = (k) => {
+  try { const q = JSON.parse(k.replace(/^full /, '')); return [q.from, q.to].flat().includes(config.origins[0]) ? SEARCH_HOURS : SLOW_SEARCH_HOURS; } catch { return SEARCH_HOURS; }
+};
 // Past SEARCH_HOURS a search still serves, up to STALE_DAYS (details.js cache.stale): a day's
 // flights and times rarely change, so its cell stays checked while it waits to be searched again,
 // after every search a check still needs. Cells with no flights checked come only from searches
@@ -156,7 +162,7 @@ function loadSearches(file, now, extraFile = null) {
     if (age >= STALE_DAYS * 864e5) continue;
     at.set(k, when);
     rows.push([k, v]);
-    if (age < SEARCH_HOURS * 3600e3) cache.set(k, Promise.resolve(v));
+    if (age < searchHours(k) * 3600e3) cache.set(k, Promise.resolve(v));
     else stale.set(k, v);
   }
   if (extraFile) console.log(`search runner's searches: ${extra} rows, ${newer} newer than the cache's`);
@@ -205,7 +211,7 @@ function searchWaste(at, used, now) {
   const kinds = {};
   let fresh = 0, unused = 0;
   for (const [k, when] of at) {
-    if (now - Date.parse(when) >= SEARCH_HOURS * 3600e3) continue;
+    if (now - Date.parse(when) >= searchHours(k) * 3600e3) continue;
     fresh++;
     if (used.has(k)) continue;
     unused++;
@@ -723,7 +729,7 @@ async function main() {
       console.log(`booking pages beside the scrape: exit IP ${egress}; canary ${view}`);
       // This IP also carries the scrape and the checks: short from the start at 10:05 pm (2026-11-12).
       // What it checks on the short list is kept SHORT_HOURS (bookings.js), then asked again.
-      const s = await bookingPass(itins, (t) => b.bookingSellers(t), bookings, { until: Date.now() + BOOKING_WARM_MS, pages: BOOKING_PAGES.warm, inCabin, short: () => !view.startsWith('full') });
+      const s = await bookingPass(itins, (t) => b.bookingSellers(t), bookings, { until: Date.now() + BOOKING_WARM_MS, pages: BOOKING_PAGES.warm, inCabin, short: () => !view.startsWith('full'), primary: homes[0] });
       console.log(`booking pages beside the scrape: canary after ${await canary((t) => b.bookingSellers(t))}`);
       console.log(`booking pages beside the scrape: ${s.checked} of ${itins.length} checked, ${s.cheaper} cheaper than listed, ${s.none} with no seller in its cabin, ${s.failed} failed, ${s.left} left; ${Math.round(s.ms / 1000)} s`);
       console.log(`booking pages beside the scrape: ${passLine(s)}`);
@@ -779,7 +785,7 @@ async function main() {
         const tickets = mainRows.flatMap((r) => CLASSES.flatMap((cls) => cellTrips(r, cls)).flatMap((t) => t.tickets));
         const lookup = await rowsOf();
         const itins = bookingCandidates([board, tickets], lookup, bookings, homes);
-        const s = await bookingPass(itins, (t) => chrome.bookingSellers(t), bookings, { until, pages: BOOKING_PAGES.build, inCabin });
+        const s = await bookingPass(itins, (t) => chrome.bookingSellers(t), bookings, { until, pages: BOOKING_PAGES.build, inCabin, primary: homes[0] });
         console.log(`booking pages: ${s.checked} of ${itins.length} checked, ${s.cheaper} cheaper than listed, ${s.none} with no seller in its cabin, ${s.failed} failed, ${s.left} left (used from the next build); ${Math.round(s.ms / 1000)} s`);
         console.log(`booking pages: ${passLine(s)}`);
         // Beyond the board: every other ticket the checks priced (each cell's next-best trips, by
@@ -909,14 +915,17 @@ async function main() {
       const wanted = [...(searches.cache.wanted?.values() ?? [])].filter((w) => !w.keys.every((k) => searches.cache.has(k)));
       // `view`: whose search it is, for the runner's tally (which views a run's pages reach).
       const VIEWS = ['board', 'via', 'long-haul cap'];
-      const label = (w) => `${VIEWS[viewOf(w.prio)]} ${w.had ? 'refresh' : 'never searched'}`;
+      const label = (w) => `${VIEWS[viewOf(w.prio)]} ${w.had ? (searchHours(w.keys[0]) > SEARCH_HOURS ? 'refresh (YYJ, hops)' : 'refresh') : 'never searched'}`;
       // Never searched first, any view's: its cell is hidden until it's made, where a refresh's is
       // shown from the stale list meanwhile (behind the board's ~4,900 refreshes at ~800 pages a
       // run, the via views' never-searched ones waited for good: 303 at 12:05 am Vancouver Nov 16).
       // Refreshes by view, the oldest day first (a list 7 days old is dropped: its cell hidden), then rank.
       const days = (w) => { const at = searches.at.get(w.keys[0]); return at ? Math.floor((Date.parse(generatedAt) - Date.parse(at)) / 864e5) : 0; };
-      const order = new Map(wanted.map((w) => [w, w.had ? [1, viewOf(w.prio), -days(w), w.prio] : [0, w.prio, 0, 0]]));
-      wanted.sort((a, b) => { const x = order.get(a), y = order.get(b); return x[0] - y[0] || x[1] - y[1] || x[2] - y[2] || x[3] - y[3]; });
+      // Within a view, YVR's refreshes before YYJ's and the hops' (Brennan, Nov 17), but not one 5
+      // days old or more: at STALE_DAYS (7) its list is dropped and its cell hidden.
+      const slow = (w) => (searchHours(w.keys[0]) > SEARCH_HOURS && days(w) < STALE_DAYS - 2 ? 1 : 0);
+      const order = new Map(wanted.map((w) => [w, w.had ? [1, viewOf(w.prio), slow(w), -days(w), w.prio] : [0, w.prio, 0, 0, 0]]));
+      wanted.sort((a, b) => { const x = order.get(a), y = order.get(b); return x[0] - y[0] || x[1] - y[1] || x[2] - y[2] || x[3] - y[3] || x[4] - y[4]; });
       const list = wanted.slice(0, SEARCH_QUEUE_MAX).map((w) => ({ q: w.q, keys: w.keys, had: w.had, view: label(w) }));
       {
         const by = {};

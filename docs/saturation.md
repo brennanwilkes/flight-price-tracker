@@ -252,6 +252,21 @@ Read at 4:20 pm Nov 16 (runs 8:05 am-3:05 pm), every line above printing:
     gone`, `… the same total with another trip (a flip)`, other outbounds by their ticket. Flips
     are the bug to fix at the source (a tie-break that holds the last pick); the first build
     after this reads `cell not known` (the last queue had no cells).
+  - YVR's long hauls first (Brennan, Nov 17: "we need to get much closer to 90%+" on catching a
+    sale live 6 or 12 h; YYJ and the hops matter less). Estimated catch rates before: airline fare
+    on a YVR core city at 14/17/21 days ~60% at 6 h, ~90% at 12 h; other YVR lengths and cities,
+    YYJ ~35% / ~75%; agency-only discount on a shown itinerary ~45% / ~80%, on one not shown ~10%
+    / ~25%. Changes (from the 11:05 am build):
+    - Graphs (`config/sweep.json`, tiers take `cabins`): every YVR business graph every 2 h (was
+      2/6/8 h); YYJ business 16 h, economy 24 h (was 8); hops 24/48 h (12/24); Pacific 24/48 h
+      (12/24); Asia round trips 96 h (48). Needed 225 graphs an hour (was 277) of ~266 scraped.
+    - Booking: YVR's long hauls before YYJ's in each tier (were cheapest first, both together);
+      YYJ's and the hops' tickets booked at the listed price held 36 h (`SLOW_HOURS`); a
+      listed-price move still brings them back at once; discounts keep 12 h.
+    - Searches: YYJ's and the hops' fresh 48 h (`SLOW_SEARCH_HOURS`), YVR's 24 h; in the search
+      runner's queue YVR refreshes before YYJ's and the hops' (`refresh (YYJ, hops)` in `search
+      queue in order`), but one 5 days old or more goes in place (dropped at 7).
+    - Brennan is getting a third runner's VPN credential; efficiency fixes first.
   - Search runner: 667 searches in 43 min, slots 97% in pages, page 14.7 s (Google's reply 61%,
     "more flights" 30%). More slots pinned the machine on Nov 14, so its ~670 a run is the cap;
     the search side converges only if churn falls.

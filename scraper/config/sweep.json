@@ -7,14 +7,17 @@
   "networkPerSweep": 100,
   "tiers": [
     { "kind": "long", "homes": ["YVR"], "cities": "core", "lengths": [14, 17, 21], "oneWay": true, "maxAgeHours": 2 },
-    { "kind": "long", "homes": ["YVR"], "cities": "core", "lengths": [15, 16, 18, 19, 20], "maxAgeHours": 6 },
-    { "kind": "long", "homes": ["YVR"], "cities": "other", "lengthRange": [14, 21], "oneWay": true, "maxAgeHours": 8 },
-    { "kind": "long", "homes": ["YYJ"], "cities": "all", "lengthRange": [14, 21], "oneWay": true, "maxAgeHours": 8 },
-    { "kind": "hops", "vietnam": true, "maxAgeHours": 12 },
-    { "kind": "hops", "vietnam": false, "maxAgeHours": 24 },
-    { "kind": "pacific", "maxAgeHours": 12 },
-    { "kind": "pacific", "lengthRange": [14, 21], "maxAgeHours": 24 },
-    { "kind": "asiaRT", "fromVietnam": [2, 15], "toVietnam": [5, 19], "maxAgeHours": 48 }
+    { "kind": "long", "homes": ["YVR"], "cities": "core", "lengths": [15, 16, 18, 19, 20], "cabins": ["J"], "maxAgeHours": 2 },
+    { "kind": "long", "homes": ["YVR"], "cities": "core", "lengths": [15, 16, 18, 19, 20], "cabins": ["Y"], "maxAgeHours": 6 },
+    { "kind": "long", "homes": ["YVR"], "cities": "other", "lengthRange": [14, 21], "oneWay": true, "cabins": ["J"], "maxAgeHours": 2 },
+    { "kind": "long", "homes": ["YVR"], "cities": "other", "lengthRange": [14, 21], "oneWay": true, "cabins": ["Y"], "maxAgeHours": 8 },
+    { "kind": "long", "homes": ["YYJ"], "cities": "all", "lengthRange": [14, 21], "oneWay": true, "cabins": ["J"], "maxAgeHours": 16 },
+    { "kind": "long", "homes": ["YYJ"], "cities": "all", "lengthRange": [14, 21], "oneWay": true, "cabins": ["Y"], "maxAgeHours": 24 },
+    { "kind": "hops", "vietnam": true, "maxAgeHours": 24 },
+    { "kind": "hops", "vietnam": false, "maxAgeHours": 48 },
+    { "kind": "pacific", "maxAgeHours": 24 },
+    { "kind": "pacific", "lengthRange": [14, 21], "maxAgeHours": 48 },
+    { "kind": "asiaRT", "fromVietnam": [2, 15], "toVietnam": [5, 19], "maxAgeHours": 96 }
   ],
   "control": { "from": "YVR", "to": "ICN", "cabin": "Y", "tripLen": 14, "daysOut": 14, "days": 7 }
 }

@@ -36,7 +36,8 @@ function allGraphs(config, network) {
       const cities = gateways.filter((c) => (t.cities === 'core' ? core.has(c) : t.cities === 'other' ? !core.has(c) : true));
       for (const home of t.homes) {
         for (const city of cities) {
-          for (const cabin of config.longCabins) {
+          // `cabins`: this tier's cabins only (YVR business every 2 h, its economy slower; Nov 17).
+          for (const cabin of config.longCabins.filter((c) => !t.cabins || t.cabins.includes(c))) {
             for (const tripLen of lengthsOf(t)) add({ routeId: `${home}-${city}-${cabin}`, from: home, to: city, cabin, tripLen });
             if (t.oneWay) {
               add({ routeId: `${home}-${city}-${cabin}-OW`, from: home, to: city, cabin, tripLen: null });

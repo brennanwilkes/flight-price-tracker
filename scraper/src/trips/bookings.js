@@ -37,6 +37,9 @@ const ALT_WITHIN = 1.4; // ... up to this many times its price
 // 17 such rechecks found a cheaper seller 137 times in 1,993 (7%); a first page finds one 1 time in
 // 3 (67 of 193). The filters' first 900 a run were 694 such rechecks while 5,347 waited unchecked.
 const QUIET_HOURS = 36;
+// YYJ's long hauls and the hops booked at the listed price: held this long (bookingPass `primary`).
+// A listed-price move still brings one back at once (bookingCandidates known).
+const SLOW_HOURS = 36;
 
 const legsKey = (legs) => legs.map((l) => `${l.code}@${l.depDate}`).join(',');
 const selKey = (sel) => sel.map((s) => `${s.airline}${s.number}@${s.date}`).join(',');
@@ -145,7 +148,9 @@ function bookingCandidates(tiers, rowsOf, map, homes, now = Date.now()) {
   for (const tickets of lists) {
     const ok = tickets.filter((t) => (t.kind === 'rt' || t.kind === 'ow') && CABIN[t.cabin]);
     // Business first (what the board is for), each cabin's own tickets before their other outbounds.
-    for (const cabin of ['J', 'Y']) addLong(ok.filter((t) => long(t) && t.cabin === cabin));
+    // The first home's long hauls (YVR) before the other's (YYJ): Brennan, Nov 17, YYJ and the hops
+    // matter less than YVR's long hauls (they are held longer too: bookingPass slowHours).
+    for (const home of homes) for (const cabin of ['J', 'Y']) addLong(ok.filter((t) => (t.from === home || t.to === home) && t.cabin === cabin));
     for (const t of ok.filter((x) => !long(x))) add(t);
     out.push(...tier, ...later);
     tier = []; later = [];
@@ -186,7 +191,7 @@ function bookingCandidates(tiers, rowsOf, map, homes, now = Date.now()) {
  * seller list); `short()` true when the IP's view is short just now (its results kept SHORT_HOURS,
  * not BOOKING_HOURS); `gapMs` between page starts, across all pages (pacing).
  */
-async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gate = null, short = null, gapMs = 0, listedHours = null, now =() => new Date().toISOString().replace(/\.\d+Z$/, 'Z') }) {
+async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gate = null, short = null, gapMs = 0, listedHours = null, primary = null, now =() => new Date().toISOString().replace(/\.\d+Z$/, 'Z') }) {
   const t0 = Date.now();
   let next = Date.now();
   const pace = async () => { if (!gapMs) return; const at = Math.max(Date.now(), next); next = at + gapMs; await new Promise((r) => setTimeout(r, at - Date.now())); };
@@ -266,7 +271,10 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gat
       // `listedHours`: booked at the listed price, held that long (a recheck finds it changed as
       // rarely as 10 in 100 at ~13 h, 2:05 pm Vancouver, 2026-11-13); a discount below it moves
       // more often (22 of 70 dearer) and keeps BOOKING_HOURS. A listed price moving brings it back sooner (bookingCandidates).
-      const hold = listedHours && !seen.short && near(best.price, L) ? { hours: listedHours } : {};
+      // Not touching the first home (`primary`, YVR): YYJ's long hauls and the hops, held SLOW_HOURS
+      // at the listed price (Brennan, Nov 17: they matter less than YVR's long hauls).
+      const hours = primary && t.from !== primary && t.to !== primary ? Math.max(SLOW_HOURS, listedHours ?? 0) : listedHours;
+      const hold = hours && !seen.short && near(best.price, L) ? { hours } : {};
       map.set(keyOf(t), { price: best.price, seller: best.sellerName, at: now(), listed: L, ...seen, ...hold });
       if (best.price < L) s.cheaper++;
       else if (!t.guess && best.price > L * LISTED_GONE) { s.dearer++; s.mixed++; }

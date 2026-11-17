@@ -120,7 +120,7 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   const timed = timed0;
   const pass = async (name, itins, end, listedHours = null) => {
     if (!itins.length || Date.now() >= end) return;
-    const s = await bookingPass(itins, timed, bookings, { until: end, pages, inCabin, gate, short: () => !isFull(), gapMs, listedHours });
+    const s = await bookingPass(itins, timed, bookings, { until: end, pages, inCabin, gate, short: () => !isFull(), gapMs, listedHours, primary: homes[0] });
     console.log(`booking runner, ${name}: ${s.checked} of ${itins.length} checked, ${s.cheaper} cheaper than listed, ${s.none} with no seller in its cabin, ${s.failed} failed, ${s.left} left; ${Math.round(s.ms / 1000)} s (${(s.checked / Math.max(1, s.ms / 1000)).toFixed(2)} a second)`);
     console.log(`booking runner, ${name}: ${passLine(s)}`);
   };
@@ -168,7 +168,7 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
     const list = [...byTie.keys()];
     if (!list.length || Date.now() > end - 60e3) { console.log(`booking runner, unchecked dates: ${list.length} date pairs with flights queued`); return; }
     const itins = [...byTie.values()].flat().filter((t) => !bookings.has(keyOf(t)));
-    const s = await bookingPass(itins, timed, bookings, { until: end, pages, inCabin, gate, short: () => !isFull(), gapMs });
+    const s = await bookingPass(itins, timed, bookings, { until: end, pages, inCabin, gate, short: () => !isFull(), gapMs, primary: homes[0] });
     st.pages += s.checked;
     for (const [tie, group] of byTie) {
       const t = group[0];

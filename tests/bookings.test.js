@@ -76,6 +76,17 @@ test('booking candidates: a recheck at the listed price, listed the same since, 
   assert.deepStrictEqual(got.map((t) => t.flights.out.legs[0].code), ['AA6', 'AA2', 'AA3', 'AA4', 'AA5', 'AA1']);
 });
 
+test('booking candidates: YVR\'s long hauls before YYJ\'s, then the hops; YYJ and hops at the listed price held 36 h', async () => {
+  const mk = (from, code, price, cabin = 'J') => ({ ...ticket, from, cabin, price, listed: price, flights: { out: { legs: [leg(code, from, 'HKG', '2027-09-10')].map((l) => ({ ...l, min: 760 })) }, back: { legs: [leg('PR311', 'HKG', from, '2027-09-25')].map((l) => ({ ...l, min: 760 })) } } });
+  const yyj = mk('YYJ', 'AA1', 2000); const yvrY = mk('YVR', 'AA2', 1500, 'Y'); const yvrJ = mk('YVR', 'AA3', 4000);
+  const hop = { kind: 'ow', from: 'HKG', to: 'SGN', date: '2027-09-13', cabin: 'Y', price: 413, listed: 413, flights: { out: { legs: [{ ...leg('VN595', 'HKG', 'SGN', '2027-09-13'), min: 160 }] } } };
+  const got = bookingCandidates([hop, yyj, yvrY, yvrJ], () => null, new Map(), ['YVR', 'YYJ']);
+  assert.deepStrictEqual(got.map((t) => t.flights.out.legs[0].code), ['AA3', 'AA2', 'AA1', 'VN595']);
+  const m = mapOf([]);
+  await bookingPass([yyj, yvrJ, hop], async (t) => [{ sellerName: 'Air', price: t.price, cabins: t.cabin === 'J' ? [3, 3] : [1] }], m, { until: Date.now() + 60e3, pages: 1, inCabin, primary: 'YVR' });
+  assert.deepStrictEqual([m.get(keyOf(yyj)).hours, m.get(keyOf(yvrJ)).hours, m.get(keyOf(hop)).hours], [36, undefined, 36]);
+});
+
 test('in cabin: every flight of 6 h or more in the ticket\'s cabin or better; without lengths, every leg', () => {
   assert.ok(inCabin({ cabins: [3, 3, 3, 3] }, 'J'));
   assert.ok(!inCabin({ cabins: [3, 1, 3, 3] }, 'J'));
