@@ -810,7 +810,16 @@ async function main() {
         for (const t of planned) { if (!t.flights?.out?.legs?.length) continue; const k = bookingKey(t); if (!(priceNow.get(k) <= t.price)) priceNow.set(k, t.price); }
         const tiers = [bookingCandidates(board, lookup, new Map(), homes)];
         const boardKeys = new Map(tiers[0].map((t) => [bookingKey(t), null]));
-        tiers.push(bookingCandidates([...tickets, ...others], lookup, boardKeys, homes).slice(0, Math.max(0, QUEUE_MAX - tiers[0].length)));
+        const filterAll = bookingCandidates([...tickets, ...others], lookup, boardKeys, homes);
+        tiers.push(filterAll.slice(0, Math.max(0, QUEUE_MAX - tiers[0].length)));
+        // Scaling (Nov 17): the window's departure days with fares grow ~1 a day until early April
+        // 2027 (330-day horizon, window to Feb 29 2028). Demand per loaded day, and what the cap cuts.
+        {
+          const days = new Set(planned.filter((t) => t.date >= config.window.start && t.date <= config.window.end).map((t) => t.date)).size;
+          const total = Math.round((Date.parse(config.window.end) - Date.parse(config.window.start)) / 864e5) + 1;
+          const per = (n) => (days ? (n / days).toFixed(1) : '-');
+          console.log(`scaling: ${days} of the window's ${total} departure days planned; board ${tiers[0].length} itineraries (${per(tiers[0].length)} a day), filters' ${filterAll.length} (${per(filterAll.length)} a day), ${Math.max(0, filterAll.length - tiers[1].length)} past the queue's cap of ${QUEUE_MAX} left out; ${planned.length} tickets planned (${per(planned.length)} a day); searches used ${searches.cache.used?.size ?? 0} (${per(searches.cache.used?.size ?? 0)} a day)`);
+        }
         // With the date pairs searched beside the scrape (--booking-ties), for the booking runner.
         let ties = null;
         try { ties = JSON.parse(fs.readFileSync(arg('booking-ties'), 'utf8')); } catch {}
