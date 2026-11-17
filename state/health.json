@@ -1,7 +1,31 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-17T04:06:13Z",
+ "lastSuccess": "2026-11-17T05:06:06Z",
  "runs": [
+  {
+   "at": "2026-11-17T05:06:06Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 111,
+   "failed": 0,
+   "cells": 2943,
+   "priced": 2822,
+   "changes": 876,
+   "errors": [],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 384,
+   "pages": 3,
+   "pauses": 1,
+   "skipped": 273,
+   "secondOk": 8,
+   "seconds": 1327,
+   "success": true
+  },
   {
    "at": "2026-11-17T04:06:13Z",
    "egress": "vpn",
@@ -594,33 +618,6 @@
    "skipped": 227,
    "secondOk": 11,
    "seconds": 1594,
-   "success": true
-  },
-  {
-   "at": "2026-11-16T05:06:12Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 194,
-   "failed": 2,
-   "cells": 6317,
-   "priced": 5532,
-   "changes": 2827,
-   "errors": [
-    "DAD-LPQ-Y 3d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Luang Prabang LPQ Filters A",
-    "LPQ-DAD-Y 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 262,
-   "pages": 3,
-   "pauses": 1,
-   "skipped": 66,
-   "secondOk": 18,
-   "seconds": 1501,
    "success": true
   }
  ]
