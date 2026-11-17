@@ -61,7 +61,7 @@ const { graphTickets, searchTies, TRIED_HOURS } = require('../src/trips/ties');
 const { similarCount, scoreOf, rowId, bandOf } = require('../../frontend/app/build.js');
 const { CITIES, airportsOf, isPacific } = require('../../frontend/app/cities.js');
 const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
-const { viewOf, addDetails, returnsDone, returnsFor, capped, longestOf, listedOnly, unlistedWhy, useBookings } = require('../src/trips/details');
+const { viewOf, addDetails, returnsDone, returnsFor, returnsReady, searched, capped, longestOf, listedOnly, unlistedWhy, useBookings } = require('../src/trips/details');
 const { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass, passLine, listedOf, keyOf: bookingKey, BOOKING_HOURS } = require('../src/trips/bookings');
 const { inCabin, bookingUrl, canary } = require('../src/gflights/booking');
 const { openBrowserThread } = require('../src/gflights/browser-thread');
@@ -76,6 +76,7 @@ const { buildTripsThreaded } = require('../src/trips/threads');
 
 const CLASSES = ['hybrid', 'economy'];
 const TRIES = 10;
+const STAND_TRIES = 2 * TRIES; // candidates walked for a proven trip to show while the best's return is searched (verify)
 const FAST_PRIO = 100 * TRIES; // after every rank's searches (ranks 0-9)
 const MAX_FILE_BYTES = 95e6; // GitHub refuses a pushed file over 100 MB
 const THROW_INS = 4; // rows per crossing and class besides the one with its cheapest
@@ -422,7 +423,7 @@ function breathe() {
 
 async function verify(byHome, trips, { cache, browser, listed, deadline, pages, warm = false }) {
   const t0 = Date.now();
-  const st = { cells: 0, replaced: 0, unresolved: 0, unknown: 0, searches: 0, failed: 0, late: 0, none: 0, stay: 0, detailsMs: 0 };
+  const st = { cells: 0, replaced: 0, unresolved: 0, unknown: 0, searches: 0, failed: 0, late: 0, none: 0, stay: 0, detailsMs: 0, standIn: 0, standInNone: 0, standInOver: [] };
   const cellsOf = (r, base) => CLASSES.filter((c) => r[c]).flatMap((cls) => [
     { rank: base + (r.top?.[cls] ? 0 : r.city?.[cls] ? 1 : 2), cls, cands: r.cands[cls], cand: r[cls], put: (t) => { r[cls] = t; } },
     ...Object.entries(r.months).filter(([, m]) => m[cls]).map(([month, m]) => {
@@ -445,11 +446,26 @@ async function verify(byHome, trips, { cache, browser, listed, deadline, pages, 
     if (p.cand.connects) (p.checked ??= []).push(p.cand);
     if (p.cand.connects === null) p.unknown = true;
     if (p.cand.connects && !(p.best && rankOf(p.best) <= rankOf(p.cand))) p.best = p.cand;
-    const next = p.cands[++p.i];
+    // The best whose returns are searched already: it can be shown this build.
+    if (p.cand.connects && returnsReady(cache, p.cand) && !(p.shown && rankOf(p.shown) <= rankOf(p.cand))) p.shown = p.cand;
+    let next = p.cands[++p.i];
     // conn is only known once checked: a candidate's rank can only rise from its builder rank.
     if (next && p.i < TRIES && !(p.best && rankOf(next) >= rankOf(p.best))) {
       p.cand = overall(next, trips, p.month);
       return true;
+    }
+    // The best's return isn't searched yet (a new outbound: the search takes a run or two, and
+    // its cell was hidden meanwhile: 286-870 cells, Nov 16). The walk goes on for the best trip
+    // that is proven already, to show until then: only candidates whose searches are all made
+    // (no search added), up to STAND_TRIES.
+    if (p.best && p.shown !== p.best) {
+      for (; next && p.i < STAND_TRIES && !(p.shown && rankOf(next) >= rankOf(p.shown)); next = p.cands[++p.i]) {
+        const cand = overall(next, trips, p.month);
+        if (!searched(cache, cand)) continue;
+        p.cand = cand;
+        return true;
+      }
+      if (p.shown) { p.alt = p.shown; backs.push(returnsFor(cache, p.alt, p.rank * TRIES + TRIES - 0.5)); }
     }
     if (p.best) p.best.tier = tierOf(alertConfig, p.cls, p.best.total);
     // Its round trips' returns searched now, after this rank's checks and before the next rank's:
@@ -485,6 +501,16 @@ async function verify(byHome, trips, { cache, browser, listed, deadline, pages, 
   const t1 = Date.now();
   await Promise.all(backs); // the cells' returns and long-haul filter cells
   st.fastMs = Date.now() - t1;
+  // A cell whose best trip's return still isn't searched shows its best proven trip (step: p.alt)
+  // until it is: priced as listed like any shown trip, and replaced once the cheaper one is proven.
+  for (const p of cells) {
+    if (!p.alt || listedOnly(p.best)) continue;
+    if (!listedOnly(p.alt)) { st.standInNone++; continue; }
+    p.alt.tier = tierOf(alertConfig, p.cls, p.alt.total);
+    p.put(p.alt);
+    st.standIn++;
+    st.standInOver.push(p.alt.total / p.best.total - 1);
+  }
   await returnsDone(cache, new Set()); // none left a cell kept: dropped
   st.detailsMs = Date.now() - td;
   lag.disable();
@@ -730,6 +756,8 @@ async function main() {
         session.listed.clear();
         session.listed.at?.clear();
         console.log(`details round ${details.rounds}: ${s.cells} cells, ${s.replaced} moved to another trip (connects, or cheaper as listed), ${s.unresolved} with none that connects, ${s.unknown} hidden with no flights checked; ${s.searches} searches${s.late ? ` (${s.late} skipped, out of time)` : ''}, ${s.none} flights not listed yet, ${s.stay} trips with a short Hoi An stay; ${moved.length} fares listed at a new price; ${s.ms}ms (checks ${Math.round(s.detailsMs / 1000)} s, event loop delay ${s.lag}, long-haul caps ${Math.round(s.fastMs / 1000)} s, past the search deadline ${Math.round(Math.max(0, Date.now() - session.deadline) / 1000)} s)`);
+        const over = s.standInOver.toSorted((a, b) => a - b);
+        console.log(`details round ${details.rounds}, cells whose best trip's return isn't searched yet: ${s.standIn} show their best proven trip meanwhile${over.length ? ` (over the best's unproven price: ${(100 * over[Math.floor(over.length / 2)]).toFixed(1)}% median, ${(100 * over.at(-1)).toFixed(1)}% most)` : ''}, ${s.standInNone} had one picked that didn't prove; the rest stay hidden (priced as listed: return not searched)`);
         if (warm || !moved.length || details.rounds >= ROUNDS || Date.now() > session.deadline) break;
         const done = [];
         for (const [k, r] of session.cache) { const v = await r; if (Array.isArray(v) && v.length) done.push([k, v]); }

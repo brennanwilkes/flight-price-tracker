@@ -497,7 +497,8 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
           : cache.returnTickets.has(ticketOf(key)) ? 'the ticket has returns searched with another outbound' : 'the ticket has no return search';
         (tally.returnNew ??= {})[w] = (tally.returnNew[w] ?? 0) + 1;
       };
-      jobs.push((p = RETURN_PRIO + prio) => {
+      // ready: its search is already made (returnsReady), so running it searches nothing.
+      const run = (p = RETURN_PRIO + prio) => {
         whyNew();
         if (!cache.has(key) && !stale.has(key) && Date.now() > deadline) tally.returnLate++;
         return once(key, (pp) => { tally.returns++; return inPage(pp, q, { timeout: SLOW_PAGE_MS }, [key]); }, p, { q, keys: [key] }).then((list) => {
@@ -533,9 +534,22 @@ async function addDetails(trips, cache = new Map(), browser = null, listed = nul
           f.ticket.seen = seenOf(key);
           trip.total = trip.tickets.reduce((sum, t) => sum + t.price, 0);
         }, () => {});
-      });
+      };
+      run.ready = () => (cache.has(key) && !cache.pending?.has(key)) || stale.has(key);
+      jobs.push(run);
     }
   }
+}
+
+/** Are `trip`'s return searches (addDetails, not run yet) all made already? Then returnsFor searches nothing. */
+const returnsReady = (cache, trip) => (cache.returns?.get(trip) ?? []).every((run) => run.ready());
+
+/** Is every search a check of `trip` needs made already (fresh or stale)? Then addDetails searches nothing. */
+function searched(cache, trip) {
+  return flightsOf(trip).every((f) => {
+    const k = JSON.stringify(f.query);
+    return cache.has(k) || cache.has(`full ${k}`) || cache.stale?.has(k) || cache.stale?.has(`full ${k}`);
+  });
 }
 
 /**
@@ -712,4 +726,4 @@ function unlistedWhy(trip) {
   return trip.total === trip.tickets.reduce((sum, t) => sum + t.price, 0) ? null : 'total not the tickets\' sum';
 }
 
-module.exports = { viewOf, useBookings, listedPrice, listedOnly, unlistedWhy, addDetails, returnsDone, returnsFor, flightsOf, capped, longestOf, slots, Late, STALE };
+module.exports = { viewOf, useBookings, listedPrice, listedOnly, unlistedWhy, addDetails, returnsDone, returnsFor, returnsReady, searched, flightsOf, capped, longestOf, slots, Late, STALE };

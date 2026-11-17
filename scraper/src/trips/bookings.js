@@ -24,6 +24,8 @@ const PARTIAL_HOURS = 3;
 // short until it rests (10:05 pm Vancouver, 2026-11-12, the canary); kept this long, then asked again.
 const SHORT_HOURS = 3;
 const LISTED_GONE = 1.03;
+const GONE_PAGES = 2; // pages running without the listed offer before the page's own price is the ticket's
+const GONE_APART_HOURS = 2;
 // An expired price kept this long (map.prev), to tell whether a recheck found anything new: how
 // often does a booking price move while Google's listed price stays put? (Scheduling rechecks.)
 const PREV_HOURS = 48;
@@ -174,7 +176,7 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gat
   // Telemetry: sellers a page (by count: few looks like the short view), fares without cabins, and
   // why a price came out dearer than listed (mixed: the listed fare is in another cabin; partial:
   // the listed offer isn't on the page at all).
-  const s = { checked: 0, cheaper: 0, dearer: 0, mixed: 0, partial: 0, none: 0, noCabins: 0, short: 0, failed: 0, left: 0, ms: 0, sellers: { '1-5': 0, '6-10': 0, '11+': 0 }, partialBy: {}, again: {}, againHours: [], quietDrop: null };
+  const s = { checked: 0, cheaper: 0, dearer: 0, mixed: 0, partial: 0, gone: 0, none: 0, noCabins: 0, short: 0, failed: 0, left: 0, ms: 0, sellers: { '1-5': 0, '6-10': 0, '11+': 0 }, partialBy: {}, again: {}, againHours: [], quietDrop: null };
   let i = 0;
   await Promise.all(Array.from({ length: pages }, async () => {
     while (i < itins.length && Date.now() < until) {
@@ -202,16 +204,29 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gat
         // Telemetry: is it the same tickets every 3 h (times running), a thin page (sellers), and
         // how far over the listed price is the cheapest seller? A ticket whose every page lacks
         // the listed offer never gets a booking price and takes a page every PARTIAL_HOURS.
-        const partialN = last?.partial ? (last.partialN ?? 1) + 1 : 1;
+        // Counted once a page: a second page under GONE_APART_HOURS on (its listed price moved)
+        // is the same reading, not another.
+        const apart = last && Date.now() - Date.parse(last.at) >= GONE_APART_HOURS * 3600e3;
+        const partialN = last?.partial || last?.gone ? (last.partialN ?? 1) + (apart ? 1 : 0) : 1;
         const over = any.price / L - 1;
         for (const w of [`${partialN === 1 ? '1st' : partialN === 2 ? '2nd' : partialN <= 5 ? '3rd-5th' : '6th+'} time running`,
           `${got.length <= 5 ? '1-5' : got.length <= 10 ? '6-10' : '11+'} sellers`,
           `cheapest ${over <= 0.1 ? '3-10%' : over <= 0.3 ? '10-30%' : 'over 30%'} above listed`,
           seen.short ? 'on the short list' : null].filter(Boolean)) s.partialBy[w] = (s.partialBy[w] ?? 0) + 1;
+        // GONE_PAGES pages running without it, on the full list, hours apart: no seller has the
+        // listed price (Google's list lags: the canary listed ~$3,470 for hours after every seller
+        // was at $4,618, Nov 16). The ticket costs what its cheapest seller in the cabin asks:
+        // applied (applyBookings: dearer on its exact flights), held BOOKING_HOURS, and back to
+        // the listed price the first page that has it.
+        if (partialN >= GONE_PAGES && !seen.short && !last?.short && best) {
+          s.gone++;
+          map.set(keyOf(t), { price: best.price, seller: best.sellerName, at: now(), listed: L, gone: true, partialN, ...seen });
+          continue;
+        }
         map.set(keyOf(t), { price: best?.price ?? null, seller: best?.sellerName ?? null, at: now(), listed: L, partial: true, partialN, ...seen });
         continue;
       }
-      if (last?.partial) s.partialBy['had the listed offer this time'] = (s.partialBy['had the listed offer this time'] ?? 0) + 1;
+      if (last?.partial || last?.gone) s.partialBy['had the listed offer this time'] = (s.partialBy['had the listed offer this time'] ?? 0) + 1;
       // None in its cabin: kept too (price null, never applied), so the page isn't asked again
       // every run until BOOKING_HOURS.
       // Without flight lengths (a queue saved before they were kept) every leg had to be in the
@@ -277,7 +292,7 @@ const dueLine = (itins, map) => {
 };
 
 /** One line of a pass's telemetry (bookingPass's returned stats). */
-const passLine = (s) => `sellers a page ${s.sellers['1-5']} with 1-5, ${s.sellers['6-10']} with 6-10, ${s.sellers['11+']} with 11+; ${s.partial} without the listed offer (held ${PARTIAL_HOURS} h, unapplied${Object.keys(s.partialBy ?? {}).length ? `: ${Object.entries(s.partialBy).sort((a, b) => b[1] - a[1]).map(([w, n]) => `${n} ${w}`).join(', ')}` : ''}),${s.mixed} dearer in the cabin than the listed fare (listed in another cabin), ${s.noCabins} fares without cabins (not counted), ${s.short} checked while the IP got the short list (held ${SHORT_HOURS} h)${againLine(s)}`;
+const passLine = (s) => `sellers a page ${s.sellers['1-5']} with 1-5, ${s.sellers['6-10']} with 6-10, ${s.sellers['11+']} with 11+; ${s.partial} without the listed offer (${s.gone ?? 0} of them the ${GONE_PAGES}nd page running or later on the full list: the page's price applied, held ${BOOKING_HOURS} h; the rest held ${PARTIAL_HOURS} h, unapplied${Object.keys(s.partialBy ?? {}).length ? `: ${Object.entries(s.partialBy).sort((a, b) => b[1] - a[1]).map(([w, n]) => `${n} ${w}`).join(', ')}` : ''}),${s.mixed} dearer in the cabin than the listed fare (listed in another cabin), ${s.noCabins} fares without cabins (not counted), ${s.short} checked while the IP got the short list (held ${SHORT_HOURS} h)${againLine(s)}`;
 // Rechecks against their last check (bookingPass s.again): what scheduling by listed-price moves would miss.
 function againLine(s) {
   const n = Object.values(s.again ?? {}).reduce((a, b) => a + b, 0);

@@ -111,6 +111,36 @@ test('a page without the listed offer in any cabin: held as partial, a dearer on
   assert.deepStrictEqual([m.get('Y|VN2@2027-09-13|').price, m.get('Y|VN2@2027-09-13|').n, m.get('Y|VN2@2027-09-13|').any], [700, 2, 400]);
 });
 
+test('the second page running without the listed offer, hours apart on the full list: the page\'s price is the ticket\'s, until a page has the listed offer', async () => {
+  const hop = { kind: 'ow', from: 'HKG', to: 'SGN', date: '2027-09-13', cabin: 'Y', price: 400, flights: { out: { legs: [{ ...leg('VN1', 'HKG', 'SGN', '2027-09-13'), min: 160 }] } } };
+  const k = keyOf(hop);
+  const ago = (h) => new Date(Date.now() - h * 3600e3).toISOString();
+  const page = async () => [{ sellerName: 'VN', price: 600, cabins: [1] }];
+  const opts = { until: Date.now() + 60e3, pages: 1, inCabin };
+  const owQ = JSON.stringify({ from: 'HKG', to: 'SGN', out: '2027-09-13', cabin: 'Y' });
+  const row = () => [{ price: 400, legs: hop.flights.out.legs }];
+  // The first page, and a second one minutes on: unapplied.
+  const m = mapOf([]);
+  await bookingPass([hop], page, m, opts);
+  await bookingPass([hop], page, m, opts);
+  assert.deepStrictEqual([m.get(k).partial, m.get(k).partialN], [true, 1]);
+  assert.strictEqual(applyBookings(m, owQ, row())[0].price, 400);
+  // Hours on: applied.
+  m.set(k, { ...m.get(k), at: ago(3) });
+  const s = await bookingPass([hop], page, m, opts);
+  assert.deepStrictEqual([s.partial, s.gone, m.get(k).gone, m.get(k).partial, m.get(k).price], [1, 1, true, undefined, 600]);
+  const applied = applyBookings(m, owQ, row())[0];
+  assert.deepStrictEqual([applied.price, applied.listedPrice, applied.seller], [600, 400, 'VN']);
+  // On the short list: not counted as gone.
+  const sh = mapOf([[k, { price: 600, at: ago(3), listed: 400, partial: true, partialN: 1, n: 1 }]]);
+  await bookingPass([hop], page, sh, { ...opts, short: () => true });
+  assert.strictEqual(sh.get(k).partial, true);
+  // A page with the listed offer again: the listed price.
+  m.set(k, { ...m.get(k), at: ago(13) });
+  await bookingPass([hop], async () => [{ sellerName: 'VN', price: 400, cabins: [1] }], m, opts);
+  assert.deepStrictEqual([m.get(k).gone, m.get(k).price], [undefined, 400]);
+});
+
 test('a page is held to the listed price, not an earlier booking price', async () => {
   // Board ticket priced $2,785 by an earlier booking; Google listed $4,870. Now $4,612 is the cheapest: a full page.
   const booked = { ...ticket, price: 2785, flights: { out: { legs: OUT.map((l) => ({ ...l, min: 300 })) }, back: { legs: BACK.map((l) => ({ ...l, min: 300 })), listedPrice: 4870 } } };

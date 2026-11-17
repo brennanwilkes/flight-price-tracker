@@ -195,6 +195,18 @@ Read at 4:20 pm Nov 16 (runs 8:05 am-3:05 pm), every line above printing:
   ~5% and 1-3% of business pages → ~0%). Real, not the runner's list: Brennan's own Chrome showed
   the canary at $4,618 AranGrant, Trip.com $4,899, Globehunters $4,871 (5 pm Nov 16), as the runner
   sees. So the canary's price test (under $4,000) is dead; only its seller count (10+ full, 6 short) tells.
+- Two calls Brennan left to judgement (5:30 pm Nov 16: "the data needs to be real… always see a
+  cheap price if it exists"), both live from the 6:05 pm run:
+  1. A cell whose best trip's return isn't searched yet shows its best trip that is proven
+     already (`verify` p.alt: walked on from searches already made, none added), until the
+     cheaper one's return lands. Log: `details round N, cells whose best trip's return isn't
+     searched yet: N show their best proven trip meanwhile (over the best's unproven price …)`.
+     Hidden should fall to the cells with no proven candidate in 20.
+  2. A ticket whose page lacks the listed price twice running (2+ h apart, full list) costs what
+     its cheapest seller in the cabin asks (`bookings.js` gone: applied, held 12 h; back to the
+     listed price the first page that has it). Log: `N without the listed offer (N of them the
+     2nd page running or later on the full list: the page's price applied …)`. Watch business
+     lows on the history tab for a step up from this, and the board's rechecks every 3 h ending.
 - Booking pages made twice: 51-146 a run of ~1,600.
 - Filters: fresh flat (4,161 of 15,317); never checked 7,308 → 6,961 with 836 of the first 900
   never checked each run. Search runner errors 1-16 a run since 10:05 am (82 at 8:05 am). Canary full, held 0 min.
