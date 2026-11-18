@@ -1,7 +1,35 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-18T13:06:36Z",
+ "lastSuccess": "2026-11-18T14:06:05Z",
  "runs": [
+  {
+   "at": "2026-11-18T14:06:05Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 26,
+   "failed": 4,
+   "cells": 664,
+   "priced": 664,
+   "changes": 18,
+   "errors": [
+    "YVR-ICN-Y 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-TYO-Y 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-SIN-Y 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-BKK-Y 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 30,
+   "pages": 3,
+   "pauses": 3,
+   "secondOk": 13,
+   "seconds": 567,
+   "success": true
+  },
   {
    "at": "2026-11-18T13:06:36Z",
    "egress": "vpn",
@@ -543,37 +571,6 @@
    "pauses": 1,
    "secondOk": 16,
    "seconds": 1589,
-   "success": true
-  },
-  {
-   "at": "2026-11-17T14:06:18Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 184,
-   "failed": 5,
-   "cells": 6824,
-   "priced": 6247,
-   "changes": 2807,
-   "errors": [
-    "YYJ-MNL-Y 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-MNL-Y 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "DAD-OKA-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-CEB-J 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Cebu City CEB Filters All",
-    "YYJ-CEB-Y 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "controlTries": 2,
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 900,
-   "pages": 6,
-   "pauses": 1,
-   "skipped": 711,
-   "secondOk": 27,
-   "seconds": 1536,
    "success": true
   }
  ]
