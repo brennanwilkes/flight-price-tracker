@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert');
-const { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass, passLine, listedOf, keyOf } = require('../scraper/src/trips/bookings');
+const { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass, passLine, listedOf, keyOf, boardHold, freshLine } = require('../scraper/src/trips/bookings');
 const { bookingUrl, inCabin } = require('../scraper/src/gflights/booking');
 
 const leg = (code, from, to, depDate) => ({ code, from, to, depDate });
@@ -96,6 +96,15 @@ test('booking candidates: YVR\'s long hauls before YYJ\'s, then the hops; YYJ an
   const m = mapOf([]);
   await bookingPass([yyj, yvrJ, hop], async (t) => [{ sellerName: 'Air', price: t.price, cabins: t.cabin === 'J' ? [3, 3] : [1] }], m, { until: Date.now() + 60e3, pages: 1, inCabin, primary: 'YVR' });
   assert.deepStrictEqual([m.get(keyOf(yyj)).hours, m.get(keyOf(yvrJ)).hours, m.get(keyOf(hop)).hours], [36, undefined, 36]);
+  // The board's groups: YVR business 2.5 h, economy 5.5 h, YYJ business 7.5 h, under the listed
+  // price too; the hops as before.
+  const b = mapOf([]);
+  const sellers = async (t) => [{ sellerName: 'Air', price: t === yvrJ ? t.price - 500 : t.price, cabins: t.cabin === 'J' ? [3, 3] : [1] }];
+  await bookingPass([yyj, yvrJ, yvrY, hop], sellers, b, { until: Date.now() + 60e3, pages: 1, inCabin, primary: 'YVR', hold: boardHold(['YVR', 'YYJ']) });
+  assert.deepStrictEqual([yyj, yvrJ, yvrY, hop].map((t) => b.get(keyOf(t)).hours), [7.5, 2.5, 5.5, 36]);
+  const line = freshLine([yyj, yvrJ, hop], b, ['YVR', 'YYJ']);
+  assert.match(line, /YVR J 1: 100% under 3 h/);
+  assert.match(line, /hops Y 1:/);
 });
 
 test('in cabin: every flight of 6 h or more in the ticket\'s cabin or better; without lengths, every leg', () => {

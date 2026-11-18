@@ -285,6 +285,14 @@ Read at 4:20 pm Nov 16 (runs 8:05 am-3:05 pm), every line above printing:
     queue. `search demand` ages now go by quarters of each search's own hours (by 6 h alone
     every 48 h search past 18 h read "18-24 h"), and its "takes N a run" counts each search at
     its own hours.
+  - Agency-only sales (only a booking page shows them) on the board: Brennan, Nov 18, the
+    likeliest place for a sale, after YVR business. Board tickets were held 12 h (24-36 h at the
+    listed price for YYJ's): a 6 h sale caught ~35%. Now held by group whatever they booked at
+    (`bookings.js` BOARD_HOURS, half an hour under the cycle): YVR business every 3 h, YVR
+    economy 6 h, YYJ business 8 h, YYJ economy 12 h; the hops as before. Telemetry: `booking
+    freshness, board / filters:` per home and cabin, the share checked under 3 / 6 / 12 h at
+    the run's start (≈ the catch chance for a sale that long). Watch the board's pages a run
+    (was ~410) and what it leaves the filters.
   - YVR's long hauls first (Brennan, Nov 17: "we need to get much closer to 90%+" on catching a
     sale live 6 or 12 h; YYJ and the hops matter less). Estimated catch rates before: airline fare
     on a YVR core city at 14/17/21 days ~60% at 6 h, ~90% at 12 h; other YVR lengths and cities,

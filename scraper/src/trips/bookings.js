@@ -196,7 +196,7 @@ function bookingCandidates(tiers, rowsOf, map, homes, now = Date.now()) {
  * seller list); `short()` true when the IP's view is short just now (its results kept SHORT_HOURS,
  * not BOOKING_HOURS); `gapMs` between page starts, across all pages (pacing).
  */
-async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gate = null, short = null, gapMs = 0, listedHours = null, primary = null, now =() => new Date().toISOString().replace(/\.\d+Z$/, 'Z') }) {
+async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gate = null, short = null, gapMs = 0, listedHours = null, primary = null, hold: holdOf = null, now =() => new Date().toISOString().replace(/\.\d+Z$/, 'Z') }) {
   const t0 = Date.now();
   let next = Date.now();
   const pace = async () => { if (!gapMs) return; const at = Math.max(Date.now(), next); next = at + gapMs; await new Promise((r) => setTimeout(r, at - Date.now())); };
@@ -283,8 +283,10 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gat
       // more often (22 of 70 dearer) and keeps BOOKING_HOURS. A listed price moving brings it back sooner (bookingCandidates).
       // Not touching the first home (`primary`, YVR): YYJ's long hauls and the hops, held SLOW_HOURS
       // at the listed price (Brennan, Nov 17: they matter less than YVR's long hauls).
-      const hours = primary && t.from !== primary && t.to !== primary ? Math.max(SLOW_HOURS, listedHours ?? 0) : listedHours;
-      const hold = hours && !seen.short && near(best.price, L) ? { hours } : {};
+      // `hold(t)`: hours for this ticket whatever it booked at (the board's groups, BOARD_HOURS).
+      const own = holdOf?.(t) ?? null;
+      const hours = own ?? (primary && t.from !== primary && t.to !== primary ? Math.max(SLOW_HOURS, listedHours ?? 0) : listedHours);
+      const hold = hours && !seen.short && (own != null || near(best.price, L)) ? { hours } : {};
       map.set(keyOf(t), { price: best.price, seller: best.sellerName, at: now(), listed: L, ...seen, ...hold });
       if (best.price < L) { s.cheaper++; by(t, 'cheaper than listed'); }
       if (t.alt && best.price < t.price - Math.max(5, t.price * 0.01)) by(t, "under its ticket's price");
@@ -329,6 +331,41 @@ const dueLine = (itins, map) => {
 };
 
 /** One line of a pass's telemetry (bookingPass's returned stats). */
+/**
+ * The board's tickets held by group (Brennan, Nov 18: a sale only a booking page shows, on the
+ * board, is the likeliest place for one; YVR business matters most, then YYJ business): booked,
+ * at the listed price or under it, held this long, then due again. `primary`: the first home.
+ */
+// Half an hour under the cycle: checked ~:20 into a run, due again by that many runs' start.
+// The hops keep their own (null: SLOW_HOURS at the listed price).
+const BOARD_HOURS = { primary: { J: 2.5, Y: 5.5 }, other: { J: 7.5, Y: 11.5 } };
+const boardHold = (homes) => (t) => {
+  if (!homes.includes(t.from) && !homes.includes(t.to)) return null;
+  return BOARD_HOURS[t.from === homes[0] || t.to === homes[0] ? 'primary' : 'other'][t.cabin] ?? null;
+};
+
+/**
+ * Telemetry: how long since each ticket's last booking page, by home and cabin (the hops apart),
+ * its own flights only: the chance of catching a sale only a booking page shows within 6 or
+ * 12 h is about the share checked within that long.
+ */
+function freshLine(tickets, map, homes, now = Date.now()) {
+  const by = {};
+  for (const t of tickets) {
+    if (t.alt) continue;
+    const home = homes.find((h) => t.from === h || t.to === h);
+    const g = home ? `${home} ${t.cabin}` : `hops ${t.cabin}`;
+    const b = map.get(keyOf(t)) ?? map.prev?.get(keyOf(t));
+    (by[g] ??= []).push(b?.at ? (now - Date.parse(b.at)) / 3600e3 : Infinity);
+  }
+  const pct = (a, h) => `${Math.round((100 * a.filter((x) => x < h).length) / a.length)}%`;
+  return Object.entries(by).sort().map(([g, a]) => {
+    a.sort((x, y) => x - y);
+    const med = a[Math.floor(a.length / 2)];
+    return `${g} ${a.length}: ${pct(a, 3)} under 3 h, ${pct(a, 6)} under 6 h, ${pct(a, 12)} under 12 h, median ${Number.isFinite(med) ? `${med.toFixed(1)} h` : 'none'}, ${a.filter((x) => !Number.isFinite(x)).length} none in ${PREV_HOURS} h`;
+  }).join('; ');
+}
+
 const passLine = (s) => `sellers a page ${s.sellers['1-5']} with 1-5, ${s.sellers['6-10']} with 6-10, ${s.sellers['11+']} with 11+; ${s.partial} without the listed offer (${s.gone ?? 0} of them the ${GONE_PAGES}nd page running or later on the full list: the page's price applied, held ${BOOKING_HOURS} h; the rest held ${PARTIAL_HOURS} h, unapplied${Object.keys(s.partialBy ?? {}).length ? `: ${Object.entries(s.partialBy).sort((a, b) => b[1] - a[1]).map(([w, n]) => `${n} ${w}`).join(', ')}` : ''}),${s.mixed} dearer in the cabin than the listed fare (listed in another cabin), ${s.noCabins} fares without cabins (not counted), ${s.short} checked while the IP got the short list (held ${SHORT_HOURS} h)${againLine(s)}`;
 // Rechecks against their last check (bookingPass s.again): what scheduling by listed-price moves would miss.
 function againLine(s) {
@@ -338,4 +375,4 @@ function againLine(s) {
   return `; rechecked ${n} (median ${h.toFixed(0)} h on): ${Object.entries(s.again).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${v} ${k}`).join(', ')}${s.quietDrop ? `; biggest drop with the listed price unmoved ${s.quietDrop.what}` : ''}`;
 }
 
-module.exports = { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass, passLine, dueWhy, dueLine, listedOf, keyOf, BOOKING_HOURS };
+module.exports = { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass, passLine, dueWhy, dueLine, listedOf, keyOf, boardHold, freshLine, BOARD_HOURS, BOOKING_HOURS };

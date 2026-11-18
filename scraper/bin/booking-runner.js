@@ -22,7 +22,7 @@
  */
 const fs = require('node:fs');
 const path = require('node:path');
-const { loadBookings, saveBookings, bookingCandidates, bookingPass, passLine, dueLine, listedOf, keyOf, BOOKING_HOURS } = require('../src/trips/bookings');
+const { loadBookings, saveBookings, bookingCandidates, bookingPass, passLine, dueLine, listedOf, keyOf, boardHold, freshLine, BOOKING_HOURS } = require('../src/trips/bookings');
 const { useBookings } = require('../src/trips/details');
 const { provenPrice, TRIED_HOURS } = require('../src/trips/ties');
 const { fareKey } = require('../src/trips/fares');
@@ -61,6 +61,10 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   // Why each is due, and for the filters' the ones a run reaches (the first ~900, in queue order):
   // are the same tickets asked again while others wait?
   console.log(`booking runner, board due: ${dueLine(all.slice(0, nBoard), bookings)}`);
+  // Since each ticket's last booking page, at the run's start: the catch chance for a sale only a
+  // booking page shows is about the share under 6 h / 12 h.
+  console.log(`booking freshness, board: ${freshLine(tiers[0] ?? [], bookings, homes)}`);
+  if (tiers[1]) console.log(`booking freshness, filters: ${freshLine(tiers[1], bookings, homes)}`);
   console.log(`booking runner, filters due: ${dueLine(all.slice(nBoard), bookings)}; the first 900 of them: ${dueLine(all.slice(nBoard, nBoard + 900), bookings)}`);
 
   const egress = await fetch('https://api.ipify.org').then((r) => r.text()).catch(() => '?');
@@ -118,15 +122,16 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
     if (homes.includes(t.from) || homes.includes(t.to)) { win.long++; if (r.length >= 6) win.wide++; if (!t.guess && listedOf(t) && r[0] && r[0].price > listedOf(t) * 1.03) win.gone++; }
     return r; } catch (e) { bad++; win.errors++; ms.push(Date.now() - t1); const w = String(e.message).replace(/\d+/g, 'N').slice(0, 60); why[w] = (why[w] ?? 0) + 1; throw e; } };
   const timed = timed0;
-  const pass = async (name, itins, end, listedHours = null) => {
+  const pass = async (name, itins, end, listedHours = null, hold = null) => {
     if (!itins.length || Date.now() >= end) return;
-    const s = await bookingPass(itins, timed, bookings, { until: end, pages, inCabin, gate, short: () => !isFull(), gapMs, listedHours, primary: homes[0] });
+    const s = await bookingPass(itins, timed, bookings, { until: end, pages, inCabin, gate, short: () => !isFull(), gapMs, listedHours, primary: homes[0], hold });
     console.log(`booking runner, ${name}: ${s.checked} of ${itins.length} checked, ${s.cheaper} cheaper than listed, ${s.none} with no seller in its cabin, ${s.failed} failed, ${s.left} left; ${Math.round(s.ms / 1000)} s (${(s.checked / Math.max(1, s.ms / 1000)).toFixed(2)} a second)`);
     console.log(`booking runner, ${name}: ${passLine(s)}`);
     console.log(`booking runner, ${name}, pages by ticket: ${Object.entries(s.by).map(([k, b]) => `${k} ${b.pages} (${Object.entries(b).filter(([w]) => w !== 'pages').map(([w, n]) => `${n} ${w}`).join(', ') || 'nothing found'})`).join('; ') || 'none'}`);
   };
   try {
-    await pass('board', all.slice(0, nBoard), until);
+    // The board's held by group (bookings.js BOARD_HOURS: YVR business every 3 h, economy 6 h; YYJ's 8 / 12 h).
+    await pass('board', all.slice(0, nBoard), until, null, boardHold(homes));
     phase = 'unchecked dates';
     await ties(Math.min(until, Date.now() + TIES_MS));
     phase = 'filters';
