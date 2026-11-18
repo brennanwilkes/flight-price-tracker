@@ -1,7 +1,29 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-18T03:06:02Z",
+ "lastSuccess": "2026-11-18T04:06:55Z",
  "runs": [
+  {
+   "at": "2026-11-18T04:06:55Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 269,
+   "failed": 0,
+   "cells": 7715,
+   "priced": 7699,
+   "changes": 1432,
+   "errors": [],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 269,
+   "pages": 3,
+   "secondOk": 8,
+   "seconds": 1159,
+   "success": true
+  },
   {
    "at": "2026-11-18T03:06:02Z",
    "egress": "vpn",
@@ -572,42 +594,6 @@
    "skipped": 273,
    "secondOk": 8,
    "seconds": 1327,
-   "success": true
-  },
-  {
-   "at": "2026-11-17T04:06:13Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 103,
-   "failed": 10,
-   "cells": 3106,
-   "priced": 3085,
-   "changes": 789,
-   "errors": [
-    "YVR-SGN-Y 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-HAN-J 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "SGN-YVR-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-ICN-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "ICN-YVR-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-ICN-Y 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-TYO-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-SHA-Y 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-SHA-Y 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Shanghai PVG SHA Filters A",
-    "YYJ-SHA-Y 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Shanghai PVG SHA Filters A"
-   ],
-   "controlTries": 2,
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 464,
-   "pages": 6,
-   "pauses": 9,
-   "skipped": 351,
-   "secondOk": 33,
-   "seconds": 1554,
    "success": true
   }
  ]
