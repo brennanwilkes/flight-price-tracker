@@ -1,7 +1,28 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-18T12:07:34Z",
+ "lastSuccess": "2026-11-18T13:06:36Z",
  "runs": [
+  {
+   "at": "2026-11-18T13:06:36Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 37,
+   "failed": 0,
+   "cells": 1077,
+   "priced": 1002,
+   "changes": 191,
+   "errors": [],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 37,
+   "pages": 3,
+   "seconds": 218,
+   "success": true
+  },
   {
    "at": "2026-11-18T12:07:34Z",
    "egress": "vpn",
@@ -553,29 +574,6 @@
    "skipped": 711,
    "secondOk": 27,
    "seconds": 1536,
-   "success": true
-  },
-  {
-   "at": "2026-11-17T13:06:11Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 300,
-   "failed": 0,
-   "cells": 9301,
-   "priced": 9044,
-   "changes": 4222,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 850,
-   "pages": 6,
-   "skipped": 550,
-   "secondOk": 13,
-   "seconds": 1349,
    "success": true
   }
  ]
