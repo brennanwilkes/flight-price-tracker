@@ -46,3 +46,18 @@ test('booking queue turnover: why each gone ticket left (dearer, not planned, it
   assert.match(line, /1 dearer now \(was below listed: booking price gone or up\)/);
   assert.match(line, /; 1 of the flips had a booking page/);
 });
+
+test('booking queue turnover: a gone cell says its kind and whether its row is still there', () => {
+  const gone = [
+    rt('2027-09-10', '2027-09-25', 'PR117', 'PR116', { cell: 'YVR|HKG|J band 2027-09-01 fast 14', cellTotal: 4000 }),
+    rt('2027-09-11', '2027-09-25', 'PR117', 'PR116', { cell: 'YVR|HKG|J 2027-09', cellTotal: 4000 }),
+    rt('2027-09-12', '2027-09-25', 'PR117', 'PR116', { cell: 'YVR|BKK|J', cellTotal: 4000 }),
+    rt('2027-09-13', '2027-09-25', 'PR117', 'PR116', { cell: 'YVR|HKG|Y', cellTotal: 4000 }),
+  ];
+  const r = turnover([[], []], [[], gone], null, () => false, 1000 * 3600e3, undefined, { priceNow: new Map(), cellTotal: new Map([['YVR|HKG|J', 4000]]) });
+  const line = r.lines.find((l) => l.includes("filters' gone, why"));
+  assert.match(line, /its cell gone \(band long-haul cap, row there\)/);
+  assert.match(line, /its cell gone \(month, row there\)/);
+  assert.match(line, /its cell gone \(whole row, row gone\)/);
+  assert.match(line, /its cell gone \(whole row, row there, not its class\)/);
+});

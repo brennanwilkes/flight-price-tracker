@@ -36,6 +36,20 @@ function kind(t, other, tierName) {
  * (cell → its total now). "same prices, its cell picked another" with the cell's total unmoved is a
  * flip between equal trips: the churn that costs pages and searches for nothing.
  */
+/** A gone cell's kind (`<view><row>|<class><label>`: label '', ' <month>', ' band <b>', then
+ * ' fast <cap>') and whether its row and its class's whole-row cell are still there. */
+function cellGone(cell, ctx) {
+  const cut = cell.lastIndexOf('|');
+  const row = cell.slice(0, cut);
+  const rest = cell.slice(cut + 1);
+  const sp = rest.indexOf(' ');
+  const label = sp < 0 ? '' : rest.slice(sp);
+  const kind = / fast \d+$/.test(label) ? `${label.replace(/ fast \d+$/, '') ? (/ band /.test(label) ? 'band' : 'month') + ' ' : ''}long-haul cap` : / band /.test(label) ? 'band' : label ? 'month' : 'whole row';
+  if (!ctx.rows) ctx.rows = new Set([...ctx.cellTotal.keys()].map((c) => c.slice(0, c.lastIndexOf('|'))));
+  const where = !ctx.rows.has(row) ? 'row gone' : ctx.cellTotal.has(`${row}|${sp < 0 ? rest : rest.slice(0, sp)}`) ? 'row there' : 'row there, not its class';
+  return `${kind}, ${where}`;
+}
+
 function goneWhy(t, ctx, aIndex, tierName) {
   const k = keyOf(t);
   if (aIndex.tierOf.has(k)) return `to the ${tierName[aIndex.tierOf.get(k)]} tier`;
@@ -49,7 +63,7 @@ function goneWhy(t, ctx, aIndex, tierName) {
     if (t.cell == null) return 'not planned now, cell not known';
     const total = ctx.cellTotal.get(t.cell);
     const tol = Math.max(5, (t.cellTotal ?? 0) * 0.01);
-    if (total == null) return 'not planned now, its cell gone';
+    if (total == null) return `not planned now, its cell gone (${cellGone(t.cell, ctx)})`;
     if (total < t.cellTotal - tol) return 'not planned now, its cell found a cheaper trip';
     if (total > t.cellTotal + tol) return 'not planned now, its cell dearer now (its flights gone or up)';
     return 'not planned now, its cell the same total with another trip (a flip)';
