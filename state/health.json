@@ -1,7 +1,35 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-18T07:07:38Z",
+ "lastSuccess": "2026-11-18T08:06:15Z",
  "runs": [
+  {
+   "at": "2026-11-18T08:06:15Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 195,
+   "failed": 3,
+   "cells": 6253,
+   "priced": 6121,
+   "changes": 2367,
+   "errors": [
+    "YVR-SHA-Y 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-SHA-Y 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-KUL-J 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Federal Territory of Kual"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 214,
+   "pages": 3,
+   "pauses": 3,
+   "skipped": 16,
+   "secondOk": 3,
+   "seconds": 1565,
+   "success": true
+  },
   {
    "at": "2026-11-18T07:07:38Z",
    "egress": "direct",
@@ -566,29 +594,6 @@
    "skipped": 608,
    "secondOk": 10,
    "seconds": 1306,
-   "success": true
-  },
-  {
-   "at": "2026-11-17T08:06:58Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 322,
-   "failed": 0,
-   "cells": 12074,
-   "priced": 11580,
-   "changes": 8576,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 864,
-   "pages": 6,
-   "skipped": 542,
-   "secondOk": 2,
-   "seconds": 1244,
    "success": true
   }
  ]
