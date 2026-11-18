@@ -139,11 +139,15 @@ const stripBookings = (rows) => rows.map((o) => (o.listedPrice == null ? o : (({
 function bookingCandidates(tiers, rowsOf, map, homes, now = Date.now()) {
   const lists = Array.isArray(tiers[0]) ? tiers : [tiers];
   const out = []; const seen = new Set();
-  let tier = []; let later = [];
+  let tier = []; let later = []; let alts = [];
+  // Past the first tier (the board), other outbounds go after the tier's own tickets, quiet rechecks
+  // too: the filters' other outbounds took 534-641 of ~1,150 pages a run and 25-46 booked under
+  // their ticket's price (~6%; the own flights' 323-376 cheaper than listed), Nov 18.
+  let altsLast = false;
   // Booked within its hours, at the listed price it's queued at: not due. Listed at another price
   // since: due now (a fare moved; a sale shows here first).
   const known = (k, t) => { if (!map.has(k)) return false; const b = map.get(k); return b == null || b.listed == null || near(b.listed, listedOf(t)); };
-  const add = (t) => { if (!t.flights?.out?.legs?.length || (t.ret && !t.flights.back?.legs?.length)) return; const k = keyOf(t); if (!seen.has(k) && !known(k, t)) { seen.add(k); (quiet(k, t) ? later : tier).push(t); } };
+  const add = (t) => { if (!t.flights?.out?.legs?.length || (t.ret && !t.flights.back?.legs?.length)) return; const k = keyOf(t); if (!seen.has(k) && !known(k, t)) { seen.add(k); (altsLast && t.alt ? alts : quiet(k, t) ? later : tier).push(t); } };
   const long = (t) => homes.includes(t.from) || homes.includes(t.to);
   for (const tickets of lists) {
     const ok = tickets.filter((t) => (t.kind === 'rt' || t.kind === 'ow') && CABIN[t.cabin]);
@@ -152,8 +156,9 @@ function bookingCandidates(tiers, rowsOf, map, homes, now = Date.now()) {
     // matter less than YVR's long hauls (they are held longer too: bookingPass slowHours).
     for (const home of homes) for (const cabin of ['J', 'Y']) addLong(ok.filter((t) => (t.from === home || t.to === home) && t.cabin === cabin));
     for (const t of ok.filter((x) => !long(x))) add(t);
-    out.push(...tier, ...later);
-    tier = []; later = [];
+    out.push(...tier, ...later, ...alts);
+    tier = []; later = []; alts = [];
+    altsLast = true;
   }
   return out;
 

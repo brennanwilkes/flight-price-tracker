@@ -268,6 +268,14 @@ Read at 4:20 pm Nov 16 (runs 8:05 am-3:05 pm), every line above printing:
     long-haul cap cells: `fast` keeps only the caps where the trip changes, so a cap's cell
     vanished whenever its cell's pick changed. Every cap now carries its effective trip (the
     looser cap's when its own is absent), so those read as the cheaper, dearer or flip they are.
+  - That didn't shrink it (425, 616). Split by kind (Nov 18): mostly band and band long-haul cap
+    cells whose row is gone (180-240 a build), the rest band cells with the row there.
+  - Pages by ticket (8:05, 9:05 am Nov 18), the filters: own flights 545-584 pages, 323-376
+    cheaper than listed; other outbounds 534-641 pages, 25-46 under their ticket's price (~6%),
+    249-324 without the listed offer, 223-248 no seller in the cabin. Board: 75-79 other
+    outbounds, 8-9 under. Fix: past the board, other outbounds go after the tier's own tickets
+    and its quiet rechecks (`bookingCandidates`). Filters fresh had stalled (−30 a run, Nov 17
+    evening), +72 a run overnight (6,190 of 14,580).
   - YVR's long hauls first (Brennan, Nov 17: "we need to get much closer to 90%+" on catching a
     sale live 6 or 12 h; YYJ and the hops matter less). Estimated catch rates before: airline fare
     on a YVR core city at 14/17/21 days ~60% at 6 h, ~90% at 12 h; other YVR lengths and cities,
