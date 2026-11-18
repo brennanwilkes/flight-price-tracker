@@ -1,7 +1,41 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-18T00:06:15Z",
+ "lastSuccess": "2026-11-18T01:06:53Z",
  "runs": [
+  {
+   "at": "2026-11-18T01:06:53Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 272,
+   "failed": 9,
+   "cells": 7699,
+   "priced": 7695,
+   "changes": 1166,
+   "errors": [
+    "ICN-YVR-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-KUL-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-DPS-J 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-JKT-J 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-MNL-Y 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-HKG-Y 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-MNL-Y 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-TYO-Y 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-HAN-J 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 323,
+   "pages": 3,
+   "pauses": 2,
+   "skipped": 42,
+   "secondOk": 17,
+   "seconds": 1532,
+   "success": true
+  },
   {
    "at": "2026-11-18T00:06:15Z",
    "egress": "vpn",
@@ -580,29 +614,6 @@
    "skipped": 337,
    "secondOk": 5,
    "seconds": 1329,
-   "success": true
-  },
-  {
-   "at": "2026-11-17T01:06:11Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 237,
-   "failed": 0,
-   "cells": 8003,
-   "priced": 7761,
-   "changes": 2691,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 351,
-   "pages": 3,
-   "skipped": 114,
-   "secondOk": 2,
-   "seconds": 1246,
    "success": true
   }
  ]
