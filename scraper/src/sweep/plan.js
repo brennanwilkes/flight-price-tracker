@@ -17,7 +17,7 @@
  * graph that keeps failing (a route with nothing listed in the window shows no price graph) waits
  * its max age, doubling per failure up to a week, instead of taking the front of every sweep.
  */
-const { citiesWith, CITIES } = require('../../../frontend/app/cities.js');
+const { citiesWith, countryOf, CITIES } = require('../../../frontend/app/cities.js');
 const { routesOf } = require('../network');
 
 const key = (g) => `${g.routeId}|${g.tripLen ?? 0}`;
@@ -93,8 +93,12 @@ const failWait = (g, fail) => Math.min(FAIL_WAIT_MAX_HOURS, g.maxAgeHours * 2 **
  * Graphs due this sweep, most overdue first (age / max age; never scraped counts as 1.5 so it
  * doesn't starve the hourly routes), then by tier. `only`: route prefixes (e.g. 'YVR-ICN').
  * A graph that failed last time is due once its wait is over, as overdue as a stale one (1).
+ * `focus`: gateway cities (an opened deal alert): every long-haul graph to or from them or their
+ * country's other gateways, both homes and cabins, first (marked `focus`), due or not, unless it's
+ * waiting out failures or was scraped within the hour.
  */
-function planSweep(config, state, network, now, only = null, fails = {}) {
+function planSweep(config, state, network, now, only = null, fails = {}, focus = []) {
+  const near = focusCities(focus);
   const due = [];
   for (const g of allGraphs(config, network)) {
     if (only && !only.some((o) => g.routeId.startsWith(`${o}-`))) continue;
@@ -102,9 +106,18 @@ function planSweep(config, state, network, now, only = null, fails = {}) {
     const fail = fails[key(g)];
     let overdue = last ? (now - Date.parse(last)) / (g.maxAgeHours * 3600e3) : 1.5;
     if (fail) overdue = now - Date.parse(fail.at) >= failWait(g, fail) * 3600e3 ? Math.min(overdue, 1) : 0;
-    if (only || overdue >= 1) due.push({ g, overdue });
+    const hot = near.size && config.tiers[g.tier].kind === 'long' && (near.has(g.from) || near.has(g.to)) && overdue > 0 && !(last && now - Date.parse(last) < 3600e3);
+    if (hot) due.push({ g: { ...g, focus: true }, overdue: 100 + overdue });
+    else if (only || overdue >= 1) due.push({ g, overdue });
   }
   return due.sort((x, y) => y.overdue - x.overdue || x.g.tier - y.g.tier).map((d) => d.g);
+}
+
+/** Focus cities with their country's other gateways. */
+function focusCities(focus) {
+  const out = new Set(focus ?? []);
+  for (const c of focus ?? []) { const n = countryOf(c); if (n) for (const x of citiesWith('gateway')) if (countryOf(x) === n) out.add(x); }
+  return out;
 }
 
 /** Hours after which a graph's cells are too old to build trips from: twice its max age, ≥ 48 h. */

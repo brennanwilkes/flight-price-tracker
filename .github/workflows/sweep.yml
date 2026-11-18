@@ -11,6 +11,9 @@ on:
       routes:
         description: Only these O-D routes (comma-separated, e.g. YVR-ICN); empty = all
         default: ''
+      focus:
+        description: Gateway cities first (an opened deal alert, from the Worker), e.g. HKG,TYO
+        default: ''
 
 permissions:
   contents: write  # push to the data branch
@@ -141,6 +144,7 @@ jobs:
           export SCRAPE_UNTIL=$(( $(date +%s) + 26 * 60 ))  # the scrape budget ends here even if it starts late
           args=()
           [[ -n "${{ inputs.routes }}" ]] && args+=(--routes "${{ inputs.routes }}")
+          [[ "${{ inputs.focus }}" =~ ^[A-Z]{3}(,[A-Z]{3})*$ ]] && args+=(--focus "${{ inputs.focus }}")
           # Flight checks beside the scrape (on the fares as they were), into the search cache the
           # build reads: done ~1 min before the scrape's ~26 (searches in flight run ~4.5 min on).
           WARM_UNTIL=$(( $(date +%s) + 20 * 60 )) scripts/run_sweep.sh warm > warm.log 2>&1 &

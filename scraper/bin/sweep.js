@@ -125,7 +125,9 @@ async function main() {
         console.log(`network: ${s.checked} pairs checked, ${s.kept} short, ${s.failed} failed; ${run.network.routes} routes known`);
       }
       const { start: wStart, end: wEnd } = config.window;
-      const work = planSweep(config, state, network, Date.now(), only, fails);
+      const focus = arg('focus')?.split(',').filter((c) => /^[A-Z]{3}$/.test(c)) ?? [];
+      const work = planSweep(config, state, network, Date.now(), only, fails, focus);
+      if (focus.length) console.log(`focus (an opened deal alert): ${focus.join(', ')}; ${work.filter((g) => g.focus).length} graphs first`);
       run.due = work.length;
       run.pages = work.length > BACKLOG ? Math.max(CONCURRENCY, CONCURRENCY_BACKLOG) : CONCURRENCY;
       let inARow = 0;

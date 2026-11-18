@@ -46,9 +46,14 @@ the builder searches every combination and the dashboard shows the best N.
 - **Cadence:** YVR long legs (round trip + one-way) hourly; YYJ long legs every 3 h (Google computes
   YYJ graphs on demand, 5-45 s each, and headline deals come from YVR anyway); hops every 12 h
   (sharded). The Worker cron picks the homes per hour (decided 2026-10-31).
-- **Full sweep on demand:** a dashboard button, also pressed automatically when a deal alert is
-  opened, so everything refreshes while the deal is being reviewed. Worker `POST /sweep`, public,
-  at most one per 30 min.
+- **Full sweep on demand:** a dashboard button. Worker `POST /sweep`, public, at most one per 30 min.
+- **Opening a deal alert focuses the next sweep** (2026-11-18, replacing a full sweep on open): the
+  alert link carries the deal's gateway cities (`?focus=HKG`); the page sends them to Worker
+  `POST /focus` (KV, 3 h); the next hourly dispatch passes them as sweep.yml's `focus` input and
+  clears them; the plan puts every long-haul graph to or from those cities and their country's
+  other gateways (both homes, both cabins, every date) first, due or not (not one scraped within
+  the hour). Not a run of its own: a dispatched run waits behind the hour's in the one
+  concurrency group, and a newer pending run cancels an older pending one.
 - **No confirm pass (decided 2026-10-31):** a price Google Flights publishes is good enough to alert
   on and rank by; no airline-direct or booking-page check. `bookingOptions` stays in the code for
   ad hoc checks. This supersedes "confirm", "airline-direct" and "candidate" wording below.

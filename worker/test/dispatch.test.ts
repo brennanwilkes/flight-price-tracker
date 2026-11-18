@@ -18,3 +18,20 @@ test('manual sweep: dispatches, then refuses for 30 min', async () => {
   assert.strictEqual((await manualSweep(env, t0 + MANUAL_MIN_GAP_MS)).started, true);
   assert.deepStrictEqual(bodies, [{ ref: 'main' }, { ref: 'main' }]);
 });
+
+test('focus: an opened alert\'s cities ride the next hourly dispatch once, dropped after 3 h', async () => {
+  const { addFocus, hourlySweep, FOCUS_HOURS } = await import('../src/dispatch.ts');
+  const kv = new Map<string, string>();
+  const env = { PUSH: { get: async (k: string) => kv.get(k) ?? null, put: async (k: string, v: string) => { kv.set(k, v); }, delete: async (k: string) => { kv.delete(k); } }, GH_DISPATCH_TOKEN: 't' } as unknown as Env;
+  const bodies: unknown[] = [];
+  globalThis.fetch = (async (_u: string, init: RequestInit) => { bodies.push(JSON.parse(String(init.body))); return new Response(null, { status: 204 }); }) as typeof fetch;
+  const t0 = Date.parse('2027-01-01T00:00:00Z');
+  assert.deepStrictEqual((await addFocus(env, ['HKG', 'bad', 'TYO'], t0)).cities, ['HKG', 'TYO']);
+  assert.deepStrictEqual((await addFocus(env, ['HKG', 'TPE'], t0 + 60e3)).cities, ['HKG', 'TYO', 'TPE']);
+  await hourlySweep(env, t0 + 120e3);
+  await hourlySweep(env, t0 + 180e3);
+  assert.deepStrictEqual(bodies, [{ ref: 'main', inputs: { focus: 'HKG,TYO,TPE' } }, { ref: 'main' }]);
+  await addFocus(env, ['ICN'], t0);
+  await hourlySweep(env, t0 + FOCUS_HOURS * 3600e3);
+  assert.deepStrictEqual(bodies.at(-1), { ref: 'main' });
+});

@@ -2,10 +2,11 @@
 //   POST /subscribe  PWA's push subscription (one; replaces the last)
 //   POST /notify     Actions → one push (Bearer NOTIFY_SECRET)
 //   POST /sweep      dashboard → full sweep now (public, at most one per 30 min)
+//   POST /focus      opened deal alert → its gateway cities first in the next hourly sweep
 //   GET  /health     push health      GET /vapid   VAPID public key
 import type { Env } from './types.ts';
 import { corsHeaders } from './cors.ts';
-import { dispatchSweep, manualSweep } from './dispatch.ts';
+import { addFocus, hourlySweep, manualSweep } from './dispatch.ts';
 import { readHealth, updateHealth } from './health.ts';
 import { sendPush, type PushMessage, type PushSubscriptionJson } from './push.ts';
 
@@ -93,11 +94,15 @@ export default {
     if (req.method === 'POST' && pathname === '/sweep') {
       try { return json(req, await manualSweep(env)); } catch (e) { return json(req, { error: String(e) }, 502); }
     }
+    if (req.method === 'POST' && pathname === '/focus') {
+      const body = (await req.json().catch(() => ({}))) as { cities?: unknown };
+      try { return json(req, await addFocus(env, body.cities)); } catch (e) { return json(req, { error: String(e) }, 502); }
+    }
     if (req.method === 'GET' && pathname === '/vapid') return json(req, { publicKey: env.VAPID_PUBLIC_KEY });
     return json(req, { error: 'not found' }, 404);
   },
 
   async scheduled(_event: ScheduledController, env: Env): Promise<void> {
-    await dispatchSweep(env);
+    await hourlySweep(env);
   },
 };

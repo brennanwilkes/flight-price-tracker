@@ -22,8 +22,21 @@ const arg = (name) => { const i = process.argv.indexOf(`--${name}`); return i > 
 const readJson = (f, def) => (fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : def);
 const money = (n) => `$${n.toLocaleString('en-CA')}`;
 
+// The deal's gateway cities (its long hauls' far ends): opening the alert puts them first in the
+// next hourly sweep (Worker POST /focus), to find what else the sale touched.
+function gatewaysOf(deals) {
+  const homes = sweepConfig.origins;
+  const out = new Set();
+  for (const d of deals) for (const t of d.trip?.tickets ?? []) {
+    if (homes.includes(t.from) && /^[A-Z]{3}$/.test(t.to)) out.add(t.to);
+    else if (homes.includes(t.to) && /^[A-Z]{3}$/.test(t.from)) out.add(t.from);
+  }
+  return [...out].slice(0, 8);
+}
+const focusParam = (deals) => { const g = gatewaysOf(deals); return g.length ? `&focus=${g.join(',')}` : ''; };
+
 function dealUrl(d, sha) {
-  return `${config.dashboard}?home=${d.home}&sweep=1&v=${sha}#trip=${rowId(d)}~${d.cls}`;
+  return `${config.dashboard}?home=${d.home}${focusParam([d])}&v=${sha}#trip=${rowId(d)}~${d.cls}`;
 }
 
 // Two lines, as the board's title line has it: the route, then class and price.
@@ -95,7 +108,7 @@ async function main() {
     const rest = news.slice(solo.length);
     if (rest.length) {
       const names = rest.map((d) => `${rowName(d)} ${money(d.trip.total)}`);
-      if (await send({ title: `${rest.length} more deals`, body: names.join(' · ').slice(0, 180), url: `${config.dashboard}?sweep=1&v=${sha}`, tag: 'more' })) rest.forEach(record);
+      if (await send({ title: `${rest.length} more deals`, body: names.join(' · ').slice(0, 180), url: `${config.dashboard}?v=${sha}${focusParam(rest)}`, tag: 'more' })) rest.forEach(record);
     }
     console.log(`alerts: ${deals.length} deals, ${news.length} new`);
   }

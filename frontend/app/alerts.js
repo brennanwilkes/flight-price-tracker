@@ -57,13 +57,22 @@ export async function requestSweep() {
 }
 
 /**
- * Opening the page from an alert (?sweep=1) asks for a full sweep, so the rest of the routes
- * refresh while the deal is being looked at. Drops the parameter; reports through `say`.
+ * Opening the page from an alert (?focus=HKG,TYO): the deal's gateway cities go first in the next
+ * hourly sweep (Worker POST /focus), every long haul to or from them, to find what else the sale
+ * touched. Drops the parameter (and an old alert's ?sweep=1); reports through `say`.
  */
 export async function sweepIfAsked(say) {
   const params = new URLSearchParams(location.search);
-  if (params.get('sweep') !== '1') return;
+  const focus = (params.get('focus') ?? '').split(',').filter((c) => /^[A-Z]{3}$/.test(c));
+  if (!focus.length && !params.has('sweep')) return;
+  params.delete('focus');
   params.delete('sweep');
   history.replaceState(history.state, '', `${location.pathname}${params.size ? `?${params}` : ''}${location.hash}`);
-  try { say(await requestSweep()); } catch (e) { say(`Couldn't start a scrape: ${e.message}`); }
+  if (!focus.length) return;
+  try {
+    const res = await fetch(`${WORKER}/focus`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ cities: focus }) });
+    const r = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(r.error ?? `HTTP ${res.status}`);
+    say(`Next scrape checks ${r.cities.join(', ')} first`);
+  } catch (e) { say(`Couldn't queue a focused scrape: ${e.message}`); }
 }
