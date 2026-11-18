@@ -66,7 +66,7 @@ function goneWhy(t, ctx, aIndex, tierName) {
     if (total == null) return `not planned now, its cell gone (${cellGone(t.cell, ctx)})`;
     if (total < t.cellTotal - tol) return 'not planned now, its cell found a cheaper trip';
     if (total > t.cellTotal + tol) return 'not planned now, its cell dearer now (its flights gone or up)';
-    return 'not planned now, its cell the same total with another trip (a flip)';
+    return `not planned now, its cell the same total with another trip (a flip${flipBy(total, t.cellTotal)})`;
   }
   if (moved(now, was)) {
     if (now < was) return 'cheaper now, still not picked';
@@ -77,8 +77,12 @@ function goneWhy(t, ctx, aIndex, tierName) {
   if (total == null) return 'same price, its cell gone';
   if (total < t.cellTotal - Math.max(5, t.cellTotal * 0.01)) return 'same price, its cell found a cheaper trip';
   if (total > t.cellTotal + Math.max(5, t.cellTotal * 0.01)) return 'same price, its cell dearer now (another part of its trip moved)';
-  return 'same price, its cell the same total with another trip (a flip)';
+  return `same price, its cell the same total with another trip (a flip${flipBy(total, t.cellTotal)})`;
 }
+
+// A flip's cell total against its last: to the dollar (a tie a sticky pick would keep), cheaper or
+// dearer by under 1% (a real, small move: the cheaper trip must win).
+const flipBy = (now, was) => (was == null ? '' : Math.round(now) === Math.round(was) ? ', to the dollar' : now < was ? ', under 1% cheaper' : ', under 1% dearer');
 
 function index(tiers) {
   const tierOf = new Map(); const own = new Map(); const routes = new Set();

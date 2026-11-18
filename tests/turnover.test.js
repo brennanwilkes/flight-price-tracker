@@ -39,9 +39,9 @@ test('booking queue turnover: why each gone ticket left (dearer, not planned, it
   const cellTotal = new Map([[cell, 4000], ['other', 3600]]);
   const r = turnover([[], []], [[], [flip, dearer, lost, cheaperCell, disc]], null, (k) => k === keyOf(flip), 1000 * 3600e3, undefined, { priceNow, cellTotal });
   const line = r.lines.find((l) => l.includes("filters' gone, why"));
-  assert.match(line, /1 same price, its cell the same total with another trip \(a flip\)/);
+  assert.match(line, /1 same price, its cell the same total with another trip \(a flip, to the dollar\)/);
   assert.match(line, /1 dearer now \(listed up\)/);
-  assert.match(line, /1 not planned now, its cell the same total with another trip \(a flip\)/);
+  assert.match(line, /1 not planned now, its cell the same total with another trip \(a flip, to the dollar\)/);
   assert.match(line, /1 same price, its cell found a cheaper trip/);
   assert.match(line, /1 dearer now \(was below listed: booking price gone or up\)/);
   assert.match(line, /; 1 of the flips had a booking page/);
