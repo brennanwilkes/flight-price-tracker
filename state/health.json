@@ -1,7 +1,30 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-18T17:06:50Z",
+ "lastSuccess": "2026-11-18T18:06:13Z",
  "runs": [
+  {
+   "at": "2026-11-18T18:06:13Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 262,
+   "failed": 0,
+   "cells": 8958,
+   "priced": 8838,
+   "changes": 3745,
+   "errors": [],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 332,
+   "pages": 3,
+   "skipped": 70,
+   "secondOk": 3,
+   "seconds": 1233,
+   "success": true
+  },
   {
    "at": "2026-11-18T17:06:50Z",
    "egress": "vpn",
@@ -546,31 +569,6 @@
    "due": 15,
    "pages": 3,
    "seconds": 29,
-   "success": true
-  },
-  {
-   "at": "2026-11-17T18:07:07Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 106,
-   "failed": 1,
-   "cells": 3183,
-   "priced": 3177,
-   "changes": 310,
-   "errors": [
-    "BKK-YVR-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "controlTries": 2,
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 107,
-   "pages": 3,
-   "secondOk": 4,
-   "seconds": 406,
    "success": true
   }
  ]
