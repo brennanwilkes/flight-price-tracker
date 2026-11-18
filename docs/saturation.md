@@ -293,6 +293,14 @@ Read at 4:20 pm Nov 16 (runs 8:05 am-3:05 pm), every line above printing:
     freshness, board / filters:` per home and cabin, the share checked under 3 / 6 / 12 h at
     the run's start (≈ the catch chance for a sale that long). Watch the board's pages a run
     (was ~410) and what it leaves the filters.
+    Measured (Nov 18): board pages 412 → 505 → 474 a run, filters ~1,000; YVR business under
+    6 h 45% (11:05 am, before) → 47% → 53% (1:05 pm), under 12 h 85% → 90%, still climbing.
+  - Flips aren't ties: of ~350 "same total" flips a build (1:05 pm Nov 18), 30 were to the
+    dollar; the rest moved under 1%, cheaper or dearer, and the cheaper trip must win. A sticky
+    pick would save ~30 a build: not built.
+  - Search backlog (`search backlog flow`, Nov 18): grows ~200-380 a run with the runner at
+    ~900-1,080 good searches. ~450-520 a build join as "new lookup, searched before (stale)":
+    itineraries the plan dropped and picked again after their searches aged out.
   - YVR's long hauls first (Brennan, Nov 17: "we need to get much closer to 90%+" on catching a
     sale live 6 or 12 h; YYJ and the hops matter less). Estimated catch rates before: airline fare
     on a YVR core city at 14/17/21 days ~60% at 6 h, ~90% at 12 h; other YVR lengths and cities,
