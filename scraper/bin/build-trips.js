@@ -805,7 +805,18 @@ async function main() {
           for (const r of rows) {
             for (const cls of CLASSES) {
               const base = [['', r[cls]], ...Object.entries(r.months ?? {}).map(([m, x]) => [` ${m}`, x[cls]]), ...Object.entries(r.bands ?? {}).map(([b, x]) => [` band ${b}`, x[cls]])].filter(([, t]) => t);
-              for (const [l, t] of [...base, ...base.flatMap(([l, t]) => Object.entries(t.fast ?? {}).filter(([, f]) => f).map(([k, f]) => [`${l} fast ${k}`, f]))]) {
+              // Each long-haul cap's trip: `fast` keeps only the caps where the trip changes, so a cap
+              // its trip keeps to takes the looser one's (else the cap's cell came and went with the
+              // cell's pick); none under a cap: no cell for it or any tighter one.
+              const capped = ([l, t]) => {
+                const out = []; let cur = t;
+                for (const cap of CAPS) {
+                  if (t.fast && cap in t.fast) { if (!t.fast[cap]) break; cur = t.fast[cap]; }
+                  out.push([`${l} fast ${cap}`, cur]);
+                }
+                return out;
+              };
+              for (const [l, t] of [...base, ...base.flatMap(capped)]) {
                 const cell = `${v}${rowId(r)}|${cls}${l}`;
                 cellTotal.set(cell, t.total);
                 for (const x of t.tickets ?? []) { if (!x.flights?.out?.legs?.length) continue; const k = bookingKey(x); if (!cellOf.has(k)) cellOf.set(k, { cell, cellTotal: t.total }); }

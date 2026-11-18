@@ -261,6 +261,13 @@ Read at 4:20 pm Nov 16 (runs 8:05 am-3:05 pm), every line above printing:
     same total with another trip (a flip)`. Same runs: searches 1,163–1,421 a run (was 551–747),
     rejected replies 25–57% (`lost` 76–279); booking pages ~1,660 a run, capped by the 1.5 s
     pacing, not CPU; filters fresh +79 a run (5,009 of 14,574).
+  - First split (6:05 pm Nov 17), the filters' 3,028 leavers: 1,063 other outbounds (682 with
+    their ticket, 381 with it still queued), 557 cell gone, 479 to the board, 407 its cell found
+    a cheaper trip, 304 its cell dearer, 218 flips (150 with a booking page in 48 h). Board: 451
+    to the filters, 72 cell gone, 53 dearer, 45 flips, 40 cheaper. "Cell gone" was mostly the
+    long-haul cap cells: `fast` keeps only the caps where the trip changes, so a cap's cell
+    vanished whenever its cell's pick changed. Every cap now carries its effective trip (the
+    looser cap's when its own is absent), so those read as the cheaper, dearer or flip they are.
   - YVR's long hauls first (Brennan, Nov 17: "we need to get much closer to 90%+" on catching a
     sale live 6 or 12 h; YYJ and the hops matter less). Estimated catch rates before: airline fare
     on a YVR core city at 14/17/21 days ~60% at 6 h, ~90% at 12 h; other YVR lengths and cities,
