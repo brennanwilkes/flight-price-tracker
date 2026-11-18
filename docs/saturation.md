@@ -276,6 +276,15 @@ Read at 4:20 pm Nov 16 (runs 8:05 am-3:05 pm), every line above printing:
     outbounds, 8-9 under. Fix: past the board, other outbounds go after the tier's own tickets
     and its quiet rechecks (`bookingCandidates`). Filters fresh had stalled (−30 a run, Nov 17
     evening), +72 a run overnight (6,190 of 14,580).
+  - Search backlog flat at 4,000-4,700 overnight with the runner at ~1,320 a run against ~880
+    needed. Telemetry (from the 11:05 am Nov 18 build): `search backlog flow: <last> → <now>;
+    left …; stayed …; joined …` against the last build's queue. Left: searched since (in the
+    runner's head or past it), no longer looked up. Stayed: in the runner's head (being searched
+    this run, its rows reach the next build) or past it. Joined: aged out (24 h YVR / 48 h YYJ and
+    hops), a new lookup (never searched, or stale), looked up last build too but not in its
+    queue. `search demand` ages now go by quarters of each search's own hours (by 6 h alone
+    every 48 h search past 18 h read "18-24 h"), and its "takes N a run" counts each search at
+    its own hours.
   - YVR's long hauls first (Brennan, Nov 17: "we need to get much closer to 90%+" on catching a
     sale live 6 or 12 h; YYJ and the hops matter less). Estimated catch rates before: airline fare
     on a YVR core city at 14/17/21 days ~60% at 6 h, ~90% at 12 h; other YVR lengths and cities,

@@ -231,6 +231,46 @@ function searchWaste(at, used, now) {
  * Hour to hour: of the last build's lookups, how many this build looked up again; of the search
  * runner's queue head (what it searched this hour), how many this build looked up.
  */
+/**
+ * The search backlog as a flow: `last` the last build's queue ({ all, head, used, at }), `wanted`
+ * this build's (left out of time). Keyed by each search's first key.
+ */
+function backlogFlow(last, wanted, { used, at, has, now }) {
+  const tally = (o) => Object.entries(o).filter(([, n]) => n).map(([w, n]) => `${n} ${w}`).join(', ') || 'none';
+  const k0 = (w) => w.keys[0];
+  const nowKeys = new Set(wanted.map(k0));
+  const headKeys = new Set((last.head ?? []).map(k0));
+  const lastKeys = new Set(last.all.map(k0));
+  const lastUsed = new Set(last.used ?? []);
+  const lastAt = last.at ? Date.parse(last.at) : null;
+  const left = {}; const stayed = {}; const joined = {};
+  const add = (o, w) => { o[w] = (o[w] ?? 0) + 1; };
+  for (const w of last.all) {
+    const k = k0(w);
+    // The runner works the last build's queue head while this build runs (its rows reach the next
+    // build): staying in it means being searched now, not missed.
+    const head = headKeys.has(k) ? "in the runner's head (its rows next build)" : "past the runner's head";
+    if (nowKeys.has(k)) { add(stayed, head); continue; }
+    if (!used.has(k)) add(left, 'no longer looked up');
+    else if (has(k)) add(left, `searched since (${head})`);
+    else add(left, 'other (fresh keys, not its first)');
+  }
+  for (const w of wanted) {
+    const k = k0(w);
+    if (lastKeys.has(k)) continue;
+    const hours = searchHours(k);
+    const cls = hours > SEARCH_HOURS ? `${hours} h (YYJ, hops)` : `${hours} h (YVR)`;
+    if (!lastUsed.has(k)) { add(joined, w.had ? 'new lookup, searched before (stale)' : 'new lookup, never searched'); continue; }
+    const when = at.get(k);
+    // Fresh at the last build, past its hours now: aged out. Searched after the last build and
+    // stale already can't be; stale then and not queued (it was searched in-build or left out).
+    if (when && lastAt && now - Date.parse(when) >= hours * 3600e3 && lastAt - Date.parse(when) < hours * 3600e3) add(joined, `aged out, ${cls}`);
+    else add(joined, `looked up last build too, not in its queue (${cls})`);
+  }
+  const hit = [...headKeys].filter((k) => has(k)).length;
+  return `search backlog flow: ${lastKeys.size} → ${nowKeys.size}; left ${tally(left)}; stayed ${tally(stayed)}; joined ${tally(joined)}; the runner's head ${headKeys.size}, ${hit} of it fresh now`;
+}
+
 function searchChurn({ head, used: lastUsed }, used, { fareKeys = new Map(), expired = new Set(), usedTier = new Map() } = {}) {
   const parts = [];
   // Is the turnover a 24 h loop? A date lists above its graph price, the plan leaves it, its listed
@@ -668,7 +708,7 @@ async function main() {
       const last = JSON.parse(fs.readFileSync(arg('runner-queue'), 'utf8'));
       const head = (last.searches ?? []).slice(0, RUNNER_REACH);
       searches.cache.runnerKeys = new Set(head.flatMap((s) => s.keys));
-      searches.last = { head, used: last.used ?? null, hidden: last.hidden ?? null };
+      searches.last = { head, used: last.used ?? null, hidden: last.hidden ?? null, all: last.searches ?? [], at: last.at ?? null };
       console.log(`search runner's queue: ${head.length} searches left to it`);
     } catch (e) { console.log(`search runner's queue unread: ${e.message}`); }
   }
@@ -902,9 +942,11 @@ async function main() {
       for (const [k, state] of used) {
         n[state]++;
         const when = searches.cache.at?.get(k);
-        if (state === 'fresh' && when) age[Math.min(3, Math.floor((Date.parse(generatedAt) - Date.parse(when)) / (6 * 3600e3)))]++;
+        // In quarters of its own fresh hours (24 h YVR's, 48 h YYJ's and the hops'): by 6 h alone
+        // every 48 h search past 18 h read "18-24 h" (9,164 of 16,146, Nov 18).
+        if (state === 'fresh' && when) age[Math.min(3, Math.floor((Date.parse(generatedAt) - Date.parse(when)) / (searchHours(k) * 900e3)))]++;
       }
-      console.log(`search demand: ${used.size} searches used, ${n.fresh} fresh at load (by age: ${age[0]} under 6 h, ${age[1]} 6-12 h, ${age[2]} 12-18 h, ${age[3]} 18-24 h), ${n.stale} stale (served), ${n.none} never searched; kept fresh at ${SEARCH_HOURS} h that takes ${Math.round(used.size / SEARCH_HOURS)} a run (hourly), made this build ${(t.plain ?? 0) - (t.errors ?? 0) - (t.timeouts ?? 0)} plain + ${t.pages ?? 0} browser pages here, plus the search runner's (its newer rows above)`);
+      console.log(`search demand: ${used.size} searches used, ${n.fresh} fresh at load (by age, in quarters of its fresh hours: ${age[0]} first, ${age[1]} second, ${age[2]} third, ${age[3]} last), ${n.stale} stale (served), ${n.none} never searched; kept fresh at ${SEARCH_HOURS} h (YVR's) and ${SLOW_SEARCH_HOURS} h (YYJ's, the hops') that takes ${Math.round([...used.keys()].reduce((s, k) => s + 1 / searchHours(k), 0))} a run (hourly), made this build ${(t.plain ?? 0) - (t.errors ?? 0) - (t.timeouts ?? 0)} plain + ${t.pages ?? 0} browser pages here, plus the search runner's (its newer rows above)`);
       {
         // The same by whose searches they are (the most important view that looked each up), with
         // the stale ones' ages: is the board's own demand fresh, and how old is what it's served?
@@ -943,6 +985,11 @@ async function main() {
         for (const w of wanted) by[label(w)] = (by[label(w)] ?? 0) + 1;
         console.log(`search queue in order: ${Object.entries(by).map(([w, n]) => `${w} ${n}`).join(', ') || 'none'}`);
       }
+      // Telemetry: the backlog as a flow against the last build's queue. What left it (searched
+      // since, by the runner's share of its queue head or not; no longer looked up), what stayed (in
+      // the runner's head and not made: rejected, failed or not reached; past its head), and what
+      // joined (a search fresh last build that aged out, by its hours; a lookup new this build).
+      try { if (searches.last?.all) console.log(backlogFlow(searches.last, wanted, { used: searches.cache.used ?? new Map(), at: searches.at, has: (k) => searches.cache.has(k), now: Date.parse(generatedAt) })); } catch (e) { console.log(`search backlog flow: not worked out (${e.message})`); }
       // used: this build's lookups, for the next build's churn line (searchChurn).
       fs.writeFileSync(arg('search-queue'), JSON.stringify({ at: generatedAt, extraTo: searches.extraTo || null, searches: list, used: [...(searches.cache.used?.keys() ?? [])] }));
       console.log(`search queue: ${list.length} browser searches for the search runner (${wanted.length} left out of time, ${wanted.filter((w) => w.had).length} of them served stale; never searched: ${wanted.filter((w) => !w.had && w.prio < 5 * TRIES).length} for board cells, ${wanted.filter((w) => !w.had && w.prio >= 5 * TRIES && w.prio < FAST_PRIO).length} for via cells, ${wanted.filter((w) => !w.had && w.prio >= FAST_PRIO).length} for long-haul caps)`);
