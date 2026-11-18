@@ -1,7 +1,31 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-18T09:06:40Z",
+ "lastSuccess": "2026-11-18T10:06:12Z",
  "runs": [
+  {
+   "at": "2026-11-18T10:06:12Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 254,
+   "failed": 0,
+   "cells": 8242,
+   "priced": 8240,
+   "changes": 2653,
+   "errors": [],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 293,
+   "pages": 3,
+   "pauses": 1,
+   "skipped": 39,
+   "secondOk": 14,
+   "seconds": 1268,
+   "success": true
+  },
   {
    "at": "2026-11-18T09:06:40Z",
    "egress": "vpn",
@@ -555,41 +579,6 @@
    "skipped": 529,
    "secondOk": 3,
    "seconds": 1274,
-   "success": true
-  },
-  {
-   "at": "2026-11-17T10:06:07Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 315,
-   "failed": 10,
-   "cells": 11422,
-   "priced": 11084,
-   "changes": 4956,
-   "errors": [
-    "TYO-YVR-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-HAN-J 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-MNL-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "HKG-REP-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "HKG-CAN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "HKT-CAN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "ICN-TPE-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "IAO-TPE-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "SGN-BKK-Y 10d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "SGN-BKK-Y 11d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 849,
-   "pages": 6,
-   "pauses": 1,
-   "skipped": 524,
-   "secondOk": 29,
-   "seconds": 1469,
    "success": true
   }
  ]
