@@ -198,7 +198,10 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gat
   // Telemetry: sellers a page (by count: few looks like the short view), fares without cabins, and
   // why a price came out dearer than listed (mixed: the listed fare is in another cabin; partial:
   // the listed offer isn't on the page at all).
-  const s = { checked: 0, cheaper: 0, dearer: 0, mixed: 0, partial: 0, gone: 0, none: 0, noCabins: 0, short: 0, failed: 0, left: 0, ms: 0, sellers: { '1-5': 0, '6-10': 0, '11+': 0 }, partialBy: {}, again: {}, againHours: [], quietDrop: null };
+  const s = { checked: 0, cheaper: 0, dearer: 0, mixed: 0, partial: 0, gone: 0, none: 0, noCabins: 0, short: 0, failed: 0, left: 0, ms: 0, sellers: { '1-5': 0, '6-10': 0, '11+': 0 }, partialBy: {}, again: {}, againHours: [], quietDrop: null, by: {} };
+  // Telemetry: the pages a ticket's own flights take beside its other outbounds' (alt), and what
+  // each found: an other outbound booked under its ticket's price makes the trip cheaper.
+  const by = (t, what) => { const b = (s.by[t.alt ? 'other outbounds' : 'own flights'] ??= { pages: 0 }); b[what] = (b[what] ?? 0) + 1; };
   let i = 0;
   await Promise.all(Array.from({ length: pages }, async () => {
     while (i < itins.length && Date.now() < until) {
@@ -211,6 +214,7 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gat
       for (let n = 0; n < 2 && !got && Date.now() < until; n++) got = await sellers(t).catch(() => null);
       if (!got) { s.failed++; continue; }
       s.checked++;
+      by(t, 'pages');
       s.sellers[got.length <= 5 ? '1-5' : got.length <= 10 ? '6-10' : '11+']++;
       s.noCabins += got.filter((o) => !Array.isArray(o.cabins) || !o.cabins.length).length;
       const legs = [...t.flights.out.legs, ...(t.ret ? t.flights.back?.legs ?? [] : [])];
@@ -223,6 +227,7 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gat
       const last = map.get(keyOf(t)) ?? map.prev?.get(keyOf(t));
       if (any && L && !t.guess && any.price > L * LISTED_GONE) {
         s.partial++;
+        by(t, 'without the listed offer');
         // Telemetry: is it the same tickets every 3 h (times running), a thin page (sellers), and
         // how far over the listed price is the cheapest seller? A ticket whose every page lacks
         // the listed offer never gets a booking price and takes a page every PARTIAL_HOURS.
@@ -253,7 +258,7 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gat
       // every run until BOOKING_HOURS.
       // Without flight lengths (a queue saved before they were kept) every leg had to be in the
       // cabin: not kept then, it's asked again once the queue has them.
-      if (!best) { s.none++; if (legs.every((l) => Number.isFinite(l?.min))) map.set(keyOf(t), { price: null, seller: null, at: now(), listed: L, byLength: true, ...seen }); continue; }
+      if (!best) { s.none++; by(t, 'no seller in its cabin'); if (legs.every((l) => Number.isFinite(l?.min))) map.set(keyOf(t), { price: null, seller: null, at: now(), listed: L, byLength: true, ...seen }); continue; }
       // Against its last check (fresh, or expired and kept in map.prev): did the listed price move,
       // did the booking price? A drop with the listed price unmoved is a sale only a recheck finds.
       const was = map.get(keyOf(t)) ?? map.prev?.get(keyOf(t));
@@ -276,7 +281,8 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gat
       const hours = primary && t.from !== primary && t.to !== primary ? Math.max(SLOW_HOURS, listedHours ?? 0) : listedHours;
       const hold = hours && !seen.short && near(best.price, L) ? { hours } : {};
       map.set(keyOf(t), { price: best.price, seller: best.sellerName, at: now(), listed: L, ...seen, ...hold });
-      if (best.price < L) s.cheaper++;
+      if (best.price < L) { s.cheaper++; by(t, 'cheaper than listed'); }
+      if (t.alt && best.price < t.price - Math.max(5, t.price * 0.01)) by(t, "under its ticket's price");
       else if (!t.guess && best.price > L * LISTED_GONE) { s.dearer++; s.mixed++; }
     }
   }));

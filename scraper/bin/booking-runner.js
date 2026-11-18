@@ -123,6 +123,7 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
     const s = await bookingPass(itins, timed, bookings, { until: end, pages, inCabin, gate, short: () => !isFull(), gapMs, listedHours, primary: homes[0] });
     console.log(`booking runner, ${name}: ${s.checked} of ${itins.length} checked, ${s.cheaper} cheaper than listed, ${s.none} with no seller in its cabin, ${s.failed} failed, ${s.left} left; ${Math.round(s.ms / 1000)} s (${(s.checked / Math.max(1, s.ms / 1000)).toFixed(2)} a second)`);
     console.log(`booking runner, ${name}: ${passLine(s)}`);
+    console.log(`booking runner, ${name}, pages by ticket: ${Object.entries(s.by).map(([k, b]) => `${k} ${b.pages} (${Object.entries(b).filter(([w]) => w !== 'pages').map(([w, n]) => `${n} ${w}`).join(', ') || 'nothing found'})`).join('; ') || 'none'}`);
   };
   try {
     await pass('board', all.slice(0, nBoard), until);
