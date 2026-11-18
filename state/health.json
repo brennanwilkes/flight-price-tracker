@@ -1,7 +1,37 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-18T06:06:44Z",
+ "lastSuccess": "2026-11-18T07:07:38Z",
  "runs": [
+  {
+   "at": "2026-11-18T07:07:38Z",
+   "egress": "direct",
+   "control": 7,
+   "ok": 196,
+   "failed": 5,
+   "cells": 5873,
+   "priced": 5870,
+   "changes": 1187,
+   "errors": [
+    "YVR-TYO-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Tokyo NRT HND Filters All",
+    "YVR-SIN-J 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Singapore SIN Filters Al",
+    "YVR-DAD-J 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Da Nang DAD Filters All ",
+    "YVR-DAD-J 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Da Nang DAD Filters All ",
+    "YVR-TYO-J 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Tokyo NRT HND Filters Al"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 350,
+   "pages": 3,
+   "pauses": 2,
+   "skipped": 149,
+   "secondOk": 9,
+   "seconds": 1511,
+   "success": true
+  },
   {
    "at": "2026-11-18T06:06:44Z",
    "egress": "vpn",
@@ -559,38 +589,6 @@
    "skipped": 542,
    "secondOk": 2,
    "seconds": 1244,
-   "success": true
-  },
-  {
-   "at": "2026-11-17T07:06:07Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 261,
-   "failed": 7,
-   "cells": 9322,
-   "priced": 9042,
-   "changes": 3996,
-   "errors": [
-    "BWN-JOG-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Bandar Seri Begawan BWN Yogyakarta YIA Fil",
-    "BWN-PQC-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Bandar Seri Begawan BWN Phú Quốc PQC Filte",
-    "DLI-CNX-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Da Lat DLI Chiang Mai CNX Filters All filt",
-    "DLI-CXR-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Da Lat DLI Nha Trang CXR Filters All filte",
-    "DLI-HKT-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Da Lat DLI Phuket HKT Filters All filters ",
-    "DLI-PQC-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Da Lat DLI Phú Quốc PQC Filters All filter",
-    "DLI-SYX-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Da Lat DLI Sanya SYX · Haikou HAK Filters "
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 632,
-   "pages": 6,
-   "pauses": 2,
-   "skipped": 364,
-   "secondOk": 9,
-   "seconds": 1582,
    "success": true
   }
  ]
