@@ -253,6 +253,14 @@ Read at 4:20 pm Nov 16 (runs 8:05 am-3:05 pm), every line above printing:
     gone`, `… the same total with another trip (a flip)`, other outbounds by their ticket. Flips
     are the bug to fix at the source (a tie-break that holds the last pick); the first build
     after this reads `cell not known` (the last queue had no cells).
+  - Nov 17, 11:05 am–5:05 pm (7 runs): no reason but `its flights no longer planned` (1,200–2,200
+    of the filters' ~2,300–3,700 leavers a build, half to two-thirds) and the tier and outbound
+    moves ever showed. Planned trips are mostly cells' picks, so a ticket its cell dropped leaves
+    the planned set too and that bucket hid the rest. It now splits by what the cell did: `not
+    planned now, its cell found a cheaper trip / dearer now (its flights gone or up) / gone / the
+    same total with another trip (a flip)`. Same runs: searches 1,163–1,421 a run (was 551–747),
+    rejected replies 25–57% (`lost` 76–279); booking pages ~1,660 a run, capped by the 1.5 s
+    pacing, not CPU; filters fresh +79 a run (5,009 of 14,574).
   - YVR's long hauls first (Brennan, Nov 17: "we need to get much closer to 90%+" on catching a
     sale live 6 or 12 h; YYJ and the hops matter less). Estimated catch rates before: airline fare
     on a YVR core city at 14/17/21 days ~60% at 6 h, ~90% at 12 h; other YVR lengths and cities,

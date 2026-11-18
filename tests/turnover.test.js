@@ -41,7 +41,7 @@ test('booking queue turnover: why each gone ticket left (dearer, not planned, it
   const line = r.lines.find((l) => l.includes("filters' gone, why"));
   assert.match(line, /1 same price, its cell the same total with another trip \(a flip\)/);
   assert.match(line, /1 dearer now \(listed up\)/);
-  assert.match(line, /1 its flights no longer planned/);
+  assert.match(line, /1 not planned now, its cell the same total with another trip \(a flip\)/);
   assert.match(line, /1 same price, its cell found a cheaper trip/);
   assert.match(line, /1 dearer now \(was below listed: booking price gone or up\)/);
   assert.match(line, /; 1 of the flips had a booking page/);

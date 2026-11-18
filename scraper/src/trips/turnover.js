@@ -43,7 +43,17 @@ function goneWhy(t, ctx, aIndex, tierName) {
   const now = ctx.priceNow.get(k);
   const was = t.price;
   const moved = (a, b) => Math.abs(a - b) > Math.max(5, b * 0.01);
-  if (now == null) return 'its flights no longer planned';
+  if (now == null) {
+    // Planned trips are mostly cells' picks, so a ticket its cell dropped is usually unplanned too:
+    // say what its cell did.
+    if (t.cell == null) return 'not planned now, cell not known';
+    const total = ctx.cellTotal.get(t.cell);
+    const tol = Math.max(5, (t.cellTotal ?? 0) * 0.01);
+    if (total == null) return 'not planned now, its cell gone';
+    if (total < t.cellTotal - tol) return 'not planned now, its cell found a cheaper trip';
+    if (total > t.cellTotal + tol) return 'not planned now, its cell dearer now (its flights gone or up)';
+    return 'not planned now, its cell the same total with another trip (a flip)';
+  }
   if (moved(now, was)) {
     if (now < was) return 'cheaper now, still not picked';
     return t.listed != null && was < t.listed - Math.max(5, t.listed * 0.01) ? 'dearer now (was below listed: booking price gone or up)' : 'dearer now (listed up)';
