@@ -1,7 +1,35 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-19T15:06:38Z",
+ "lastSuccess": "2026-11-19T16:07:10Z",
  "runs": [
+  {
+   "at": "2026-11-19T16:07:10Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 256,
+   "failed": 3,
+   "cells": 9147,
+   "priced": 8998,
+   "changes": 4007,
+   "errors": [
+    "YYJ-MNL-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "PQC-CXR-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Phú Quốc PQC Nha Trang CXR Filters All fil",
+    "PQC-KBV-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Phú Quốc PQC Krabi KBV Filters All filters"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 952,
+   "pages": 6,
+   "pauses": 2,
+   "skipped": 693,
+   "secondOk": 30,
+   "seconds": 1508,
+   "success": true
+  },
   {
    "at": "2026-11-19T15:06:38Z",
    "egress": "vpn",
@@ -629,29 +657,6 @@
    "pages": 3,
    "secondOk": 9,
    "seconds": 1021,
-   "success": true
-  },
-  {
-   "at": "2026-11-18T16:07:09Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 185,
-   "failed": 0,
-   "cells": 6312,
-   "priced": 6024,
-   "changes": 2998,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 298,
-   "pages": 3,
-   "skipped": 113,
-   "secondOk": 6,
-   "seconds": 1246,
    "success": true
   }
  ]
