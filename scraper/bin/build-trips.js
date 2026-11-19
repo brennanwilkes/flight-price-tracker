@@ -62,7 +62,7 @@ const { similarCount, scoreOf, rowId, bandOf } = require('../../frontend/app/bui
 const { CITIES, airportsOf, isPacific } = require('../../frontend/app/cities.js');
 const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
 const { viewOf, addDetails, returnsDone, returnsFor, returnsReady, searched, capped, longestOf, listedOnly, unlistedWhy, useBookings } = require('../src/trips/details');
-const { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass, passLine, listedOf, keyOf: bookingKey, BOOKING_HOURS } = require('../src/trips/bookings');
+const { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass, passLine, listedOf, keyOf: bookingKey, boardHold, BOOKING_HOURS } = require('../src/trips/bookings');
 const { inCabin, bookingUrl, canary } = require('../src/gflights/booking');
 const { openBrowserThread } = require('../src/gflights/browser-thread');
 const { monitorEventLoopDelay } = require('node:perf_hooks');
@@ -826,7 +826,10 @@ async function main() {
         const tickets = mainRows.flatMap((r) => CLASSES.flatMap((cls) => cellTrips(r, cls)).flatMap((t) => t.tickets));
         const lookup = await rowsOf();
         const itins = bookingCandidates([board, tickets], lookup, bookings, homes);
-        const s = await bookingPass(itins, (t) => chrome.bookingSellers(t), bookings, { until, pages: BOOKING_PAGES.build, inCabin, primary: homes[0] });
+        // The board's held by group as in the booking runner (BOARD_HOURS); the filters' as before.
+        const onBoard = new Set(bookingCandidates([board], lookup, bookings, homes).map(bookingKey));
+        const byGroup = boardHold(homes);
+        const s = await bookingPass(itins, (t) => chrome.bookingSellers(t), bookings, { until, pages: BOOKING_PAGES.build, inCabin, primary: homes[0], hold: (t) => (onBoard.has(bookingKey(t)) ? byGroup(t) : null) });
         console.log(`booking pages: ${s.checked} of ${itins.length} checked, ${s.cheaper} cheaper than listed, ${s.none} with no seller in its cabin, ${s.failed} failed, ${s.left} left (used from the next build); ${Math.round(s.ms / 1000)} s`);
         console.log(`booking pages: ${passLine(s)}`);
         // Beyond the board: every other ticket the checks priced (each cell's next-best trips, by
