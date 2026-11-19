@@ -1,7 +1,33 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-19T07:07:09Z",
+ "lastSuccess": "2026-11-19T08:07:02Z",
  "runs": [
+  {
+   "at": "2026-11-19T08:07:02Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 217,
+   "failed": 2,
+   "cells": 9161,
+   "priced": 8575,
+   "changes": 4059,
+   "errors": [
+    "BKK-TPE-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "BJS-TYO-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Beijing PEK PKX Tokyo NRT HND Filters All "
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 293,
+   "pages": 3,
+   "skipped": 74,
+   "secondOk": 6,
+   "seconds": 1314,
+   "success": true
+  },
   {
    "at": "2026-11-19T07:07:09Z",
    "egress": "vpn",
@@ -545,34 +571,6 @@
    "skipped": 53,
    "secondOk": 20,
    "seconds": 1403,
-   "success": true
-  },
-  {
-   "at": "2026-11-18T08:06:15Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 195,
-   "failed": 3,
-   "cells": 6253,
-   "priced": 6121,
-   "changes": 2367,
-   "errors": [
-    "YVR-SHA-Y 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-SHA-Y 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-KUL-J 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Federal Territory of Kual"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 214,
-   "pages": 3,
-   "pauses": 3,
-   "skipped": 16,
-   "secondOk": 3,
-   "seconds": 1565,
    "success": true
   }
  ]
