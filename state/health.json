@@ -1,7 +1,34 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-19T21:06:47Z",
+ "lastSuccess": "2026-11-19T22:06:59Z",
  "runs": [
+  {
+   "at": "2026-11-19T22:06:59Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 162,
+   "failed": 3,
+   "cells": 5417,
+   "priced": 4359,
+   "changes": 4505,
+   "errors": [
+    "DAD-TYO-Y 5d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "DAD-BJS-Y 12d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "HUI-PQC-Y 2d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Phú Quốc PQC Filters All filter"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 214,
+   "pages": 3,
+   "skipped": 49,
+   "secondOk": 17,
+   "seconds": 1508,
+   "success": true
+  },
   {
    "at": "2026-11-19T21:06:47Z",
    "egress": "vpn",
@@ -658,29 +685,6 @@
    "skipped": 78,
    "secondOk": 12,
    "seconds": 1589,
-   "success": true
-  },
-  {
-   "at": "2026-11-18T22:06:09Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 9,
-   "failed": 0,
-   "cells": 274,
-   "priced": 269,
-   "changes": 143,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 9,
-   "pages": 3,
-   "pauses": 1,
-   "secondOk": 4,
-   "seconds": 294,
    "success": true
   }
  ]
