@@ -230,6 +230,11 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gat
       const L = listedOf(t);
       // `guess`: a return guessed, not listed with its outbound (trips/ties.js): no listed price to hold the page to.
       const last = map.get(keyOf(t)) ?? map.prev?.get(keyOf(t));
+      // `hold(t)`: hours for this ticket whatever its page found (the board's groups, BOARD_HOURS):
+      // the "no listed offer, price applied" and "no seller in its cabin" pages too (they kept 12 h,
+      // a third of YVR business board tickets over 6 h old at a run's start, Nov 19).
+      const own = holdOf?.(t) ?? null;
+      const ownHold = own != null && !seen.short ? { hours: own } : {};
       if (any && L && !t.guess && any.price > L * LISTED_GONE) {
         s.partial++;
         by(t, 'without the listed offer');
@@ -252,7 +257,7 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gat
         // the listed price the first page that has it.
         if (partialN >= GONE_PAGES && !seen.short && !last?.short && best) {
           s.gone++;
-          map.set(keyOf(t), { price: best.price, seller: best.sellerName, at: now(), listed: L, gone: true, partialN, ...seen });
+          map.set(keyOf(t), { price: best.price, seller: best.sellerName, at: now(), listed: L, gone: true, partialN, ...seen, ...ownHold });
           continue;
         }
         map.set(keyOf(t), { price: best?.price ?? null, seller: best?.sellerName ?? null, at: now(), listed: L, partial: true, partialN, ...seen });
@@ -263,7 +268,7 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gat
       // every run until BOOKING_HOURS.
       // Without flight lengths (a queue saved before they were kept) every leg had to be in the
       // cabin: not kept then, it's asked again once the queue has them.
-      if (!best) { s.none++; by(t, 'no seller in its cabin'); if (legs.every((l) => Number.isFinite(l?.min))) map.set(keyOf(t), { price: null, seller: null, at: now(), listed: L, byLength: true, ...seen }); continue; }
+      if (!best) { s.none++; by(t, 'no seller in its cabin'); if (legs.every((l) => Number.isFinite(l?.min))) map.set(keyOf(t), { price: null, seller: null, at: now(), listed: L, byLength: true, ...seen, ...ownHold }); continue; }
       // Against its last check (fresh, or expired and kept in map.prev): did the listed price move,
       // did the booking price? A drop with the listed price unmoved is a sale only a recheck finds.
       const was = map.get(keyOf(t)) ?? map.prev?.get(keyOf(t));
@@ -283,8 +288,6 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gat
       // more often (22 of 70 dearer) and keeps BOOKING_HOURS. A listed price moving brings it back sooner (bookingCandidates).
       // Not touching the first home (`primary`, YVR): YYJ's long hauls and the hops, held SLOW_HOURS
       // at the listed price (Brennan, Nov 17: they matter less than YVR's long hauls).
-      // `hold(t)`: hours for this ticket whatever it booked at (the board's groups, BOARD_HOURS).
-      const own = holdOf?.(t) ?? null;
       const hours = own ?? (primary && t.from !== primary && t.to !== primary ? Math.max(SLOW_HOURS, listedHours ?? 0) : listedHours);
       const hold = hours && !seen.short && (own != null || near(best.price, L)) ? { hours } : {};
       map.set(keyOf(t), { price: best.price, seller: best.sellerName, at: now(), listed: L, ...seen, ...hold });
@@ -339,9 +342,12 @@ const dueLine = (itins, map) => {
 // Half an hour under the cycle: checked ~:20 into a run, due again by that many runs' start.
 // The hops keep their own (null: SLOW_HOURS at the listed price).
 const BOARD_HOURS = { primary: { J: 2.5, Y: 5.5 }, other: { J: 7.5, Y: 11.5 } };
-const boardHold = (homes) => (t) => {
+// The filters' the same way once a second booking runner left time over (Nov 19: filters at 0
+// left in most runs, slots 42% idle): YVR's every 6 h, YYJ's 12 h (were 12 h, 24 h at listed).
+const FILTER_HOURS = { primary: { J: 5.5, Y: 5.5 }, other: { J: 11.5, Y: 11.5 } };
+const boardHold = (homes, table = BOARD_HOURS) => (t) => {
   if (!homes.includes(t.from) && !homes.includes(t.to)) return null;
-  return BOARD_HOURS[t.from === homes[0] || t.to === homes[0] ? 'primary' : 'other'][t.cabin] ?? null;
+  return table[t.from === homes[0] || t.to === homes[0] ? 'primary' : 'other'][t.cabin] ?? null;
 };
 
 /**
@@ -375,4 +381,4 @@ function againLine(s) {
   return `; rechecked ${n} (median ${h.toFixed(0)} h on): ${Object.entries(s.again).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${v} ${k}`).join(', ')}${s.quietDrop ? `; biggest drop with the listed price unmoved ${s.quietDrop.what}` : ''}`;
 }
 
-module.exports = { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass, passLine, dueWhy, dueLine, listedOf, keyOf, boardHold, freshLine, BOARD_HOURS, BOOKING_HOURS };
+module.exports = { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass, passLine, dueWhy, dueLine, listedOf, keyOf, boardHold, freshLine, BOARD_HOURS, FILTER_HOURS, BOOKING_HOURS };

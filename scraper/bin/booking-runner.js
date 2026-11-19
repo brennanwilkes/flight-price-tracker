@@ -22,7 +22,7 @@
  */
 const fs = require('node:fs');
 const path = require('node:path');
-const { loadBookings, saveBookings, bookingCandidates, bookingPass, passLine, dueLine, listedOf, keyOf, boardHold, freshLine, BOOKING_HOURS } = require('../src/trips/bookings');
+const { loadBookings, saveBookings, bookingCandidates, bookingPass, passLine, dueLine, listedOf, keyOf, boardHold, freshLine, FILTER_HOURS, BOOKING_HOURS } = require('../src/trips/bookings');
 const { useBookings } = require('../src/trips/details');
 const { provenPrice, TRIED_HOURS } = require('../src/trips/ties');
 const { fareKey } = require('../src/trips/fares');
@@ -153,7 +153,8 @@ const hashOf = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) h
     const filters = all.slice(nBoard).filter((t) => mine(t) && !(bookings.get(keyOf(t))?.at >= started))
       .map((t, i) => [last(t), i, t]).sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : a[1] - b[1])).map((x) => x[2]);
     console.log(`booking runner, filters in order, the first 900: ${dueLine(filters.slice(0, 900), bookings)}`);
-    await pass('filters', filters, until, FILTER_LISTED_HOURS);
+    // YVR's every 6 h, YYJ's 12 h (bookings.js FILTER_HOURS); the hops as before.
+    await pass('filters', filters, until, FILTER_LISTED_HOURS, boardHold(homes, FILTER_HOURS));
   } finally {
     clearInterval(tick); clearInterval(watch);
     // Where the page slots' time went (page-stats.js lines, then the slot split): pages, waiting on a
