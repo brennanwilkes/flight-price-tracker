@@ -38,6 +38,7 @@ const FILTER_LISTED_HOURS = 24;
 const arg = (name, def) => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1] : def; };
 const sleep = (ms) => new Promise((r) => setTimeout(r, Math.max(0, ms)));
 const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+const hashOf = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619); return h >>> 0; };
 
 (async () => {
   const dataDir = arg('data');
@@ -46,7 +47,12 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   const until = Number(arg('until')) * 1000;
   const pages = Number(arg('pages', 6));
   const homes = require('../config/sweep.json').origins;
-  const bookings = loadBookings([path.join(dataDir, 'state', 'booking.json'), extra]);
+  // --also: the other booking runner's prices (read only); --shard i/n: this runner's share of the
+  // queue, by each itinerary's key, so two runners on two IPs never page the same one.
+  const also = (arg('also') ?? '').split(',').filter(Boolean);
+  const [shard, shards] = (arg('shard') ?? '0/1').split('/').map(Number);
+  const mine = (t) => shards < 2 || hashOf(keyOf(t)) % shards === shard;
+  const bookings = loadBookings([path.join(dataDir, 'state', 'booking.json'), ...also, extra]);
   useBookings(bookings);
   let checked = {};
   const started = stamp();
@@ -131,9 +137,11 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   };
   try {
     // The board's held by group (bookings.js BOARD_HOURS: YVR business every 3 h, economy 6 h; YYJ's 8 / 12 h).
-    await pass('board', all.slice(0, nBoard), until, null, boardHold(homes));
+    if (shards > 1) console.log(`booking runner: shard ${shard + 1} of ${shards}, ${all.slice(0, nBoard).filter(mine).length} of the board's ${nBoard} and ${all.slice(nBoard).filter(mine).length} of the filters' ${all.length - nBoard}${shard ? '; the unchecked dates on shard 1' : ''}`);
+    await pass('board', all.slice(0, nBoard).filter(mine), until, null, boardHold(homes));
     phase = 'unchecked dates';
-    await ties(Math.min(until, Date.now() + TIES_MS));
+    // One runner's (their --checked file is one).
+    if (shard === 0) await ties(Math.min(until, Date.now() + TIES_MS));
     phase = 'filters';
     // Not those booked in this run already (the board's, the unchecked dates').
     // The filters' tickets due, in order: listed at a new price since its check (where a sale
@@ -142,7 +150,7 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
     // as it came due again (every 3 h where a page lacked the listed offer), and 8,184 of 14,554
     // tickets had no check in 48 h (10:05 pm Vancouver Nov 15) at ~21,000 filter pages a day.
     const last = (t) => (bookings.has(keyOf(t)) ? '0' : bookings.prev?.get(keyOf(t))?.at ?? '1');
-    const filters = all.slice(nBoard).filter((t) => !(bookings.get(keyOf(t))?.at >= started))
+    const filters = all.slice(nBoard).filter((t) => mine(t) && !(bookings.get(keyOf(t))?.at >= started))
       .map((t, i) => [last(t), i, t]).sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : a[1] - b[1])).map((x) => x[2]);
     console.log(`booking runner, filters in order, the first 900: ${dueLine(filters.slice(0, 900), bookings)}`);
     await pass('filters', filters, until, FILTER_LISTED_HOURS);
@@ -161,7 +169,7 @@ const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   console.log(`booking runner: pages held ${Math.round(held / 60e3)} min for the short list; canary at the end ${view}; new sessions ${renewals.pages} at ${sessionMax} pages, ${renewals.short} on a short canary`);
   console.log(`booking runner: page errors by kind: ${Object.entries(why).sort((x, y) => y[1] - x[1]).map(([w, n]) => `${n}× ${w}`).join('; ') || 'none'}`);
   saveBookings(extra, bookings);
-  if (checkedFile) fs.writeFileSync(checkedFile, JSON.stringify(checked));
+  if (checkedFile && shard === 0) fs.writeFileSync(checkedFile, JSON.stringify(checked));
 
   // 2. Date pairs the board never checks: their flights searched beside the scrape on the sweep's
   // runner (trips/ties.js searchTies, the queue's `ties`), their booking pages here.

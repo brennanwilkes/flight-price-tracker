@@ -295,6 +295,11 @@ Read at 4:20 pm Nov 16 (runs 8:05 am-3:05 pm), every line above printing:
     (was ~410) and what it leaves the filters.
     Measured (Nov 18): board pages 412 → 505 → 474 a run, filters ~1,000; YVR business under
     6 h 45% (11:05 am, before) → 47% → 53% (1:05 pm), under 12 h 85% → 90%, still climbing.
+  - Fourth runner (Nov 18, 7 pm; Brennan: "another proton vpn but no more", CA#623): job
+    `booking2`, a second booking runner on its own IP. `--shard i/n` splits the queue by
+    itinerary key (board and filters both), the unchecked dates stay on shard 1, each reads the
+    other's last prices (`--also`), the build reads both (`--booking-extra a,b`). Expect ~3,100
+    booking pages a run; run-stats sums both runners.
   - Flips aren't ties: of ~350 "same total" flips a build (1:05 pm Nov 18), 30 were to the
     dollar; the rest moved under 1%, cheaper or dearer, and the cheaper trip must win. A sticky
     pick would save ~30 a build: not built.

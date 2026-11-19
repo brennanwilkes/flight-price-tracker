@@ -97,6 +97,12 @@ jobs:
             .booking-checked.json
           key: booking-extra-${{ github.run_id }}
           restore-keys: booking-extra-
+      - name: Restore second booking runner's prices
+        uses: actions/cache/restore@v4
+        with:
+          path: .booking-extra-2.json
+          key: booking-extra2-${{ github.run_id }}
+          restore-keys: booking-extra2-
       # The search runner's browser searches (job `booking`, bin/search-runner.js), from the last run.
       - name: Restore search runner's searches
         uses: actions/cache/restore@v4
@@ -249,6 +255,12 @@ jobs:
             .booking-checked.json
           key: booking-extra-${{ github.run_id }}
           restore-keys: booking-extra-
+      - name: Restore second booking runner's prices
+        uses: actions/cache/restore@v4
+        with:
+          path: .booking-extra-2.json
+          key: booking-extra2-${{ github.run_id }}
+          restore-keys: booking-extra2-
       - name: Data snapshot
         run: scripts/run_sweep.sh snapshot
 
@@ -282,7 +294,7 @@ jobs:
         if: steps.vpn.outputs.vpn_ok == 'true'
         run: |
           echo "$(nproc) CPUs"
-          node scraper/bin/booking-runner.js --data .worktrees/warm --queue .booking-queue.json --extra .booking-extra.json --checked .booking-checked.json --until $(( $(date +%s) + 43 * 60 )) --pages 3 --gap 1500 --session-pages 300 &
+          node scraper/bin/booking-runner.js --data .worktrees/warm --queue .booking-queue.json --extra .booking-extra.json --checked .booking-checked.json --until $(( $(date +%s) + 43 * 60 )) --pages 3 --gap 1500 --session-pages 300 --shard 0/2 --also .booking-extra-2.json &
           pid=$!
           # Load 5-9 at a 2 s booking gap, 12-18 at 1.5 s (9:05, 10:05 pm Vancouver, Nov 13): CPU by runner
           # and by Chrome process kind every minute (to cpu.log, every 5th to the log), averaged at the end.
@@ -304,6 +316,72 @@ jobs:
             .booking-extra.json
             .booking-checked.json
           key: booking-extra-${{ github.run_id }}
+
+  # A second booking runner on its own IP (ProtonVPN CA#623, Nov 18; Brennan: "Here is another proton
+  # vpn but no more"): one IP tops out at ~1,560-1,660 pages a run at the 1.5 s gap, and the filters
+  # had ~7,100 itineraries left a run. The queue split by itinerary (--shard), the unchecked dates on
+  # the first; each reads the other's last prices (--also).
+  booking2:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      PW_CHANNEL: chrome
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: scraper/package-lock.json
+
+      - name: Install
+        working-directory: scraper
+        run: |
+          npm ci --no-audit --no-fund
+          google-chrome --version || npx playwright install --with-deps chrome
+
+      - name: Restore booking queue
+        uses: actions/cache/restore@v4
+        with:
+          path: .booking-queue.json
+          key: booking-queue-${{ github.run_id }}
+          restore-keys: booking-queue-
+      - name: Restore booking runners' prices
+        uses: actions/cache/restore@v4
+        with:
+          path: .booking-extra.json
+          key: booking-extra-${{ github.run_id }}
+          restore-keys: booking-extra-
+      - name: Restore this runner's prices
+        uses: actions/cache/restore@v4
+        with:
+          path: .booking-extra-2.json
+          key: booking-extra2-${{ github.run_id }}
+          restore-keys: booking-extra2-
+      - name: Data snapshot
+        run: scripts/run_sweep.sh snapshot
+
+      - name: VPN up
+        id: vpn
+        timeout-minutes: 5
+        continue-on-error: true
+        env:
+          WG_CONF: ${{ secrets.PROTONVPN_WG_CONF_BOOKING2 }}
+        run: scripts/vpn_up.sh
+
+      - name: Booking pages
+        if: steps.vpn.outputs.vpn_ok == 'true'
+        run: |
+          echo "$(nproc) CPUs"
+          node scraper/bin/booking-runner.js --data .worktrees/warm --queue .booking-queue.json --extra .booking-extra-2.json --until $(( $(date +%s) + 43 * 60 )) --pages 3 --gap 1500 --session-pages 300 --shard 1/2 --also .booking-extra.json
+
+      - name: Save this runner's prices
+        if: always() && hashFiles('.booking-extra-2.json') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: .booking-extra-2.json
+          key: booking-extra2-${{ github.run_id }}
 
   # The sweep build's browser searches left out of time (bin/search-runner.js) on a runner and
   # ProtonVPN config of their own (CA#123, Nov 17; the third: Brennan, "sounds like we need a third

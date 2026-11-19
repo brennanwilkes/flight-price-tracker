@@ -32,11 +32,13 @@ const rows = runs.map((r) => {
   // Strip the "job\tstep\ttimestamp " prefix of each line.
   const log = fs.readFileSync(f, 'utf8').split('\n').map((l) => l.replace(/^[^\t]*\t[^\t]*\t\S+ /, '')).join('\n');
   const g = (re, i = 1) => num(m(log, re)?.[i]);
+  // Summed over the booking runners (jobs `booking`, `booking2` from Nov 18).
+  const sum = (re) => { const v = [...log.matchAll(new RegExp(re, 'g'))].map((x) => num(x[1])); return v.length ? v.reduce((a, b) => a + b, 0) : null; };
   return {
     id: r.databaseId, at: r.createdAt, when: van(r.createdAt), ok: r.conclusion, sha: r.headSha.slice(0, 7), log,
-    boardDone: g(/booking runner, board: (\d+) of/), boardDue: g(/booking runner, board: \d+ of (\d+)/),
+    boardDone: sum(/booking runner, board: (\d+) of/), boardDue: sum(/booking runner, board: \d+ of (\d+)/),
     tiesPages: g(/booking runner, unchecked dates: .*?; (\d+) booking pages/),
-    filtersDone: g(/booking runner, filters: (\d+) of/),
+    filtersDone: sum(/booking runner, filters: (\d+) of/),
     boardN: g(/booking queue: (\d+) board itineraries/), boardFresh: g(/booking queue: \d+ board itineraries \((\d+)/),
     filtersN: g(/booking queue: .*?, (\d+) filters'/), filtersFresh: g(/booking queue: .*?, \d+ filters' \((\d+)\)/),
     searched: g(/(\d+) of \d+ searched in/), lost: g(/more flights \{[^}]*"lost":(\d+)/),

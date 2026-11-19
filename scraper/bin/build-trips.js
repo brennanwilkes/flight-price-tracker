@@ -716,8 +716,9 @@ async function main() {
   // scrape (--booking-cache), applied to every search's rows (details.js useBookings).
   const bookingFile = path.join(dataDir, 'state', 'booking.json');
   const queueFile = arg('booking-queue'); // kept between runs in the Actions cache, not in git
-  // --booking-extra: the booking runner's (sweep.yml job `booking`, bin/booking-runner.js), last run's.
-  const bookings = loadBookings([bookingFile, arg('booking-cache'), arg('booking-extra')], Date.parse(generatedAt));
+  // --booking-extra: the booking runners' (sweep.yml jobs `booking`, `booking2`, bin/booking-runner.js),
+  // last run's, comma-separated.
+  const bookings = loadBookings([bookingFile, arg('booking-cache'), ...(arg('booking-extra') ?? '').split(',')], Date.parse(generatedAt));
   console.log(`booking pages made twice within 2 h (the sweep's and the booking runner's, in the last 3 h): ${bookings.twice ?? 0}`);
   useBookings(bookings);
   for (const [k, p] of searches.cache) applyBookings(bookings, k, await p);
