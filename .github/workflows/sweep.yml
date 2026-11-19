@@ -347,10 +347,14 @@ jobs:
           path: .booking-queue.json
           key: booking-queue-${{ github.run_id }}
           restore-keys: booking-queue-
+      # The same paths as the first runner saves: a cache's version includes its path list, so
+      # .booking-extra.json alone missed it (Nov 18, 8:05 pm: 779 board itineraries due here, 502 there).
       - name: Restore booking runners' prices
         uses: actions/cache/restore@v4
         with:
-          path: .booking-extra.json
+          path: |
+            .booking-extra.json
+            .booking-checked.json
           key: booking-extra-${{ github.run_id }}
           restore-keys: booking-extra-
       - name: Restore this runner's prices
