@@ -4,6 +4,41 @@ Goal: every board cell and every filter-view ticket proven against a real flight
 booking page, with a recheck soon after its listed price moves. Two runners only (two IPs); no
 more runners or VPN configs. Times are Vancouver (UTC−7).
 
+## Check-in (written Nov 19, 10 am; read this first)
+
+`node scripts/run-stats.mjs 24` (Vancouver time). Its "Agency-only sale caught" table is the
+goal metric: per group, the share of board (b:) and filters (f:) itineraries booking-checked
+within 6 h / 12 h at a booking runner's start, ≈ the chance of catching a sale only a booking page
+shows. Last column: the search runner's good searches / Google's rejections.
+
+Where it stood (9-10 am Nov 19), with what's live from the 11:05 am run:
+
+| | 6 h | 12 h |
+|---|---|---|
+| board YVR J | 56-63% | 96-98% |
+| board YVR Y | 65-71% | 95% |
+| board YYJ J / Y | 50-60% / 39-46% | 77-86% / 74-79% |
+| filters YVR J / Y | 26-30% / 34-35% | 83-88% / 77-81% |
+| filters YYJ J / Y | 32% / 33% | 68-70% / 68% |
+
+- c2b498904 (11:05 am Nov 19): the board's "no listed offer, price applied" and "no seller in
+  its cabin" pages held by group (were 12 h); filters held by group, YVR 6 h, YYJ 12 h (were
+  12 h, 24 h at listed), on the second booking runner's spare time (slots ~42% idle, filters at
+  0 left). Expect board YVR J 6 h → ~80%+, filters YVR 6 h → ~60%+. If the filters show
+  thousands left again (`booking runner, filters: N of M checked, … L left`), the holds
+  overran capacity: lengthen FILTER_HOURS (bookings.js).
+- Board 6 h misses after that are mostly tickets new to the board (`board due: N never
+  checked`, ~160 a run): a new trip can't be fresher than its first check.
+
+Open, in order:
+1. Search output: 155-1,176 good searches a run (avg ~650), Google rejecting 300-500 a run,
+   lows overnight (2-6 am). Backlog 4,900 → 6,479 overnight Nov 18-19. Planned: browser
+   searches on the two booking machines in their idle time (each its own IP; three writers to
+   merge into the search extra). Check `[search] search runner: errors by kind` and `more flights`.
+2. Plan churn: ~450-630 a build "new lookup, searched before (stale)" in `search backlog flow`;
+   via view lookups are most of the stale pile (`search demand by view`).
+3. YYJ economy and filters YYJ at ~70% / 12 h: fine per Brennan's priorities unless capacity is spare.
+
 ## The three jobs (`.github/workflows/sweep.yml`)
 
 | Job | IP | Does |

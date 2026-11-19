@@ -47,6 +47,11 @@ const rows = runs.map((r) => {
     used: g(/search demand: (\d+) searches used/), needSearch: g(/that takes (\d+) a run/),
     neverSearched: g(/search demand: .*?(\d+) never searched/),
     cpu: m(log, /CPU averages over .*/)?.[0], load: m(log, /load \(1 min\) average \d.*/)?.[0],
+    // The catch chance for a sale only a booking page shows (bookings.js freshLine, at a booking
+    // runner's start): per group, the share checked under 6 h and 12 h.
+    fresh: Object.fromEntries(['board', 'filters'].map((v) => [v, Object.fromEntries([...(m(log, new RegExp(`booking freshness, ${v}: .*`))?.[0] ?? '')
+      .matchAll(/(YVR|YYJ|hops) ([JY]) \d+: \d+% under 3 h, (\d+)% under 6 h, (\d+)% under 12 h/g)].map((x) => [`${x[1]} ${x[2]}`, `${x[3]}/${x[4]}`]))])),
+    good: (() => { const x = m(log, /more flights \{"ok":(\d+),"okReload":(\d+),"rejected":(\d+)/); return x ? { ok: +x[1] + +x[2], rejected: +x[3] } : null; })(),
   };
 });
 
@@ -55,6 +60,15 @@ console.log(`Last ${rows.length} runs (Vancouver time):`);
 console.log('run          board  ties filters  filt.fresh  board.fresh searched lost backlog hidden');
 for (const r of rows) {
   console.log(`${r.when} ${pad(r.boardDone, 4)}/${pad(r.boardDue, 4)} ${pad(r.tiesPages, 4)} ${pad(r.filtersDone, 6)} ${pad(r.filtersFresh, 5)}/${pad(r.filtersN, 5)} ${pad(r.boardFresh, 5)}/${pad(r.boardN, 5)} ${pad(r.searched, 7)} ${pad(r.lost, 4)} ${pad(r.backlog, 7)} ${pad(r.hidden, 6)}`);
+}
+
+// Catch chance for an agency-only sale (% of itineraries booking-checked under 6 h / 12 h), and
+// the search runner's good searches against Google's rejections.
+const GROUPS = ['YVR J', 'YVR Y', 'YYJ J', 'YYJ Y'];
+console.log('\nAgency-only sale caught, 6 h / 12 h (% booking-checked within):');
+console.log(`run          ${['board', 'filters'].flatMap((v) => GROUPS.map((g) => `${v[0]}:${g}`.padStart(8))).join(' ')}  searches ok/rejected`);
+for (const r of rows) {
+  console.log(`${r.when} ${['board', 'filters'].flatMap((v) => GROUPS.map((g) => pad(r.fresh[v][g], 8))).join(' ')}  ${r.good ? `${r.good.ok}/${r.good.rejected}` : '-'}`);
 }
 
 // Least-squares slope per run of a series (nulls skipped), and the run count to reach `target`.
