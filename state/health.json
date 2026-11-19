@@ -1,7 +1,40 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-19T10:06:12Z",
+ "lastSuccess": "2026-11-19T11:06:59Z",
  "runs": [
+  {
+   "at": "2026-11-19T11:06:59Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 195,
+   "failed": 8,
+   "cells": 6805,
+   "priced": 6451,
+   "changes": 2790,
+   "errors": [
+    "YYJ-HAN-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Victoria YYJ Hanoi HAN Filters All filters",
+    "YYJ-HAN-Y 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Hanoi HAN Filters All filt",
+    "YYJ-SGN-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Ho Chi Minh City SGN Filte",
+    "YYJ-SGN-Y 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Ho Chi Minh City SGN Filte",
+    "YYJ-SGN-Y 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-SGN-Y 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Ho Chi Minh City SGN Filte",
+    "YYJ-ICN-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Seoul ICN Filters All filt",
+    "YYJ-ICN-Y 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Seoul ICN Filters All filt"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 627,
+   "pages": 6,
+   "pauses": 4,
+   "skipped": 424,
+   "secondOk": 6,
+   "seconds": 1551,
+   "success": true
+  },
   {
    "at": "2026-11-19T10:06:12Z",
    "egress": "vpn",
@@ -585,28 +618,6 @@
    "pages": 3,
    "secondOk": 6,
    "seconds": 1085,
-   "success": true
-  },
-  {
-   "at": "2026-11-18T11:06:43Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 94,
-   "failed": 0,
-   "cells": 3008,
-   "priced": 2943,
-   "changes": 1056,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 94,
-   "pages": 3,
-   "secondOk": 6,
-   "seconds": 665,
    "success": true
   }
  ]
