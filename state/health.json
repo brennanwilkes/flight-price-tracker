@@ -1,7 +1,39 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-19T22:06:59Z",
+ "lastSuccess": "2026-11-19T23:06:48Z",
  "runs": [
+  {
+   "at": "2026-11-19T23:06:48Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 271,
+   "failed": 7,
+   "cells": 8408,
+   "priced": 7725,
+   "changes": 1786,
+   "errors": [
+    "HUI-PQC-Y 8d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Phú Quốc PQC Filters All filter",
+    "PQC-HUI-Y 9d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Phú Quốc PQC Hue HUI Filters All filter",
+    "PQC-HUI-Y 8d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Phú Quốc PQC Hue HUI Filters All filter",
+    "PQC-HUI-Y 12d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Phú Quốc PQC Hue HUI Filters All filter",
+    "PQC-HUI-Y 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Phú Quốc PQC Hue HUI Filters All filter",
+    "PQC-HUI-Y 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Phú Quốc PQC Hue HUI Filters All filter",
+    "PQC-HUI-Y 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Phú Quốc PQC Hue HUI Filters All filter"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 463,
+   "pages": 6,
+   "pauses": 4,
+   "skipped": 185,
+   "secondOk": 28,
+   "seconds": 1555,
+   "success": true
+  },
   {
    "at": "2026-11-19T22:06:59Z",
    "egress": "vpn",
@@ -655,36 +687,6 @@
    "pauses": 1,
    "secondOk": 11,
    "seconds": 1106,
-   "success": true
-  },
-  {
-   "at": "2026-11-18T23:07:03Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 219,
-   "failed": 5,
-   "cells": 6733,
-   "priced": 6545,
-   "changes": 1468,
-   "errors": [
-    "YVR-HKG-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-SIN-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-CAN-J 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Guangzhou CAN Filters All",
-    "YYJ-MNL-J 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Manila MNL Filters All fi",
-    "YYJ-CEB-J 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Cebu City CEB Filters All"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 302,
-   "pages": 3,
-   "pauses": 2,
-   "skipped": 78,
-   "secondOk": 12,
-   "seconds": 1589,
    "success": true
   }
  ]
