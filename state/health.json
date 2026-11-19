@@ -1,7 +1,46 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-19T13:06:28Z",
+ "lastSuccess": "2026-11-19T14:07:33Z",
  "runs": [
+  {
+   "at": "2026-11-19T14:07:33Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 102,
+   "failed": 13,
+   "cells": 3484,
+   "priced": 3462,
+   "changes": 1257,
+   "errors": [
+    "YVR-DPS-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-JKT-J 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-JKT-J 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-DPS-Y 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-HKG-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-HKG-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-OSA-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-BJS-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "BJS-HAN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "CTS-HKG-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "CTS-SIN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "HKG-GUM-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "BKI-BWN-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Kota Kinabalu BKI Bandar Seri Begawan BWN "
+   ],
+   "controlTries": 2,
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 896,
+   "pages": 6,
+   "pauses": 6,
+   "skipped": 781,
+   "secondOk": 29,
+   "seconds": 1480,
+   "success": true
+  },
   {
    "at": "2026-11-19T13:06:28Z",
    "egress": "vpn",
@@ -609,34 +648,6 @@
    "pauses": 2,
    "secondOk": 3,
    "seconds": 1566,
-   "success": true
-  },
-  {
-   "at": "2026-11-18T14:06:05Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 26,
-   "failed": 4,
-   "cells": 664,
-   "priced": 664,
-   "changes": 18,
-   "errors": [
-    "YVR-ICN-Y 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-TYO-Y 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-SIN-Y 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-BKK-Y 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 30,
-   "pages": 3,
-   "pauses": 3,
-   "secondOk": 13,
-   "seconds": 567,
    "success": true
   }
  ]
