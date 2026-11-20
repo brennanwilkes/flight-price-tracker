@@ -1,7 +1,37 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-20T14:05:47Z",
+ "lastSuccess": "2026-11-20T15:06:14Z",
  "runs": [
+  {
+   "at": "2026-11-20T15:06:14Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 107,
+   "failed": 5,
+   "cells": 3753,
+   "priced": 3152,
+   "changes": 1727,
+   "errors": [
+    "YYJ-GUM-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "OSA-SGN-Y 5d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "SGN-LPQ-Y 9d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "SGN-PNH-Y 2d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-OSA-Y 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Osaka KIX ITM Filters All "
+   ],
+   "network": {
+    "checked": 100,
+    "kept": 54,
+    "failed": 6,
+    "routes": 1285
+   },
+   "due": 298,
+   "pages": 3,
+   "pauses": 2,
+   "skipped": 186,
+   "secondOk": 21,
+   "seconds": 1612,
+   "success": true
+  },
   {
    "at": "2026-11-20T14:05:47Z",
    "egress": "vpn",
@@ -659,38 +689,6 @@
    "skipped": 693,
    "secondOk": 30,
    "seconds": 1508,
-   "success": true
-  },
-  {
-   "at": "2026-11-19T15:06:38Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 300,
-   "failed": 7,
-   "cells": 11753,
-   "priced": 11547,
-   "changes": 5193,
-   "errors": [
-    "MNL-YVR-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-BKK-J 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "JKT-LGK-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-ICN-J 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "JKT-DLI-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-DAD-J 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Da Nang DAD Filters All ",
-    "YYJ-SHA-Y 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 870,
-   "pages": 6,
-   "pauses": 2,
-   "skipped": 563,
-   "secondOk": 24,
-   "seconds": 1425,
    "success": true
   }
  ]
