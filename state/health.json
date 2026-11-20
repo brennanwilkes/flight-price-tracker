@@ -1,7 +1,39 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-20T21:06:28Z",
+ "lastSuccess": "2026-11-20T22:06:31Z",
  "runs": [
+  {
+   "at": "2026-11-20T22:06:31Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 225,
+   "failed": 7,
+   "cells": 8944,
+   "priced": 8747,
+   "changes": 3481,
+   "errors": [
+    "SIN-BJS-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-TPE-J 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "SIN-MFM-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "TYO-CTS-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "TYO-BWN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "SYX-KHH-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "SYX-REP-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Sanya SYX · Haikou HAK Krong Siem Reap SAI"
+   ],
+   "network": {
+    "checked": 100,
+    "kept": 52,
+    "failed": 0,
+    "routes": 1283
+   },
+   "due": 1034,
+   "pages": 6,
+   "pauses": 1,
+   "skipped": 802,
+   "secondOk": 22,
+   "seconds": 1432,
+   "success": true
+  },
   {
    "at": "2026-11-20T21:06:28Z",
    "egress": "vpn",
@@ -647,33 +679,6 @@
    "skipped": 185,
    "secondOk": 28,
    "seconds": 1555,
-   "success": true
-  },
-  {
-   "at": "2026-11-19T22:06:59Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 162,
-   "failed": 3,
-   "cells": 5417,
-   "priced": 4359,
-   "changes": 4505,
-   "errors": [
-    "DAD-TYO-Y 5d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "DAD-BJS-Y 12d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "HUI-PQC-Y 2d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Phú Quốc PQC Filters All filter"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 214,
-   "pages": 3,
-   "skipped": 49,
-   "secondOk": 17,
-   "seconds": 1508,
    "success": true
   }
  ]
