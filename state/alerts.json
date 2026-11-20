@@ -64,6 +64,26 @@
    "total": 7138,
    "tier": "",
    "at": "2026-11-20T18:31:45Z"
+  },
+  "YYJ,economy,CAN,HAN": {
+   "total": 1618,
+   "tier": "",
+   "at": "2026-11-20T19:30:18Z"
+  },
+  "YYJ,economy,CAN,CEB": {
+   "total": 1701,
+   "tier": "",
+   "at": "2026-11-20T19:30:18Z"
+  },
+  "YYJ,economy,DPS,JKT": {
+   "total": 1771,
+   "tier": "",
+   "at": "2026-11-20T19:30:18Z"
+  },
+  "YYJ,economy,ICN,CAN": {
+   "total": 1844,
+   "tier": "",
+   "at": "2026-11-20T19:30:18Z"
   }
  }
 }
