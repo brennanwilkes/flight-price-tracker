@@ -119,6 +119,36 @@
    "total": 1751,
    "tier": "",
    "at": "2026-11-20T21:36:08Z"
+  },
+  "YYJ,economy,HKG,HAN": {
+   "total": 1559,
+   "tier": "",
+   "at": "2026-11-20T23:30:58Z"
+  },
+  "YYJ,economy,BJS,SIN": {
+   "total": 1657,
+   "tier": "",
+   "at": "2026-11-20T23:30:58Z"
+  },
+  "YYJ,economy,CAN,SIN": {
+   "total": 1662,
+   "tier": "",
+   "at": "2026-11-20T23:30:58Z"
+  },
+  "YYJ,economy,BJS,HKG": {
+   "total": 1692,
+   "tier": "",
+   "at": "2026-11-20T23:30:58Z"
+  },
+  "YYJ,economy,BJS,SHA": {
+   "total": 1924,
+   "tier": "",
+   "at": "2026-11-20T23:30:58Z"
+  },
+  "YYJ,hybrid,TPE,BKK": {
+   "total": 6551,
+   "tier": "",
+   "at": "2026-11-20T23:30:58Z"
   }
  }
 }
