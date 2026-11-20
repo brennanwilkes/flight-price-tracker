@@ -1,7 +1,31 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-20T09:06:19Z",
+ "lastSuccess": "2026-11-20T10:06:13Z",
  "runs": [
+  {
+   "at": "2026-11-20T10:06:13Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 251,
+   "failed": 0,
+   "cells": 8219,
+   "priced": 7183,
+   "changes": 3429,
+   "errors": [],
+   "network": {
+    "checked": 100,
+    "kept": 78,
+    "failed": 0,
+    "routes": 1285
+   },
+   "due": 428,
+   "pages": 6,
+   "pauses": 1,
+   "skipped": 177,
+   "secondOk": 38,
+   "seconds": 1411,
+   "success": true
+  },
   {
    "at": "2026-11-20T09:06:19Z",
    "egress": "vpn",
@@ -678,51 +702,6 @@
    "skipped": 424,
    "secondOk": 6,
    "seconds": 1551,
-   "success": true
-  },
-  {
-   "at": "2026-11-19T10:06:12Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 94,
-   "failed": 20,
-   "cells": 2655,
-   "priced": 2654,
-   "changes": 306,
-   "errors": [
-    "YVR-DAD-J 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-TPE-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-HKG-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-MNL-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-TYO-J 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-SIN-J 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-OSA-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-SHA-J 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-CAN-J 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-KUL-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "CAN-YVR-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-MNL-J 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Manila MNL Filters All f",
-    "YVR-CAN-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-CAN-J 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-CEB-J 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Cebu City CEB Filters Al",
-    "YVR-CEB-J 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Cebu City CEB Filters Al",
-    "YVR-CEB-J 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Cebu City CEB Filters Al",
-    "YVR-CEB-J 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Cebu City CEB Filters Al",
-    "YVR-CEB-J 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Cebu City CEB Filters Al",
-    "YVR-CEB-J 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Cebu City CEB Filters Al"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 567,
-   "pages": 6,
-   "pauses": 10,
-   "skipped": 453,
-   "secondOk": 16,
-   "seconds": 1734,
    "success": true
   }
  ]
