@@ -1,7 +1,42 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-20T13:06:18Z",
+ "lastSuccess": "2026-11-20T14:05:47Z",
  "runs": [
+  {
+   "at": "2026-11-20T14:05:47Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 143,
+   "failed": 9,
+   "cells": 4301,
+   "priced": 4301,
+   "changes": 678,
+   "errors": [
+    "YVR-HKG-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-TYO-J 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Tokyo NRT HND Filters Al",
+    "YVR-OSA-J 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-BJS-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-KUL-J 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-BJS-J 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Beijing PEK PKX Filters ",
+    "YVR-KUL-Y 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Federal Territory of Kual",
+    "CEB-YVR-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-CEB-Y 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "controlTries": 3,
+   "network": {
+    "checked": 100,
+    "kept": 77,
+    "failed": 11,
+    "routes": 1285
+   },
+   "due": 310,
+   "pages": 3,
+   "pauses": 1,
+   "skipped": 158,
+   "secondOk": 17,
+   "seconds": 1549,
+   "success": true
+  },
   {
    "at": "2026-11-20T13:06:18Z",
    "egress": "vpn",
@@ -656,45 +691,6 @@
    "skipped": 563,
    "secondOk": 24,
    "seconds": 1425,
-   "success": true
-  },
-  {
-   "at": "2026-11-19T14:07:33Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 102,
-   "failed": 13,
-   "cells": 3484,
-   "priced": 3462,
-   "changes": 1257,
-   "errors": [
-    "YVR-DPS-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-JKT-J 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-JKT-J 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-DPS-Y 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-HKG-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-HKG-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-OSA-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-BJS-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "BJS-HAN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "CTS-HKG-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "CTS-SIN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "HKG-GUM-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "BKI-BWN-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Kota Kinabalu BKI Bandar Seri Begawan BWN "
-   ],
-   "controlTries": 2,
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 896,
-   "pages": 6,
-   "pauses": 6,
-   "skipped": 781,
-   "secondOk": 29,
-   "seconds": 1480,
    "success": true
   }
  ]
