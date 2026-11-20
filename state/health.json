@@ -1,7 +1,30 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-20T11:06:44Z",
+ "lastSuccess": "2026-11-20T12:06:17Z",
  "runs": [
+  {
+   "at": "2026-11-20T12:06:17Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 112,
+   "failed": 0,
+   "cells": 4216,
+   "priced": 3736,
+   "changes": 1951,
+   "errors": [],
+   "network": {
+    "checked": 100,
+    "kept": 50,
+    "failed": 1,
+    "routes": 1287
+   },
+   "due": 394,
+   "pages": 3,
+   "skipped": 282,
+   "secondOk": 3,
+   "seconds": 1258,
+   "success": true
+  },
   {
    "at": "2026-11-20T11:06:44Z",
    "egress": "vpn",
@@ -668,38 +691,6 @@
    "skipped": 579,
    "secondOk": 7,
    "seconds": 1521,
-   "success": true
-  },
-  {
-   "at": "2026-11-19T12:06:49Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 184,
-   "failed": 7,
-   "cells": 6483,
-   "priced": 6412,
-   "changes": 2523,
-   "errors": [
-    "YYJ-ICN-J 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Seoul ICN Filters All fil",
-    "YYJ-TPE-J 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Taipei City TPE Filters A",
-    "YYJ-TPE-J 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Taipei City TPE Filters A",
-    "YYJ-TPE-J 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Taipei City TPE Filters A",
-    "YYJ-TPE-J 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Taipei City TPE Filters A",
-    "YYJ-TPE-J 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Taipei City TPE Filters A",
-    "YYJ-TPE-J 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Taipei City TPE Filters A"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 831,
-   "pages": 6,
-   "pauses": 4,
-   "skipped": 640,
-   "secondOk": 31,
-   "seconds": 1612,
    "success": true
   }
  ]
