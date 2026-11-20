@@ -1,7 +1,40 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-20T03:06:43Z",
+ "lastSuccess": "2026-11-20T04:07:08Z",
  "runs": [
+  {
+   "at": "2026-11-20T04:07:08Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 67,
+   "failed": 8,
+   "cells": 2006,
+   "priced": 1962,
+   "changes": 609,
+   "errors": [
+    "YVR-JKT-J 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-DAD-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-DAD-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-HAN-J 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-HAN-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-CEB-J 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-HAN-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "HAN-YYJ-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 174,
+   "pages": 3,
+   "pauses": 7,
+   "skipped": 99,
+   "secondOk": 20,
+   "seconds": 1546,
+   "success": true
+  },
   {
    "at": "2026-11-20T03:06:43Z",
    "egress": "vpn",
@@ -692,31 +725,6 @@
    "due": 5,
    "pages": 3,
    "seconds": 39,
-   "success": true
-  },
-  {
-   "at": "2026-11-19T04:06:53Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 236,
-   "failed": 2,
-   "cells": 7022,
-   "priced": 7016,
-   "changes": 1049,
-   "errors": [
-    "BJS-YVR-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-CEB-J 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 238,
-   "pages": 3,
-   "secondOk": 16,
-   "seconds": 1001,
    "success": true
   }
  ]
