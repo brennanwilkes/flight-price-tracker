@@ -1,7 +1,39 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-20T00:08:49Z",
+ "lastSuccess": "2026-11-20T01:06:37Z",
  "runs": [
+  {
+   "at": "2026-11-20T01:06:37Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 215,
+   "failed": 6,
+   "cells": 6711,
+   "priced": 6522,
+   "changes": 1151,
+   "errors": [
+    "HUI-CXR-Y 12d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Nha Trang CXR Filters All filte",
+    "HUI-CXR-Y 10d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Nha Trang CXR Filters All filte",
+    "HUI-CXR-Y 11d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Nha Trang CXR Filters All filte",
+    "HUI-CXR-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Nha Trang CXR Filters All filte",
+    "CXR-HUI-Y 5d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Nha Trang CXR Hue HUI Filters All filte",
+    "CXR-HUI-Y 7d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Nha Trang CXR Hue HUI Filters All filte"
+   ],
+   "controlTries": 2,
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 366,
+   "pages": 3,
+   "pauses": 5,
+   "skipped": 145,
+   "secondOk": 1,
+   "seconds": 1586,
+   "success": true
+  },
   {
    "at": "2026-11-20T00:08:49Z",
    "egress": "vpn",
@@ -669,28 +701,6 @@
    "due": 55,
    "pages": 3,
    "seconds": 157,
-   "success": true
-  },
-  {
-   "at": "2026-11-19T01:06:53Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 292,
-   "failed": 0,
-   "cells": 8617,
-   "priced": 8601,
-   "changes": 1342,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 292,
-   "pages": 3,
-   "secondOk": 19,
-   "seconds": 1317,
    "success": true
   }
  ]
