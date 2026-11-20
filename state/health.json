@@ -1,7 +1,39 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-19T23:06:48Z",
+ "lastSuccess": "2026-11-20T00:08:49Z",
  "runs": [
+  {
+   "at": "2026-11-20T00:08:49Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 154,
+   "failed": 7,
+   "cells": 5109,
+   "priced": 4872,
+   "changes": 4384,
+   "errors": [
+    "CEB-DAD-Y 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "DAD-SIN-Y 2d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "SIN-DAD-Y 7d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "DAD-BKK-Y 5d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "DAD-BKK-Y 12d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "HUI-CXR-Y 2d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "BKK-DAD-Y 5d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 201,
+   "pages": 3,
+   "pauses": 2,
+   "skipped": 40,
+   "secondOk": 13,
+   "seconds": 1503,
+   "success": true
+  },
   {
    "at": "2026-11-19T23:06:48Z",
    "egress": "vpn",
@@ -659,34 +691,6 @@
    "pages": 3,
    "secondOk": 19,
    "seconds": 1317,
-   "success": true
-  },
-  {
-   "at": "2026-11-19T00:06:41Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 112,
-   "failed": 4,
-   "cells": 3345,
-   "priced": 2896,
-   "changes": 788,
-   "errors": [
-    "CEB-YVR-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-HKG-J 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-SIN-J 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-GUM-Y 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 116,
-   "pages": 3,
-   "pauses": 1,
-   "secondOk": 11,
-   "seconds": 1106,
    "success": true
   }
  ]
