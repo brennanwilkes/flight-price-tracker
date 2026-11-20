@@ -1,7 +1,33 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-20T04:07:08Z",
+ "lastSuccess": "2026-11-20T05:06:27Z",
  "runs": [
+  {
+   "at": "2026-11-20T05:06:27Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 179,
+   "failed": 1,
+   "cells": 5758,
+   "priced": 4780,
+   "changes": 3790,
+   "errors": [
+    "HUI-DLI-Y 13d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Da Lat DLI Filters All filters "
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 192,
+   "pages": 3,
+   "pauses": 2,
+   "skipped": 12,
+   "secondOk": 29,
+   "seconds": 1370,
+   "success": true
+  },
   {
    "at": "2026-11-20T04:07:08Z",
    "egress": "vpn",
@@ -704,27 +730,6 @@
    "due": 0,
    "pages": 3,
    "seconds": 14,
-   "success": true
-  },
-  {
-   "at": "2026-11-19T05:06:44Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 5,
-   "failed": 0,
-   "cells": 155,
-   "priced": 155,
-   "changes": 47,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 5,
-   "pages": 3,
-   "seconds": 39,
    "success": true
   }
  ]
