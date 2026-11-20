@@ -1,7 +1,30 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-20T19:07:10Z",
+ "lastSuccess": "2026-11-20T20:06:12Z",
  "runs": [
+  {
+   "at": "2026-11-20T20:06:12Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 284,
+   "failed": 0,
+   "cells": 10375,
+   "priced": 8610,
+   "changes": 5141,
+   "errors": [],
+   "network": {
+    "checked": 100,
+    "kept": 48,
+    "failed": 1,
+    "routes": 1287
+   },
+   "due": 830,
+   "pages": 6,
+   "skipped": 546,
+   "secondOk": 4,
+   "seconds": 1272,
+   "success": true
+  },
   {
    "at": "2026-11-20T19:07:10Z",
    "egress": "vpn",
@@ -646,35 +669,6 @@
    "pauses": 1,
    "secondOk": 10,
    "seconds": 864,
-   "success": true
-  },
-  {
-   "at": "2026-11-19T20:07:15Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 359,
-   "failed": 4,
-   "cells": 11647,
-   "priced": 11561,
-   "changes": 5764,
-   "errors": [
-    "ICN-DAD-Y 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-BKK-Y 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-MNL-Y 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "DAD-HAN-Y 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Hanoi HAN Filters All filte"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 408,
-   "pages": 6,
-   "skipped": 45,
-   "pauses": 1,
-   "secondOk": 19,
-   "seconds": 1548,
    "success": true
   }
  ]
