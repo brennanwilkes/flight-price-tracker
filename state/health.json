@@ -1,7 +1,31 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-20T17:05:50Z",
+ "lastSuccess": "2026-11-20T18:07:04Z",
  "runs": [
+  {
+   "at": "2026-11-20T18:07:04Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 310,
+   "failed": 0,
+   "cells": 10520,
+   "priced": 10434,
+   "changes": 4001,
+   "errors": [],
+   "network": {
+    "checked": 100,
+    "kept": 72,
+    "failed": 0,
+    "routes": 1286
+   },
+   "due": 590,
+   "pages": 6,
+   "pauses": 1,
+   "skipped": 280,
+   "secondOk": 24,
+   "seconds": 1363,
+   "success": true
+  },
   {
    "at": "2026-11-20T17:05:50Z",
    "egress": "vpn",
@@ -656,39 +680,6 @@
    "secondOk": 15,
    "pauses": 1,
    "seconds": 1383,
-   "success": true
-  },
-  {
-   "at": "2026-11-19T18:07:16Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 282,
-   "failed": 9,
-   "cells": 10761,
-   "priced": 10493,
-   "changes": 5169,
-   "errors": [
-    "YVR-ICN-Y 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "DAD-JKT-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "DAD-KHH-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-DAD-Y 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-BKK-Y 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Bangkok BKK DMK Filters Al",
-    "YYJ-JKT-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "MFM-KUL-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-JKT-J 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Jakarta CGK Filters All f",
-    "YYJ-DPS-J 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Denpasar DPS Filters All "
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 718,
-   "pages": 6,
-   "skipped": 427,
-   "secondOk": 21,
-   "seconds": 1587,
    "success": true
   }
  ]
