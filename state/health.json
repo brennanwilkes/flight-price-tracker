@@ -1,7 +1,31 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-20T18:07:04Z",
+ "lastSuccess": "2026-11-20T19:07:10Z",
  "runs": [
+  {
+   "at": "2026-11-20T19:07:10Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 334,
+   "failed": 1,
+   "cells": 11789,
+   "priced": 11546,
+   "changes": 3779,
+   "errors": [
+    "HUI-PQC-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Hue HUI Phú Quốc PQC Filters All filters S"
+   ],
+   "network": {
+    "checked": 100,
+    "kept": 66,
+    "failed": 0,
+    "routes": 1287
+   },
+   "due": 638,
+   "pages": 6,
+   "skipped": 303,
+   "seconds": 1336,
+   "success": true
+  },
   {
    "at": "2026-11-20T18:07:04Z",
    "egress": "vpn",
@@ -651,35 +675,6 @@
    "pauses": 1,
    "secondOk": 19,
    "seconds": 1548,
-   "success": true
-  },
-  {
-   "at": "2026-11-19T19:06:21Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 292,
-   "failed": 4,
-   "cells": 9797,
-   "priced": 5576,
-   "changes": 3044,
-   "errors": [
-    "BKK-HUI-Y 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "SGN-BWN-Y 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "BKK-HUI-Y 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "HUI-HKT-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Hue HUI Phuket HKT Filters All filters Sto"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 434,
-   "pages": 6,
-   "skipped": 138,
-   "secondOk": 15,
-   "pauses": 1,
-   "seconds": 1383,
    "success": true
   }
  ]
