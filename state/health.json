@@ -1,7 +1,33 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-20T08:06:40Z",
+ "lastSuccess": "2026-11-20T09:06:19Z",
  "runs": [
+  {
+   "at": "2026-11-20T09:06:19Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 92,
+   "failed": 2,
+   "cells": 3720,
+   "priced": 3568,
+   "changes": 1955,
+   "errors": [
+    "YYJ-BJS-J 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-MNL-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 100,
+    "kept": 96,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 94,
+   "pages": 3,
+   "pauses": 1,
+   "secondOk": 6,
+   "seconds": 1015,
+   "success": true
+  },
   {
    "at": "2026-11-20T08:06:40Z",
    "egress": "vpn",
@@ -697,44 +723,6 @@
    "skipped": 453,
    "secondOk": 16,
    "seconds": 1734,
-   "success": true
-  },
-  {
-   "at": "2026-11-19T09:07:16Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 184,
-   "failed": 13,
-   "cells": 6643,
-   "priced": 6549,
-   "changes": 2278,
-   "errors": [
-    "CEB-MFM-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "CNX-JKT-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Chiang Mai CNX Jakarta CGK Filters All fil",
-    "CNX-BWN-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Chiang Mai CNX Bandar Seri Begawan BWN Fil",
-    "SYX-BWN-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Sanya SYX · Haikou HAK Bandar Seri Begawan",
-    "SYX-KBV-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-HKG-Y 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-BKK-Y 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Bangkok BKK DMK Filters A",
-    "YVR-MNL-Y 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Manila MNL Filters All fi",
-    "YVR-SIN-Y 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Singapore SIN Filters All",
-    "YVR-BKK-Y 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Bangkok BKK DMK Filters A",
-    "YVR-BKK-Y 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Bangkok BKK DMK Filters A",
-    "YVR-BKK-Y 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Bangkok BKK DMK Filters A",
-    "YVR-KUL-Y 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Federal Territory of Kual"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 541,
-   "pages": 6,
-   "pauses": 5,
-   "skipped": 344,
-   "secondOk": 13,
-   "seconds": 1592,
    "success": true
   }
  ]
