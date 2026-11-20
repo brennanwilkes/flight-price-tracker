@@ -39,6 +39,26 @@
    "total": 1725,
    "tier": "",
    "at": "2026-11-20T16:31:31Z"
+  },
+  "YYJ,economy,HAN,HKG": {
+   "total": 1460,
+   "tier": "",
+   "at": "2026-11-20T17:32:45Z"
+  },
+  "YYJ,economy,SGN,HKG": {
+   "total": 1467,
+   "tier": "",
+   "at": "2026-11-20T17:32:45Z"
+  },
+  "YYJ,economy,JKT,SHA": {
+   "total": 1710,
+   "tier": "",
+   "at": "2026-11-20T17:32:45Z"
+  },
+  "YYJ,economy,TYO,HKG": {
+   "total": 1898,
+   "tier": "",
+   "at": "2026-11-20T17:32:45Z"
   }
  }
 }
