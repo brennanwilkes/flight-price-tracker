@@ -1,7 +1,35 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-20T20:06:12Z",
+ "lastSuccess": "2026-11-20T21:06:28Z",
  "runs": [
+  {
+   "at": "2026-11-20T21:06:28Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 140,
+   "failed": 3,
+   "cells": 4387,
+   "priced": 4379,
+   "changes": 964,
+   "errors": [
+    "YVR-SHA-Y 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-DPS-J 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Denpasar DPS Filters All",
+    "YYJ-CAN-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 100,
+    "kept": 50,
+    "failed": 1,
+    "routes": 1283
+   },
+   "due": 1059,
+   "pages": 6,
+   "skipped": 916,
+   "pauses": 1,
+   "secondOk": 11,
+   "seconds": 1540,
+   "success": true
+  },
   {
    "at": "2026-11-20T20:06:12Z",
    "egress": "vpn",
@@ -646,29 +674,6 @@
    "skipped": 49,
    "secondOk": 17,
    "seconds": 1508,
-   "success": true
-  },
-  {
-   "at": "2026-11-19T21:06:47Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 178,
-   "failed": 0,
-   "cells": 5518,
-   "priced": 4642,
-   "changes": 1762,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 178,
-   "pages": 3,
-   "pauses": 1,
-   "secondOk": 10,
-   "seconds": 864,
    "success": true
   }
  ]
