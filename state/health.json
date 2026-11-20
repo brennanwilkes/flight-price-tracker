@@ -1,7 +1,37 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-20T02:06:24Z",
+ "lastSuccess": "2026-11-20T03:06:43Z",
  "runs": [
+  {
+   "at": "2026-11-20T03:06:43Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 252,
+   "failed": 5,
+   "cells": 7730,
+   "priced": 7340,
+   "changes": 1480,
+   "errors": [
+    "YVR-TYO-J 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-DAD-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-DAD-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-TYO-J 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Tokyo NRT HND Filters Al",
+    "YVR-BKK-J 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Bangkok BKK DMK Filters "
+   ],
+   "controlTries": 2,
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1280
+   },
+   "due": 289,
+   "pages": 3,
+   "skipped": 32,
+   "secondOk": 17,
+   "seconds": 1603,
+   "success": true
+  },
   {
    "at": "2026-11-20T02:06:24Z",
    "egress": "vpn",
@@ -687,28 +717,6 @@
    "pages": 3,
    "secondOk": 16,
    "seconds": 1001,
-   "success": true
-  },
-  {
-   "at": "2026-11-19T03:06:17Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 35,
-   "failed": 0,
-   "cells": 978,
-   "priced": 923,
-   "changes": 177,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 35,
-   "pages": 3,
-   "secondOk": 5,
-   "seconds": 202,
    "success": true
   }
  ]
