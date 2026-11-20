@@ -38,7 +38,10 @@ const rows = runs.map((r) => {
     id: r.databaseId, at: r.createdAt, when: van(r.createdAt), ok: r.conclusion, sha: r.headSha.slice(0, 7), log,
     boardDone: sum(/booking runner, board: (\d+) of/), boardDue: sum(/booking runner, board: \d+ of (\d+)/),
     tiesPages: g(/booking runner, unchecked dates: .*?; (\d+) booking pages/),
-    filtersDone: sum(/booking runner, filters: (\d+) of/),
+    // With the second shard's pages from the first shard's tail (", the first shard's from its tail").
+    filtersDone: sum(/booking runner, filters[^:]*: (\d+) of/),
+    // Plan churn: itineraries due with no check in 48 h (mostly new to the queue), the first shard's due line.
+    newBoard: g(/booking runner, board due: .*?(\d+) never checked/), newFilters: g(/booking runner, filters due: .*?(\d+) never checked/),
     boardN: g(/booking queue: (\d+) board itineraries/), boardFresh: g(/booking queue: \d+ board itineraries \((\d+)/),
     filtersN: g(/booking queue: .*?, (\d+) filters'/), filtersFresh: g(/booking queue: .*?, \d+ filters' \((\d+)\)/),
     searched: g(/(\d+) of \d+ searched in/), lost: g(/more flights \{[^}]*"lost":(\d+)/),
@@ -66,9 +69,9 @@ for (const r of rows) {
 // the search runner's good searches against Google's rejections.
 const GROUPS = ['YVR J', 'YVR Y', 'YYJ J', 'YYJ Y'];
 console.log('\nAgency-only sale caught, 6 h / 12 h (% booking-checked within):');
-console.log(`run          ${['board', 'filters'].flatMap((v) => GROUPS.map((g) => `${v[0]}:${g}`.padStart(8))).join(' ')}  searches ok/rejected`);
+console.log(`run          ${['board', 'filters'].flatMap((v) => GROUPS.map((g) => `${v[0]}:${g}`.padStart(8))).join(' ')}  searches ok/rejected  new (48 h) b/f`);
 for (const r of rows) {
-  console.log(`${r.when} ${['board', 'filters'].flatMap((v) => GROUPS.map((g) => pad(r.fresh[v][g], 8))).join(' ')}  ${r.good ? `${r.good.ok}/${r.good.rejected}` : '-'}`);
+  console.log(`${r.when} ${['board', 'filters'].flatMap((v) => GROUPS.map((g) => pad(r.fresh[v][g], 8))).join(' ')}  ${(r.good ? `${r.good.ok}/${r.good.rejected}` : '-').padStart(20)}  ${r.newBoard ?? '-'}/${r.newFilters ?? '-'}`);
 }
 
 // Least-squares slope per run of a series (nulls skipped), and the run count to reach `target`.
