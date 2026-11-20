@@ -1,7 +1,36 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-20T15:06:14Z",
+ "lastSuccess": "2026-11-20T16:06:49Z",
  "runs": [
+  {
+   "at": "2026-11-20T16:06:49Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 212,
+   "failed": 4,
+   "cells": 7090,
+   "priced": 7005,
+   "changes": 1553,
+   "errors": [
+    "SGN-YVR-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-TYO-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "DLI-HUI-Y 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Lat DLI Hue HUI Filters All filters ",
+    "DLI-HUI-Y 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Lat DLI Hue HUI Filters All filters "
+   ],
+   "network": {
+    "checked": 100,
+    "kept": 74,
+    "failed": 1,
+    "routes": 1285
+   },
+   "due": 354,
+   "pages": 3,
+   "pauses": 1,
+   "skipped": 138,
+   "secondOk": 24,
+   "seconds": 1474,
+   "success": true
+  },
   {
    "at": "2026-11-20T15:06:14Z",
    "egress": "vpn",
@@ -661,34 +690,6 @@
    "skipped": 606,
    "secondOk": 21,
    "seconds": 1430,
-   "success": true
-  },
-  {
-   "at": "2026-11-19T16:07:10Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 256,
-   "failed": 3,
-   "cells": 9147,
-   "priced": 8998,
-   "changes": 4007,
-   "errors": [
-    "YYJ-MNL-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "PQC-CXR-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Phú Quốc PQC Nha Trang CXR Filters All fil",
-    "PQC-KBV-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Phú Quốc PQC Krabi KBV Filters All filters"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 952,
-   "pages": 6,
-   "pauses": 2,
-   "skipped": 693,
-   "secondOk": 30,
-   "seconds": 1508,
    "success": true
   }
  ]
