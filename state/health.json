@@ -1,7 +1,39 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-20T22:06:31Z",
+ "lastSuccess": "2026-11-20T23:06:28Z",
  "runs": [
+  {
+   "at": "2026-11-20T23:06:28Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 289,
+   "failed": 8,
+   "cells": 9445,
+   "priced": 8389,
+   "changes": 4784,
+   "errors": [
+    "YVR-SIN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "TYO-MPH-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "KBV-DAD-Y 10d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "KBV-DAD-Y 11d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-MNL-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "DAD-PEN-Y 8d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "KBV-DAD-Y 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "KBV-DAD-Y 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 100,
+    "kept": 37,
+    "failed": 19,
+    "routes": 1283
+   },
+   "due": 1150,
+   "pages": 6,
+   "skipped": 853,
+   "secondOk": 13,
+   "seconds": 1354,
+   "success": true
+  },
   {
    "at": "2026-11-20T22:06:31Z",
    "egress": "vpn",
@@ -647,38 +679,6 @@
    "skipped": 40,
    "secondOk": 13,
    "seconds": 1503,
-   "success": true
-  },
-  {
-   "at": "2026-11-19T23:06:48Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 271,
-   "failed": 7,
-   "cells": 8408,
-   "priced": 7725,
-   "changes": 1786,
-   "errors": [
-    "HUI-PQC-Y 8d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Phú Quốc PQC Filters All filter",
-    "PQC-HUI-Y 9d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Phú Quốc PQC Hue HUI Filters All filter",
-    "PQC-HUI-Y 8d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Phú Quốc PQC Hue HUI Filters All filter",
-    "PQC-HUI-Y 12d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Phú Quốc PQC Hue HUI Filters All filter",
-    "PQC-HUI-Y 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Phú Quốc PQC Hue HUI Filters All filter",
-    "PQC-HUI-Y 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Phú Quốc PQC Hue HUI Filters All filter",
-    "PQC-HUI-Y 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Phú Quốc PQC Hue HUI Filters All filter"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 463,
-   "pages": 6,
-   "pauses": 4,
-   "skipped": 185,
-   "secondOk": 28,
-   "seconds": 1555,
    "success": true
   }
  ]
