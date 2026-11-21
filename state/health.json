@@ -1,7 +1,40 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-21T15:06:55Z",
+ "lastSuccess": "2026-11-21T16:06:14Z",
  "runs": [
+  {
+   "at": "2026-11-21T16:06:14Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 250,
+   "failed": 8,
+   "cells": 8931,
+   "priced": 8872,
+   "changes": 3674,
+   "errors": [
+    "YYJ-TYO-Y 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-TYO-Y 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "BJS-SGN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-TPE-Y 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Taipei City TPE Filters Al",
+    "YYJ-SHA-Y 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Shanghai PVG SHA Filters A",
+    "YYJ-OSA-Y 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Osaka KIX ITM Filters All ",
+    "YYJ-SHA-Y 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Shanghai PVG SHA Filters A",
+    "SGN-KBV-Y 3d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 722,
+   "pages": 6,
+   "pauses": 3,
+   "skipped": 464,
+   "secondOk": 14,
+   "seconds": 1450,
+   "success": true
+  },
   {
    "at": "2026-11-21T15:06:55Z",
    "egress": "vpn",
@@ -691,35 +724,6 @@
    "pages": 3,
    "secondOk": 1,
    "seconds": 1015,
-   "success": true
-  },
-  {
-   "at": "2026-11-20T16:06:49Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 212,
-   "failed": 4,
-   "cells": 7090,
-   "priced": 7005,
-   "changes": 1553,
-   "errors": [
-    "SGN-YVR-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-TYO-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "DLI-HUI-Y 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Lat DLI Hue HUI Filters All filters ",
-    "DLI-HUI-Y 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Lat DLI Hue HUI Filters All filters "
-   ],
-   "network": {
-    "checked": 100,
-    "kept": 74,
-    "failed": 1,
-    "routes": 1285
-   },
-   "due": 354,
-   "pages": 3,
-   "pauses": 1,
-   "skipped": 138,
-   "secondOk": 24,
-   "seconds": 1474,
    "success": true
   }
  ]
