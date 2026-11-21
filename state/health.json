@@ -1,7 +1,38 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-21T13:06:30Z",
+ "lastSuccess": "2026-11-21T14:06:22Z",
  "runs": [
+  {
+   "at": "2026-11-21T14:06:22Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 231,
+   "failed": 6,
+   "cells": 8049,
+   "priced": 8030,
+   "changes": 2775,
+   "errors": [
+    "YYJ-OSA-J 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Osaka KIX ITM Filters All",
+    "YYJ-BJS-J 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Beijing PEK PKX Filters A",
+    "YYJ-SHA-J 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Shanghai PVG SHA Filters ",
+    "YYJ-DPS-J 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Denpasar DPS Filters All ",
+    "YYJ-KUL-Y 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Federal Territory of Kuala",
+    "YYJ-DPS-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Denpasar DPS Filters All f"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 711,
+   "pages": 6,
+   "pauses": 4,
+   "skipped": 474,
+   "secondOk": 14,
+   "seconds": 1570,
+   "success": true
+  },
   {
    "at": "2026-11-21T13:06:30Z",
    "egress": "vpn",
@@ -685,41 +716,6 @@
    "skipped": 186,
    "secondOk": 21,
    "seconds": 1612,
-   "success": true
-  },
-  {
-   "at": "2026-11-20T14:05:47Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 143,
-   "failed": 9,
-   "cells": 4301,
-   "priced": 4301,
-   "changes": 678,
-   "errors": [
-    "YVR-HKG-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-TYO-J 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Tokyo NRT HND Filters Al",
-    "YVR-OSA-J 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-BJS-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-KUL-J 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-BJS-J 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Beijing PEK PKX Filters ",
-    "YVR-KUL-Y 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Federal Territory of Kual",
-    "CEB-YVR-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-CEB-Y 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "controlTries": 3,
-   "network": {
-    "checked": 100,
-    "kept": 77,
-    "failed": 11,
-    "routes": 1285
-   },
-   "due": 310,
-   "pages": 3,
-   "pauses": 1,
-   "skipped": 158,
-   "secondOk": 17,
-   "seconds": 1549,
    "success": true
   }
  ]
