@@ -1,7 +1,32 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-20T23:06:28Z",
+ "lastSuccess": "2026-11-21T00:07:12Z",
  "runs": [
+  {
+   "at": "2026-11-21T00:07:12Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 285,
+   "failed": 1,
+   "cells": 9645,
+   "priced": 9606,
+   "changes": 7181,
+   "errors": [
+    "PPS-DAD-Y 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 38,
+    "kept": 12,
+    "failed": 0,
+    "routes": 1284
+   },
+   "due": 1078,
+   "pages": 6,
+   "skipped": 792,
+   "secondOk": 7,
+   "seconds": 1313,
+   "success": true
+  },
   {
    "at": "2026-11-20T23:06:28Z",
    "egress": "vpn",
@@ -647,38 +672,6 @@
    "skipped": 145,
    "secondOk": 1,
    "seconds": 1586,
-   "success": true
-  },
-  {
-   "at": "2026-11-20T00:08:49Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 154,
-   "failed": 7,
-   "cells": 5109,
-   "priced": 4872,
-   "changes": 4384,
-   "errors": [
-    "CEB-DAD-Y 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "DAD-SIN-Y 2d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "SIN-DAD-Y 7d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "DAD-BKK-Y 5d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "DAD-BKK-Y 12d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "HUI-CXR-Y 2d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "BKK-DAD-Y 5d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 201,
-   "pages": 3,
-   "pauses": 2,
-   "skipped": 40,
-   "secondOk": 13,
-   "seconds": 1503,
    "success": true
   }
  ]
