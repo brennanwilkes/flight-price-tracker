@@ -6,7 +6,8 @@
  * A cell is a deal when its trip connects (checked against real flights) and any of:
  *   buy        it's in the top price tier
  *   cheap-j    business, and its long flights cost under cheapBusinessLongLegs
- *   new-low    below every total recorded for it since lowsSince, once it has newLowWarmupDays of history
+ *   new-low    in a price tier, and below every total recorded for it since lowsSince, once it has
+ *              newLowWarmupDays of history
  * One push per deal; it pushes again only after a further drop of realertDrop, or a better tier.
  * Thresholds: config/alerts.json.
  */
@@ -63,7 +64,9 @@ function findDeals(config, rows, history, now) {
         const longJ = trip.tickets.filter((t) => t.cabin === 'J').reduce((s, t) => s + t.price, 0);
         if (cls === 'hybrid' && longJ && longJ < config.cheapBusinessLongLegs) reasons.push('cheap-j');
         const h = history.get(key);
-        if (h && Date.parse(h.first) <= warm && trip.total < h.low) reasons.push('new-low');
+        // Only at a tier's price: lows of dear open-jaw rows drift down as coverage grows (2026-11-20,
+        // the warm-up's first day: 29 pushes at $1,430–2,010 economy, $6,330–7,640 business).
+        if (tier && h && Date.parse(h.first) <= warm && trip.total < h.low) reasons.push('new-low');
         // A cheaper row of the pair that isn't a deal still stands for it (no push for a dearer row).
         best.set(key, { key, home, cls, in: r.in, out: r.out, set: r.set, trip, tier, reasons, prevLow: h?.low ?? null });
       }

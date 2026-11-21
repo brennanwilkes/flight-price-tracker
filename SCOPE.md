@@ -423,7 +423,8 @@ Web Push from the dashboard PWA, using meowmap's push implementation.
   anyone could technically subscribe. Accepted: alerts contain nothing sensitive.
 - **Triggers** (plan §Alerts), on Google's published price:
   1. A business fare meets "reasonable" for the first time on a route.
-  2. A route or full trip sets a new low against its own history (after the 14-day warm-up).
+  2. A route or full trip sets a new low against its own history (after the 14-day warm-up), at a
+     tier's price (2026-11-20: without that, dear open-jaw rows pushed every few dollars of drift).
   3. A long-leg business round trip under CAD 3,000.
   4. **Scraper failed 2 runs in a row** (control route empty, all egress blocked, parse failure).
      One push, then silent until a run succeeds; recovery shows only on the dashboard.

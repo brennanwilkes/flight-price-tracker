@@ -17,13 +17,15 @@ test('deals: buy tier, cheap business long legs, new low after warm-up; never a 
   const rows = { YVR: [
     { in: 'MNL', out: 'MNL', hybrid: trip(3400, 3200), economy: null },        // buy
     { in: 'ICN', out: 'ICN', hybrid: trip(4100, 2900), economy: null },        // cheap-j
-    { in: 'HKG', out: 'HKG', hybrid: trip(4500, 4300), economy: null },        // new low (history 4600 since Nov 1)
-    { in: 'SIN', out: 'SIN', hybrid: trip(4500, 4300), economy: null },        // history too young
+    { in: 'HKG', out: 'HKG', hybrid: trip(4150, 4000), economy: null },        // new low (history 4200 since Nov 1)
+    { in: 'SIN', out: 'SIN', hybrid: trip(4150, 4000), economy: null },        // history too young
+    { in: 'TPE', out: 'TPE', hybrid: trip(6300, 6000), economy: null },        // new low, but in no tier
     { in: 'BKK', out: 'BKK', hybrid: trip(3000, 2800, false), economy: null }, // doesn't connect
   ] };
   const history = new Map([
-    ['YVR,hybrid,HKG,HKG', { low: 4600, first: '2026-11-01T00:00:00Z' }],
-    ['YVR,hybrid,SIN,SIN', { low: 4600, first: '2026-11-25T00:00:00Z' }],
+    ['YVR,hybrid,HKG,HKG', { low: 4200, first: '2026-11-01T00:00:00Z' }],
+    ['YVR,hybrid,SIN,SIN', { low: 4200, first: '2026-11-25T00:00:00Z' }],
+    ['YVR,hybrid,TPE,TPE', { low: 6500, first: '2026-11-01T00:00:00Z' }],
   ]);
   const deals = findDeals(config, rows, history, now);
   assert.deepEqual(deals.map((d) => [d.in, d.reasons]), [['MNL', ['buy']], ['ICN', ['cheap-j']], ['HKG', ['new-low']]]);
