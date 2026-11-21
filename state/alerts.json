@@ -169,6 +169,16 @@
    "total": 2010,
    "tier": "",
    "at": "2026-11-21T02:34:33Z"
+  },
+  "YVR,economy,ICN,MNL": {
+   "total": 1477,
+   "tier": "",
+   "at": "2026-11-21T03:28:52Z"
+  },
+  "YYJ,hybrid,ICN,HKG": {
+   "total": 7275,
+   "tier": "",
+   "at": "2026-11-21T03:28:52Z"
   }
  }
 }
