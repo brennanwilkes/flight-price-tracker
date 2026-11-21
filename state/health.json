@@ -1,7 +1,44 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-21T04:06:39Z",
+ "lastSuccess": "2026-11-21T05:06:38Z",
  "runs": [
+  {
+   "at": "2026-11-21T05:06:38Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 110,
+   "failed": 12,
+   "cells": 3534,
+   "priced": 3446,
+   "changes": 232,
+   "errors": [
+    "BKK-YVR-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-TPE-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-ICN-J 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-TPE-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-KUL-Y 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Federal Territory of Kual",
+    "YVR-MNL-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-TYO-J 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Tokyo NRT HND Filters Al",
+    "YVR-TYO-J 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Tokyo NRT HND Filters Al",
+    "YVR-BKK-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-OSA-J 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Osaka KIX ITM Filters Al",
+    "YVR-SHA-J 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Shanghai PVG SHA Filters",
+    "YVR-OSA-J 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Osaka KIX ITM Filters Al"
+   ],
+   "network": {
+    "checked": 55,
+    "kept": 15,
+    "failed": 2,
+    "routes": 1277
+   },
+   "due": 1093,
+   "pages": 6,
+   "pauses": 5,
+   "skipped": 971,
+   "secondOk": 19,
+   "seconds": 1556,
+   "success": true
+  },
   {
    "at": "2026-11-21T04:06:39Z",
    "egress": "direct",
@@ -635,32 +672,6 @@
    "pages": 3,
    "secondOk": 10,
    "seconds": 1461,
-   "success": true
-  },
-  {
-   "at": "2026-11-20T05:06:27Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 179,
-   "failed": 1,
-   "cells": 5758,
-   "priced": 4780,
-   "changes": 3790,
-   "errors": [
-    "HUI-DLI-Y 13d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Da Lat DLI Filters All filters "
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 192,
-   "pages": 3,
-   "pauses": 2,
-   "skipped": 12,
-   "secondOk": 29,
-   "seconds": 1370,
    "success": true
   }
  ]
