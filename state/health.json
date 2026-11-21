@@ -1,7 +1,38 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-21T12:06:46Z",
+ "lastSuccess": "2026-11-21T13:06:30Z",
  "runs": [
+  {
+   "at": "2026-11-21T13:06:30Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 264,
+   "failed": 6,
+   "cells": 9855,
+   "priced": 9424,
+   "changes": 6620,
+   "errors": [
+    "SHA-SGN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "SGN-BKK-Y 2d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "TPE-DAD-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "BKK-SGN-Y 10d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "SGN-CAN-Y 9d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Ho Chi Minh City SGN Guangzhou CAN Filt",
+    "SGN-CAN-Y 6d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Ho Chi Minh City SGN Guangzhou CAN Filt"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 926,
+   "pages": 6,
+   "pauses": 1,
+   "skipped": 656,
+   "secondOk": 18,
+   "seconds": 1355,
+   "success": true
+  },
   {
    "at": "2026-11-21T12:06:46Z",
    "egress": "vpn",
@@ -689,43 +720,6 @@
    "skipped": 158,
    "secondOk": 17,
    "seconds": 1549,
-   "success": true
-  },
-  {
-   "at": "2026-11-20T13:06:18Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 203,
-   "failed": 12,
-   "cells": 7055,
-   "priced": 6912,
-   "changes": 2341,
-   "errors": [
-    "YVR-KUL-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-BKK-Y 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-TPE-Y 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "ICN-GUM-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "GUM-OSA-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "CEB-GUM-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "SGN-PPS-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "TYO-DAD-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "HNL-YYJ-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "MNL-HNL-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "TYO-GUM-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "TPE-GUM-J-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Business Taipei City TPE Guam GUM Filters All filt"
-   ],
-   "network": {
-    "checked": 95,
-    "kept": 72,
-    "failed": 2,
-    "routes": 1286
-   },
-   "due": 478,
-   "pages": 6,
-   "pauses": 4,
-   "skipped": 263,
-   "secondOk": 15,
-   "seconds": 1620,
    "success": true
   }
  ]
