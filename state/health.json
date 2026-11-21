@@ -1,7 +1,36 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-21T00:07:12Z",
+ "lastSuccess": "2026-11-21T01:06:04Z",
  "runs": [
+  {
+   "at": "2026-11-21T01:06:04Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 256,
+   "failed": 5,
+   "cells": 8787,
+   "priced": 8601,
+   "changes": 4914,
+   "errors": [
+    "HAN-SGN-Y 9d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "HAN-ICN-Y 9d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "ICN-HAN-Y 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "HAN-HKG-Y 11d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "HAN-TYO-Y 7d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 100,
+    "kept": 30,
+    "failed": 9,
+    "routes": 1283
+   },
+   "due": 1016,
+   "pages": 6,
+   "skipped": 755,
+   "secondOk": 22,
+   "seconds": 1343,
+   "success": true
+  },
   {
    "at": "2026-11-21T00:07:12Z",
    "egress": "vpn",
@@ -640,38 +669,6 @@
    "skipped": 18,
    "secondOk": 14,
    "seconds": 1345,
-   "success": true
-  },
-  {
-   "at": "2026-11-20T01:06:37Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 215,
-   "failed": 6,
-   "cells": 6711,
-   "priced": 6522,
-   "changes": 1151,
-   "errors": [
-    "HUI-CXR-Y 12d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Nha Trang CXR Filters All filte",
-    "HUI-CXR-Y 10d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Nha Trang CXR Filters All filte",
-    "HUI-CXR-Y 11d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Nha Trang CXR Filters All filte",
-    "HUI-CXR-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Nha Trang CXR Filters All filte",
-    "CXR-HUI-Y 5d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Nha Trang CXR Hue HUI Filters All filte",
-    "CXR-HUI-Y 7d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Nha Trang CXR Hue HUI Filters All filte"
-   ],
-   "controlTries": 2,
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1280
-   },
-   "due": 366,
-   "pages": 3,
-   "pauses": 5,
-   "skipped": 145,
-   "secondOk": 1,
-   "seconds": 1586,
    "success": true
   }
  ]
