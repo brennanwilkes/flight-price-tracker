@@ -1,7 +1,30 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-21T18:06:46Z",
+ "lastSuccess": "2026-11-21T19:06:40Z",
  "runs": [
+  {
+   "at": "2026-11-21T19:06:40Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 143,
+   "failed": 0,
+   "cells": 5569,
+   "priced": 5548,
+   "changes": 2476,
+   "errors": [],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 374,
+   "pages": 3,
+   "skipped": 231,
+   "secondOk": 3,
+   "seconds": 1250,
+   "success": true
+  },
   {
    "at": "2026-11-21T18:06:46Z",
    "egress": "vpn",
@@ -700,30 +723,6 @@
    "skipped": 546,
    "secondOk": 4,
    "seconds": 1272,
-   "success": true
-  },
-  {
-   "at": "2026-11-20T19:07:10Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 334,
-   "failed": 1,
-   "cells": 11789,
-   "priced": 11546,
-   "changes": 3779,
-   "errors": [
-    "HUI-PQC-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Hue HUI Phú Quốc PQC Filters All filters S"
-   ],
-   "network": {
-    "checked": 100,
-    "kept": 66,
-    "failed": 0,
-    "routes": 1287
-   },
-   "due": 638,
-   "pages": 6,
-   "skipped": 303,
-   "seconds": 1336,
    "success": true
   }
  ]
