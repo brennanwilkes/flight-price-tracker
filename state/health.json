@@ -1,7 +1,41 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-21T14:06:22Z",
+ "lastSuccess": "2026-11-21T15:06:55Z",
  "runs": [
+  {
+   "at": "2026-11-21T15:06:55Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 233,
+   "failed": 8,
+   "cells": 8098,
+   "priced": 8042,
+   "changes": 1915,
+   "errors": [
+    "SGN-REP-Y 9d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-DAD-J 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Da Nang DAD Filters All ",
+    "REP-SGN-Y 5d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "REP-SGN-Y 6d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "SGN-REP-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Ho Chi Minh City SGN Krong Siem Reap SA",
+    "SGN-REP-Y 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Ho Chi Minh City SGN Krong Siem Reap SA",
+    "REP-SGN-Y 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Krong Siem Reap SAI Ho Chi Minh City SG",
+    "REP-SGN-Y 13d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Krong Siem Reap SAI Ho Chi Minh City SG"
+   ],
+   "controlTries": 2,
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 844,
+   "pages": 6,
+   "pauses": 5,
+   "skipped": 603,
+   "secondOk": 29,
+   "seconds": 1591,
+   "success": true
+  },
   {
    "at": "2026-11-21T14:06:22Z",
    "egress": "vpn",
@@ -686,36 +720,6 @@
    "skipped": 138,
    "secondOk": 24,
    "seconds": 1474,
-   "success": true
-  },
-  {
-   "at": "2026-11-20T15:06:14Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 107,
-   "failed": 5,
-   "cells": 3753,
-   "priced": 3152,
-   "changes": 1727,
-   "errors": [
-    "YYJ-GUM-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "OSA-SGN-Y 5d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "SGN-LPQ-Y 9d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "SGN-PNH-Y 2d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-OSA-Y 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Osaka KIX ITM Filters All "
-   ],
-   "network": {
-    "checked": 100,
-    "kept": 54,
-    "failed": 6,
-    "routes": 1285
-   },
-   "due": 298,
-   "pages": 3,
-   "pauses": 2,
-   "skipped": 186,
-   "secondOk": 21,
-   "seconds": 1612,
    "success": true
   }
  ]
