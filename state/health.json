@@ -1,7 +1,40 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-21T09:06:28Z",
+ "lastSuccess": "2026-11-21T10:06:10Z",
  "runs": [
+  {
+   "at": "2026-11-21T10:06:10Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 218,
+   "failed": 8,
+   "cells": 7833,
+   "priced": 7826,
+   "changes": 5406,
+   "errors": [
+    "YVR-TPE-Y 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "HAN-SYX-Y 9d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "HAN-SYX-Y 7d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hanoi HAN Sanya SYX · Haikou HAK Filter",
+    "HAN-SYX-Y 11d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hanoi HAN Sanya SYX · Haikou HAK Filter",
+    "TPE-SGN-Y 13d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "SYX-HAN-Y 10d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Sanya SYX · Haikou HAK Hanoi HAN Filter",
+    "SYX-HAN-Y 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "SYX-HAN-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Sanya SYX · Haikou HAK Hanoi HAN Filter"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 746,
+   "pages": 6,
+   "pauses": 2,
+   "skipped": 520,
+   "secondOk": 8,
+   "seconds": 1529,
+   "success": true
+  },
   {
    "at": "2026-11-21T09:06:28Z",
    "egress": "vpn",
@@ -689,30 +722,6 @@
    "skipped": 195,
    "secondOk": 20,
    "seconds": 1617,
-   "success": true
-  },
-  {
-   "at": "2026-11-20T10:06:13Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 251,
-   "failed": 0,
-   "cells": 8219,
-   "priced": 7183,
-   "changes": 3429,
-   "errors": [],
-   "network": {
-    "checked": 100,
-    "kept": 78,
-    "failed": 0,
-    "routes": 1285
-   },
-   "due": 428,
-   "pages": 6,
-   "pauses": 1,
-   "skipped": 177,
-   "secondOk": 38,
-   "seconds": 1411,
    "success": true
   }
  ]
