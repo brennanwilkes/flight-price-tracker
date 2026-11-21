@@ -1,7 +1,38 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-21T10:06:10Z",
+ "lastSuccess": "2026-11-21T11:05:49Z",
  "runs": [
+  {
+   "at": "2026-11-21T11:05:49Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 282,
+   "failed": 6,
+   "cells": 11509,
+   "priced": 11110,
+   "changes": 4072,
+   "errors": [
+    "PPS-PNH-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "TYO-SGN-Y 9d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "TYO-SGN-Y 8d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "JOG-PQC-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Yogyakarta YIA Phú Quốc PQC Filters All fi",
+    "LOP-BKI-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Praya LOP Kota Kinabalu BKI Filters All fi",
+    "LOP-KBV-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Praya LOP Krabi KBV Filters All filters St"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 622,
+   "pages": 6,
+   "pauses": 2,
+   "skipped": 334,
+   "secondOk": 3,
+   "seconds": 1340,
+   "success": true
+  },
   {
    "at": "2026-11-21T10:06:10Z",
    "egress": "vpn",
@@ -691,37 +722,6 @@
    "skipped": 282,
    "secondOk": 3,
    "seconds": 1258,
-   "success": true
-  },
-  {
-   "at": "2026-11-20T11:06:44Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 153,
-   "failed": 6,
-   "cells": 4826,
-   "priced": 3827,
-   "changes": 2086,
-   "errors": [
-    "YVR-SIN-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "SHA-YVR-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-DPS-J 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-DPS-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "HKG-HUI-Y 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hong Kong HKG Hue HUI Filters All filte",
-    "HKG-HUI-Y 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hong Kong HKG Hue HUI Filters All filte"
-   ],
-   "network": {
-    "checked": 100,
-    "kept": 78,
-    "failed": 0,
-    "routes": 1287
-   },
-   "due": 354,
-   "pages": 3,
-   "pauses": 2,
-   "skipped": 195,
-   "secondOk": 20,
-   "seconds": 1617,
    "success": true
   }
  ]
