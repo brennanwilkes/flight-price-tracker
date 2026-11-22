@@ -1,7 +1,32 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-22T03:06:33Z",
+ "lastSuccess": "2026-11-22T04:06:40Z",
  "runs": [
+  {
+   "at": "2026-11-22T04:06:40Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 173,
+   "failed": 0,
+   "cells": 5318,
+   "priced": 5313,
+   "changes": 137,
+   "errors": [],
+   "controlTries": 4,
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 218,
+   "pages": 3,
+   "pauses": 2,
+   "skipped": 45,
+   "secondOk": 24,
+   "seconds": 1289,
+   "success": true
+  },
   {
    "at": "2026-11-22T03:06:33Z",
    "egress": "vpn",
@@ -661,32 +686,6 @@
    "skipped": 971,
    "secondOk": 19,
    "seconds": 1556,
-   "success": true
-  },
-  {
-   "at": "2026-11-21T04:06:39Z",
-   "egress": "direct",
-   "control": 7,
-   "ok": 152,
-   "failed": 1,
-   "cells": 5268,
-   "priced": 5259,
-   "changes": 5164,
-   "errors": [
-    "BJS-HAN-Y 12d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Beijing PEK PKX Hanoi HAN Filters All f"
-   ],
-   "network": {
-    "checked": 100,
-    "kept": 26,
-    "failed": 47,
-    "routes": 1276
-   },
-   "due": 1069,
-   "pages": 6,
-   "pauses": 1,
-   "skipped": 916,
-   "secondOk": 13,
-   "seconds": 1402,
    "success": true
   }
  ]
