@@ -1,7 +1,29 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-22T05:06:38Z",
+ "lastSuccess": "2026-11-22T06:06:15Z",
  "runs": [
+  {
+   "at": "2026-11-22T06:06:15Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 48,
+   "failed": 0,
+   "cells": 1558,
+   "priced": 1540,
+   "changes": 400,
+   "errors": [],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 48,
+   "pages": 3,
+   "secondOk": 3,
+   "seconds": 524,
+   "success": true
+  },
   {
    "at": "2026-11-22T05:06:38Z",
    "egress": "vpn",
@@ -641,40 +663,6 @@
    "skipped": 725,
    "secondOk": 16,
    "seconds": 1609,
-   "success": true
-  },
-  {
-   "at": "2026-11-21T06:06:23Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 269,
-   "failed": 9,
-   "cells": 8804,
-   "priced": 8796,
-   "changes": 2940,
-   "errors": [
-    "YVR-DPS-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-SGN-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-HKG-Y 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-DAD-Y 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Da Nang DAD Filters All f",
-    "YVR-DAD-J 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Da Nang DAD Filters All ",
-    "DLI-MFM-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Da Lat DLI Macao MFM Filters All filters S",
-    "YVR-DPS-Y 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-KUL-J 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Federal Territory of Kual",
-    "YYJ-SHA-Y 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Shanghai PVG SHA Filters A"
-   ],
-   "network": {
-    "checked": 2,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 1011,
-   "pages": 6,
-   "pauses": 3,
-   "skipped": 733,
-   "secondOk": 4,
-   "seconds": 1548,
    "success": true
   }
  ]
