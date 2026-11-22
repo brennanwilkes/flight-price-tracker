@@ -1,7 +1,29 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-22T08:06:15Z",
+ "lastSuccess": "2026-11-22T09:05:46Z",
  "runs": [
+  {
+   "at": "2026-11-22T09:05:46Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 54,
+   "failed": 0,
+   "cells": 1776,
+   "priced": 1776,
+   "changes": 109,
+   "errors": [],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 54,
+   "pages": 3,
+   "secondOk": 1,
+   "seconds": 139,
+   "success": true
+  },
   {
    "at": "2026-11-22T08:06:15Z",
    "egress": "vpn",
@@ -597,52 +619,6 @@
    "skipped": 520,
    "secondOk": 8,
    "seconds": 1529,
-   "success": true
-  },
-  {
-   "at": "2026-11-21T09:06:28Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 266,
-   "failed": 21,
-   "cells": 9417,
-   "priced": 9379,
-   "changes": 4796,
-   "errors": [
-    "SGN-YVR-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-HAN-J 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-TYO-J 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-CAN-J 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-SGN-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-HKG-Y 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-OSA-J 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Osaka KIX ITM Filters Al",
-    "YVR-HAN-Y 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "HAN-FUK-Y 5d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-DAD-Y 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Da Nang DAD Filters All f",
-    "HKT-HAN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-DAD-Y 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Da Nang DAD Filters All f",
-    "OKA-HAN-Y 13d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "OKA-HAN-Y 8d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Okinawa OKA Hanoi HAN Filters All filte",
-    "HAN-PUS-Y 11d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "HAN-PUS-Y 5d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "OKA-HAN-Y 16d: locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for getByRole('button', { name: 'Price graph' }).first()\n    - locator resolved to <button jsname=\"MinD4b\" jscontroller=\"soHxf\" data-idom-class=\"ksBjEc lKxP2d LQeN7 uRHSYe JgWerc\" class=\"VfPpkd-LgbsSe VfPpkd-LgbsSe-OWXEXe-Bz112c-M1Soyc ksBjEc lKxP2d LQeN7 uRHSYe JgWerc\" jsaction=\"click:cOuCgd; mousedown:UX7yZ; mouseup:lbsD7e; mouseenter:tfO1Yc; mouseleave:JywGue; touchstart:p6p2H; touchmove:FwuNnf; touchend:yfqBxc; touchcancel:JMtRjd; focus:AHmuwe; blur:O22p3e; contextmenu:mg9Pef;mlnRJb:fLiPzd;\">…</button>\n  - attempting click action\n    - waiting for element to be visible, enabled and stable\n  - element was detached from the DOM, retrying\n",
-    "PUS-HAN-Y 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "PUS-HAN-Y 11d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "HAN-FUK-Y 8d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hanoi HAN Fukuoka FUK Filters All filte",
-    "HAN-PUS-Y 9d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 943,
-   "pages": 6,
-   "skipped": 656,
-   "secondOk": 22,
-   "pauses": 1,
-   "seconds": 1599,
    "success": true
   }
  ]
