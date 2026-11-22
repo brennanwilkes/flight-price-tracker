@@ -1,7 +1,40 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-22T10:06:55Z",
+ "lastSuccess": "2026-11-22T11:06:48Z",
  "runs": [
+  {
+   "at": "2026-11-22T11:06:48Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 126,
+   "failed": 8,
+   "cells": 4400,
+   "priced": 4398,
+   "changes": 150,
+   "errors": [
+    "YVR-SHA-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-SHA-J 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-OSA-J 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Osaka KIX ITM Filters Al",
+    "YVR-DPS-J-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Business Vancouver YVR Denpasar DPS Filters All fi",
+    "YVR-BJS-J 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Beijing PEK PKX Filters ",
+    "SGN-YVR-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Ho Chi Minh City SGN Vancouver YVR Filters",
+    "YVR-HAN-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Hanoi HAN Filters All fil",
+    "YVR-SGN-J 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Ho Chi Minh City SGN Fil"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 318,
+   "pages": 3,
+   "pauses": 7,
+   "skipped": 184,
+   "secondOk": 1,
+   "seconds": 1561,
+   "success": true
+  },
   {
    "at": "2026-11-22T10:06:55Z",
    "egress": "vpn",
@@ -588,37 +621,6 @@
    "skipped": 536,
    "secondOk": 12,
    "seconds": 1394,
-   "success": true
-  },
-  {
-   "at": "2026-11-21T11:05:49Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 282,
-   "failed": 6,
-   "cells": 11509,
-   "priced": 11110,
-   "changes": 4072,
-   "errors": [
-    "PPS-PNH-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "TYO-SGN-Y 9d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "TYO-SGN-Y 8d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "JOG-PQC-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Yogyakarta YIA Phú Quốc PQC Filters All fi",
-    "LOP-BKI-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Praya LOP Kota Kinabalu BKI Filters All fi",
-    "LOP-KBV-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Praya LOP Krabi KBV Filters All filters St"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 622,
-   "pages": 6,
-   "pauses": 2,
-   "skipped": 334,
-   "secondOk": 3,
-   "seconds": 1340,
    "success": true
   }
  ]
