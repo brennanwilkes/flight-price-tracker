@@ -1,7 +1,33 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-22T15:06:16Z",
+ "lastSuccess": "2026-11-22T16:06:41Z",
  "runs": [
+  {
+   "at": "2026-11-22T16:06:41Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 173,
+   "failed": 2,
+   "cells": 6265,
+   "priced": 6165,
+   "changes": 470,
+   "errors": [
+    "CEB-GUM-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-TYO-Y 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 175,
+   "pages": 3,
+   "pauses": 1,
+   "secondOk": 13,
+   "seconds": 922,
+   "success": true
+  },
   {
    "at": "2026-11-22T15:06:16Z",
    "egress": "vpn",
@@ -567,39 +593,6 @@
    "skipped": 412,
    "secondOk": 19,
    "seconds": 1275,
-   "success": true
-  },
-  {
-   "at": "2026-11-21T16:06:14Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 250,
-   "failed": 8,
-   "cells": 8931,
-   "priced": 8872,
-   "changes": 3674,
-   "errors": [
-    "YYJ-TYO-Y 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-TYO-Y 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "BJS-SGN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-TPE-Y 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Taipei City TPE Filters Al",
-    "YYJ-SHA-Y 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Shanghai PVG SHA Filters A",
-    "YYJ-OSA-Y 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Osaka KIX ITM Filters All ",
-    "YYJ-SHA-Y 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Shanghai PVG SHA Filters A",
-    "SGN-KBV-Y 3d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 722,
-   "pages": 6,
-   "pauses": 3,
-   "skipped": 464,
-   "secondOk": 14,
-   "seconds": 1450,
    "success": true
   }
  ]
