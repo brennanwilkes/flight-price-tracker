@@ -1,7 +1,31 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-22T11:06:48Z",
+ "lastSuccess": "2026-11-22T12:06:13Z",
  "runs": [
+  {
+   "at": "2026-11-22T12:06:13Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 180,
+   "failed": 0,
+   "cells": 7153,
+   "priced": 7046,
+   "changes": 876,
+   "errors": [],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 210,
+   "pages": 3,
+   "pauses": 2,
+   "skipped": 30,
+   "secondOk": 19,
+   "seconds": 1236,
+   "success": true
+  },
   {
    "at": "2026-11-22T11:06:48Z",
    "egress": "vpn",
@@ -594,33 +618,6 @@
    "skipped": 656,
    "secondOk": 18,
    "seconds": 1355,
-   "success": true
-  },
-  {
-   "at": "2026-11-21T12:06:46Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 264,
-   "failed": 2,
-   "cells": 9613,
-   "priced": 9360,
-   "changes": 4331,
-   "errors": [
-    "YYJ-HAN-J 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Hanoi HAN Filters All fil",
-    "YYJ-SGN-J 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Ho Chi Minh City SGN Filt"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 802,
-   "pages": 6,
-   "pauses": 1,
-   "skipped": 536,
-   "secondOk": 12,
-   "seconds": 1394,
    "success": true
   }
  ]
