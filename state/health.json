@@ -1,7 +1,29 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-22T06:06:15Z",
+ "lastSuccess": "2026-11-22T07:06:10Z",
  "runs": [
+  {
+   "at": "2026-11-22T07:06:10Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 164,
+   "failed": 0,
+   "cells": 5226,
+   "priced": 5175,
+   "changes": 262,
+   "errors": [],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 164,
+   "pages": 3,
+   "secondOk": 4,
+   "seconds": 585,
+   "success": true
+  },
   {
    "at": "2026-11-22T06:06:15Z",
    "egress": "vpn",
@@ -626,43 +648,6 @@
    "skipped": 594,
    "secondOk": 40,
    "seconds": 1496,
-   "success": true
-  },
-  {
-   "at": "2026-11-21T07:06:09Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 201,
-   "failed": 11,
-   "cells": 7088,
-   "priced": 7034,
-   "changes": 5627,
-   "errors": [
-    "YVR-ICN-Y 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-MNL-Y 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-SHA-Y 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-ICN-Y 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-JKT-J 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Jakarta CGK Filters All f",
-    "YVR-TYO-Y 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Tokyo NRT HND Filters All",
-    "HAN-PNH-Y 11d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "CJU-CTS-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Jeju-si CJU Sapporo CTS Filters All filter",
-    "YYJ-SHA-Y 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Shanghai PVG SHA Filters A",
-    "LPQ-HAN-Y 5d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "HAN-LPQ-Y 9d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hanoi HAN Luang Prabang LPQ Filters All"
-   ],
-   "controlTries": 2,
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 937,
-   "pages": 6,
-   "pauses": 4,
-   "skipped": 725,
-   "secondOk": 16,
-   "seconds": 1609,
    "success": true
   }
  ]
