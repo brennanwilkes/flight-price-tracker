@@ -1,7 +1,28 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-22T01:06:34Z",
+ "lastSuccess": "2026-11-22T02:06:40Z",
  "runs": [
+  {
+   "at": "2026-11-22T02:06:40Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 13,
+   "failed": 0,
+   "cells": 420,
+   "priced": 419,
+   "changes": 28,
+   "errors": [],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 13,
+   "pages": 3,
+   "seconds": 75,
+   "success": true
+  },
   {
    "at": "2026-11-22T01:06:34Z",
    "egress": "vpn",
@@ -651,40 +672,6 @@
    "skipped": 931,
    "secondOk": 2,
    "seconds": 1358,
-   "success": true
-  },
-  {
-   "at": "2026-11-21T02:06:26Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 167,
-   "failed": 9,
-   "cells": 5308,
-   "priced": 5166,
-   "changes": 947,
-   "errors": [
-    "YVR-SGN-Y 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "LPQ-SYX-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "BKI-DLI-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Kota Kinabalu BKI Da Lat DLI Filters All f",
-    "CXR-DLI-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Nha Trang CXR Da Lat DLI Filters All filte",
-    "CXR-KBV-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Nha Trang CXR Krabi KBV Filters All filter",
-    "KBV-JOG-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Krabi KBV Yogyakarta YIA Filters All filte",
-    "PQC-DLI-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Phú Quốc PQC Da Lat DLI Filters All filter",
-    "PQC-JOG-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Phú Quốc PQC Yogyakarta YIA Filters All fi",
-    "PQC-LGK-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Phú Quốc PQC Langkawi LGK Filters All filt"
-   ],
-   "network": {
-    "checked": 100,
-    "kept": 26,
-    "failed": 30,
-    "routes": 1282
-   },
-   "due": 954,
-   "pages": 6,
-   "pauses": 2,
-   "skipped": 778,
-   "secondOk": 4,
-   "seconds": 1505,
    "success": true
   }
  ]
