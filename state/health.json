@@ -1,7 +1,28 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-22T00:06:53Z",
+ "lastSuccess": "2026-11-22T01:06:34Z",
  "runs": [
+  {
+   "at": "2026-11-22T01:06:34Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 2,
+   "failed": 0,
+   "cells": 58,
+   "priced": 58,
+   "changes": 0,
+   "errors": [],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 2,
+   "pages": 3,
+   "seconds": 14,
+   "success": true
+  },
   {
    "at": "2026-11-22T00:06:53Z",
    "egress": "vpn",
@@ -664,35 +685,6 @@
    "skipped": 778,
    "secondOk": 4,
    "seconds": 1505,
-   "success": true
-  },
-  {
-   "at": "2026-11-21T01:06:04Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 256,
-   "failed": 5,
-   "cells": 8787,
-   "priced": 8601,
-   "changes": 4914,
-   "errors": [
-    "HAN-SGN-Y 9d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "HAN-ICN-Y 9d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "ICN-HAN-Y 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "HAN-HKG-Y 11d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "HAN-TYO-Y 7d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 100,
-    "kept": 30,
-    "failed": 9,
-    "routes": 1283
-   },
-   "due": 1016,
-   "pages": 6,
-   "skipped": 755,
-   "secondOk": 22,
-   "seconds": 1343,
    "success": true
   }
  ]
