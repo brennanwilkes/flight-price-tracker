@@ -1,7 +1,35 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-22T13:05:45Z",
+ "lastSuccess": "2026-11-22T14:06:49Z",
  "runs": [
+  {
+   "at": "2026-11-22T14:06:49Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 173,
+   "failed": 3,
+   "cells": 6018,
+   "priced": 5742,
+   "changes": 320,
+   "errors": [
+    "YYJ-HAN-J 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-BJS-J 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Beijing PEK PKX Filters A",
+    "YYJ-MNL-J 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Manila MNL Filters All fi"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 307,
+   "pages": 3,
+   "pauses": 3,
+   "skipped": 131,
+   "secondOk": 16,
+   "seconds": 1595,
+   "success": true
+  },
   {
    "at": "2026-11-22T13:05:45Z",
    "egress": "vpn",
@@ -578,37 +606,6 @@
    "skipped": 603,
    "secondOk": 29,
    "seconds": 1591,
-   "success": true
-  },
-  {
-   "at": "2026-11-21T14:06:22Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 231,
-   "failed": 6,
-   "cells": 8049,
-   "priced": 8030,
-   "changes": 2775,
-   "errors": [
-    "YYJ-OSA-J 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Osaka KIX ITM Filters All",
-    "YYJ-BJS-J 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Beijing PEK PKX Filters A",
-    "YYJ-SHA-J 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Shanghai PVG SHA Filters ",
-    "YYJ-DPS-J 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Denpasar DPS Filters All ",
-    "YYJ-KUL-Y 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Federal Territory of Kuala",
-    "YYJ-DPS-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Denpasar DPS Filters All f"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 711,
-   "pages": 6,
-   "pauses": 4,
-   "skipped": 474,
-   "secondOk": 14,
-   "seconds": 1570,
    "success": true
   }
  ]
