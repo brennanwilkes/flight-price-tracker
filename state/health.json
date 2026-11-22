@@ -1,7 +1,37 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-22T17:05:49Z",
+ "lastSuccess": "2026-11-22T18:06:42Z",
  "runs": [
+  {
+   "at": "2026-11-22T18:06:42Z",
+   "egress": "direct",
+   "control": 7,
+   "ok": 287,
+   "failed": 6,
+   "cells": 9923,
+   "priced": 9920,
+   "changes": 833,
+   "errors": [
+    "YVR-TYO-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-CEB-J 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-SGN-Y 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-ICN-Y 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-ICN-Y 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-DAD-Y 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Da Nang DAD Filters All f"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 354,
+   "pages": 3,
+   "skipped": 61,
+   "secondOk": 17,
+   "seconds": 1500,
+   "success": true
+  },
   {
    "at": "2026-11-22T17:05:49Z",
    "egress": "vpn",
@@ -569,29 +599,6 @@
    "skipped": 231,
    "secondOk": 3,
    "seconds": 1250,
-   "success": true
-  },
-  {
-   "at": "2026-11-21T18:06:46Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 388,
-   "failed": 0,
-   "cells": 15254,
-   "priced": 14915,
-   "changes": 8223,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 466,
-   "pages": 6,
-   "skipped": 78,
-   "secondOk": 3,
-   "seconds": 1409,
    "success": true
   }
  ]
