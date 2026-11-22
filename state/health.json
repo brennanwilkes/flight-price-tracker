@@ -1,7 +1,35 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-22T14:06:49Z",
+ "lastSuccess": "2026-11-22T15:06:16Z",
  "runs": [
+  {
+   "at": "2026-11-22T15:06:16Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 209,
+   "failed": 4,
+   "cells": 7837,
+   "priced": 7704,
+   "changes": 678,
+   "errors": [
+    "YYJ-KUL-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "SGN-SIN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "DLI-HUI-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Da Lat DLI Hue HUI Filters All filters Sto",
+    "SGN-PNH-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 213,
+   "pages": 3,
+   "pauses": 1,
+   "secondOk": 22,
+   "seconds": 1431,
+   "success": true
+  },
   {
    "at": "2026-11-22T14:06:49Z",
    "egress": "vpn",
@@ -572,40 +600,6 @@
    "skipped": 464,
    "secondOk": 14,
    "seconds": 1450,
-   "success": true
-  },
-  {
-   "at": "2026-11-21T15:06:55Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 233,
-   "failed": 8,
-   "cells": 8098,
-   "priced": 8042,
-   "changes": 1915,
-   "errors": [
-    "SGN-REP-Y 9d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-DAD-J 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Da Nang DAD Filters All ",
-    "REP-SGN-Y 5d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "REP-SGN-Y 6d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "SGN-REP-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Ho Chi Minh City SGN Krong Siem Reap SA",
-    "SGN-REP-Y 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Ho Chi Minh City SGN Krong Siem Reap SA",
-    "REP-SGN-Y 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Krong Siem Reap SAI Ho Chi Minh City SG",
-    "REP-SGN-Y 13d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Krong Siem Reap SAI Ho Chi Minh City SG"
-   ],
-   "controlTries": 2,
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 844,
-   "pages": 6,
-   "pauses": 5,
-   "skipped": 603,
-   "secondOk": 29,
-   "seconds": 1591,
    "success": true
   }
  ]
