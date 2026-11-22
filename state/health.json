@@ -1,7 +1,29 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-22T07:06:10Z",
+ "lastSuccess": "2026-11-22T08:06:15Z",
  "runs": [
+  {
+   "at": "2026-11-22T08:06:15Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 111,
+   "failed": 0,
+   "cells": 3989,
+   "priced": 3987,
+   "changes": 267,
+   "errors": [],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 111,
+   "pages": 3,
+   "secondOk": 4,
+   "seconds": 646,
+   "success": true
+  },
   {
    "at": "2026-11-22T07:06:10Z",
    "egress": "vpn",
@@ -621,33 +643,6 @@
    "secondOk": 22,
    "pauses": 1,
    "seconds": 1599,
-   "success": true
-  },
-  {
-   "at": "2026-11-21T08:06:39Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 267,
-   "failed": 2,
-   "cells": 9205,
-   "priced": 9200,
-   "changes": 4226,
-   "errors": [
-    "HKT-HAN-Y 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-CAN-J 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Guangzhou CAN Filters All"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 863,
-   "pages": 6,
-   "pauses": 1,
-   "skipped": 594,
-   "secondOk": 40,
-   "seconds": 1496,
    "success": true
   }
  ]
