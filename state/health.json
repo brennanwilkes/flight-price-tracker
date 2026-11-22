@@ -1,7 +1,40 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-22T09:05:46Z",
+ "lastSuccess": "2026-11-22T10:06:55Z",
  "runs": [
+  {
+   "at": "2026-11-22T10:06:55Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 70,
+   "failed": 7,
+   "cells": 2196,
+   "priced": 2194,
+   "changes": 47,
+   "errors": [
+    "YVR-SGN-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-BKK-J 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-BKK-J 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-KUL-J 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-KUL-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-BKK-J 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-OSA-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "controlTries": 5,
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 345,
+   "pages": 3,
+   "pauses": 3,
+   "skipped": 268,
+   "secondOk": 11,
+   "seconds": 1291,
+   "success": true
+  },
   {
    "at": "2026-11-22T09:05:46Z",
    "egress": "vpn",
@@ -586,39 +619,6 @@
    "skipped": 334,
    "secondOk": 3,
    "seconds": 1340,
-   "success": true
-  },
-  {
-   "at": "2026-11-21T10:06:10Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 218,
-   "failed": 8,
-   "cells": 7833,
-   "priced": 7826,
-   "changes": 5406,
-   "errors": [
-    "YVR-TPE-Y 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "HAN-SYX-Y 9d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "HAN-SYX-Y 7d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hanoi HAN Sanya SYX · Haikou HAK Filter",
-    "HAN-SYX-Y 11d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hanoi HAN Sanya SYX · Haikou HAK Filter",
-    "TPE-SGN-Y 13d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "SYX-HAN-Y 10d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Sanya SYX · Haikou HAK Hanoi HAN Filter",
-    "SYX-HAN-Y 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "SYX-HAN-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Sanya SYX · Haikou HAK Hanoi HAN Filter"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 746,
-   "pages": 6,
-   "pauses": 2,
-   "skipped": 520,
-   "secondOk": 8,
-   "seconds": 1529,
    "success": true
   }
  ]
