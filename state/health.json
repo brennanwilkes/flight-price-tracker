@@ -1,7 +1,38 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-22T22:06:15Z",
+ "lastSuccess": "2026-11-22T23:06:50Z",
  "runs": [
+  {
+   "at": "2026-11-22T23:06:50Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 119,
+   "failed": 6,
+   "cells": 4796,
+   "priced": 4028,
+   "changes": 1398,
+   "errors": [
+    "YYJ-KUL-Y 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-TYO-J 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "PPS-TPE-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "PQC-SIN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "PUS-ICN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "PUS-MFM-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 364,
+   "pages": 3,
+   "pauses": 2,
+   "skipped": 239,
+   "secondOk": 20,
+   "seconds": 1425,
+   "success": true
+  },
   {
    "at": "2026-11-22T22:06:15Z",
    "egress": "vpn",
@@ -553,27 +584,6 @@
    "pages": 3,
    "secondOk": 25,
    "seconds": 1230,
-   "success": true
-  },
-  {
-   "at": "2026-11-21T23:06:11Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 4,
-   "failed": 0,
-   "cells": 147,
-   "priced": 92,
-   "changes": 57,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 4,
-   "pages": 3,
-   "seconds": 93,
    "success": true
   }
  ]
