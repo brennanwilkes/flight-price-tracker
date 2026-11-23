@@ -1,7 +1,33 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-23T19:07:07Z",
+ "lastSuccess": "2026-11-23T20:07:18Z",
  "runs": [
+  {
+   "at": "2026-11-23T20:07:18Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 309,
+   "failed": 2,
+   "cells": 11704,
+   "priced": 11600,
+   "changes": 6241,
+   "errors": [
+    "YYJ-CEB-Y 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Cebu City CEB Filters All ",
+    "MPH-SGN-Y 11d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 875,
+   "pages": 6,
+   "skipped": 564,
+   "secondOk": 18,
+   "seconds": 1429,
+   "success": true
+  },
   {
    "at": "2026-11-23T19:07:07Z",
    "egress": "vpn",
@@ -613,27 +639,6 @@
    "skipped": 157,
    "secondOk": 5,
    "seconds": 1328,
-   "success": true
-  },
-  {
-   "at": "2026-11-22T20:05:52Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 121,
-   "failed": 0,
-   "cells": 5127,
-   "priced": 5050,
-   "changes": 1485,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 121,
-   "pages": 3,
-   "seconds": 939,
    "success": true
   }
  ]
