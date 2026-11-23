@@ -183,7 +183,11 @@ const hashOf = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) h
     const at0 = stamp();
     for (const k of tieQueue.tried ?? []) checked[k] ??= { price: null, at: at0 };
     const byTie = new Map();
-    for (const t of tieQueue.itins ?? []) { if (checked[t.tie]) continue; if (!byTie.has(t.tie)) byTie.set(t.tie, []); byTie.get(t.tie).push(t); }
+    // Skipped only when checked since this queue was built: the sweep queues a pair that was checked
+    // before when its graph price dropped (build-trips.js `dropped`), and skipping those left 150+ "due
+    // early" pairs searched each run and none booked (7-26 pages a run from 7 pm Vancouver, Nov 22).
+    const builtAt = Date.parse(tieQueue.at ?? '') || 0;
+    for (const t of tieQueue.itins ?? []) { const c = checked[t.tie]; if (c && !(Date.parse(c.at) < builtAt)) continue; if (!byTie.has(t.tie)) byTie.set(t.tie, []); byTie.get(t.tie).push(t); }
     const st = { searched: byTie.size, flown: byTie.size, pages: 0, proven: 0, cheaper: 0, best: null, unpriced: 0, above: 0, ratios: [], bands: {} };
     const list = [...byTie.keys()];
     if (!list.length || Date.now() > end - 60e3) { console.log(`booking runner, unchecked dates: ${list.length} date pairs with flights queued`); return; }
