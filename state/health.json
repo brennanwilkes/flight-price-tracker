@@ -1,7 +1,39 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-23T17:06:44Z",
+ "lastSuccess": "2026-11-23T18:05:51Z",
  "runs": [
+  {
+   "at": "2026-11-23T18:05:51Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 286,
+   "failed": 6,
+   "cells": 11850,
+   "priced": 11665,
+   "changes": 5702,
+   "errors": [
+    "YVR-DAD-J 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Da Nang DAD Filters All ",
+    "DAD-HUI-Y 8d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Hue HUI Filters All filters",
+    "DAD-HUI-Y 9d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Hue HUI Filters All filters",
+    "DAD-HUI-Y 10d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Hue HUI Filters All filters",
+    "DAD-HUI-Y 11d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Hue HUI Filters All filters",
+    "DAD-HUI-Y 12d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Hue HUI Filters All filters"
+   ],
+   "controlTries": 2,
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 723,
+   "pages": 6,
+   "pauses": 4,
+   "skipped": 431,
+   "secondOk": 9,
+   "seconds": 1587,
+   "success": true
+  },
   {
    "at": "2026-11-23T17:06:44Z",
    "egress": "vpn",
@@ -591,36 +623,6 @@
    "due": 125,
    "pages": 3,
    "seconds": 1070,
-   "success": true
-  },
-  {
-   "at": "2026-11-22T18:06:42Z",
-   "egress": "direct",
-   "control": 7,
-   "ok": 287,
-   "failed": 6,
-   "cells": 9923,
-   "priced": 9920,
-   "changes": 833,
-   "errors": [
-    "YVR-TYO-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-CEB-J 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-SGN-Y 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-ICN-Y 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-ICN-Y 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-DAD-Y 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Da Nang DAD Filters All f"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 354,
-   "pages": 3,
-   "skipped": 61,
-   "secondOk": 17,
-   "seconds": 1500,
    "success": true
   }
  ]
