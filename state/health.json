@@ -1,7 +1,38 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-23T10:06:18Z",
+ "lastSuccess": "2026-11-23T11:06:14Z",
  "runs": [
+  {
+   "at": "2026-11-23T11:06:14Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 155,
+   "failed": 6,
+   "cells": 6822,
+   "priced": 6721,
+   "changes": 2614,
+   "errors": [
+    "BJS-OKA-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "BJS-SHA-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "BJS-ICN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "BKK-MPH-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "CAN-BJS-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "BWN-MPH-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Bandar Seri Begawan BWN Caticlan MPH · Kal"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 206,
+   "pages": 3,
+   "pauses": 3,
+   "skipped": 45,
+   "secondOk": 10,
+   "seconds": 1533,
+   "success": true
+  },
   {
    "at": "2026-11-23T10:06:18Z",
    "egress": "vpn",
@@ -582,39 +613,6 @@
    "skipped": 30,
    "secondOk": 19,
    "seconds": 1236,
-   "success": true
-  },
-  {
-   "at": "2026-11-22T11:06:48Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 126,
-   "failed": 8,
-   "cells": 4400,
-   "priced": 4398,
-   "changes": 150,
-   "errors": [
-    "YVR-SHA-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-SHA-J 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-OSA-J 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Osaka KIX ITM Filters Al",
-    "YVR-DPS-J-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Business Vancouver YVR Denpasar DPS Filters All fi",
-    "YVR-BJS-J 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Beijing PEK PKX Filters ",
-    "SGN-YVR-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Ho Chi Minh City SGN Vancouver YVR Filters",
-    "YVR-HAN-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Hanoi HAN Filters All fil",
-    "YVR-SGN-J 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Ho Chi Minh City SGN Fil"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 318,
-   "pages": 3,
-   "pauses": 7,
-   "skipped": 184,
-   "secondOk": 1,
-   "seconds": 1561,
    "success": true
   }
  ]
