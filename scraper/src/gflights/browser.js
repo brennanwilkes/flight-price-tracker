@@ -28,7 +28,9 @@ const MORE_TRIES = 5;
 const MORE_REJECT_MS = 2_000;
 // Per process: "View more flights" replies (ok on the first load, ok after a reload, rejected, no
 // reply in 15 s), reloads made for it, and pages left with the top flights only after reloads.
-const moreTally = { ok: 0, okReload: 0, rejected: 0, failed: 0, reloads: 0, lost: 0 };
+// byTry: replies by load number (ok/rejected per try 1..MORE_TRIES), ms: slot time spent on the
+// "more" step by outcome (telemetry for the ~40% rejected: where the time goes, which try pays).
+const moreTally = { ok: 0, okReload: 0, rejected: 0, failed: 0, reloads: 0, lost: 0, okByTry: [0, 0, 0, 0, 0], rejByTry: [0, 0, 0, 0, 0], msOk: 0, msRejected: 0, msReload: 0 };
 // Google computes uncached graphs on demand: YYJ ones take 2-22s+ where YVR's come back in 0.1s.
 // So wait long for a reply once the request is out, but re-click quickly if none went out.
 const GRAPH_TIMEOUT_MS = 60_000;
@@ -297,18 +299,22 @@ async function shoppingResults(ctx, query, { timeout = 30_000 } = {}) {
     for (let n = 0; n < MORE_TRIES; n++) {
       if (n) {
         moreTally.reloads++;
+        const r0 = Date.now();
         try {
           payloads = await capture(page, 'GetShoppingResults', (p) => [p], go('reloadNav'), `${label} again`,
             SHOP_TRY_MS, REJECT_GRACE_MS, true);
-        } catch { moreTally.lost++; break; } finally { prof.mark('reloadReply'); } // the first load's top flights kept
+        } catch { moreTally.lost++; break; } finally { moreTally.msReload += Date.now() - r0; prof.mark('reloadReply'); } // the first load's top flights kept
       }
       if (!await more.isVisible().catch(() => false)) { if (n) moreTally.lost++; break; }
+      const c0 = Date.now();
       try {
         payloads.push(...await capture(page, 'GetShoppingResults', (p) => [p], () => more.click(), `${label} more`, 15_000, MORE_REJECT_MS));
         moreTally[n ? 'okReload' : 'ok']++;
+        moreTally.okByTry[n]++; moreTally.msOk += Date.now() - c0;
         break;
       } catch (e) {
         moreTally[e instanceof Rejected ? 'rejected' : 'failed']++;
+        if (e instanceof Rejected) { moreTally.rejByTry[n]++; moreTally.msRejected += Date.now() - c0; }
         if (!(e instanceof Rejected)) break; // no reply in 15 s: not waited out again
         if (n === MORE_TRIES - 1) moreTally.lost++;
       } finally { prof.mark('more'); }

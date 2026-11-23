@@ -67,11 +67,21 @@ const pct = (a, q) => (a.length ? `${(a.toSorted((x, y) => x - y)[Math.floor(q *
   // flights were listed before)?
   const all = { pages: 0, rows: 0, empty: 0, emptyHad: 0, errors: 0, ms: [], why: {} };
   let win = { pages: 0, empty: 0, emptyHad: 0, errors: 0, ms: [] };
+  let lastMore = {};
   let sessionPages = 0, sessions = 0, renewing = null, next = 0, started = Date.now();
   const t0 = Date.now();
   const tick = setInterval(() => {
     console.log(`  ${Math.round((Date.now() - t0) / 60e3)} min: ${all.pages} searches (${all.errors} errors); this window: ${win.pages} pages, ${win.empty} listing nothing (${win.emptyHad} of them listed flights before), ${win.errors} errors, page ${pct(win.ms, 0.5)} median, ${pct(win.ms, 0.9)} p90; ${sessions} new sessions`);
     win = { pages: 0, empty: 0, emptyHad: 0, errors: 0, ms: [] };
+    // "View more flights" this window (replies are rejected in clusters, per run not per hour: is it
+    // the pace, a cut-off IP, or a stretch of one kind of search?): tally deltas.
+    b.tally().then((t) => {
+      const m = t?.more; if (!m) return;
+      const d = (k) => (Array.isArray(m[k]) ? m[k].map((v, i) => v - (lastMore[k]?.[i] ?? 0)) : m[k] - (lastMore[k] ?? 0));
+      const w = Object.fromEntries(Object.keys(m).map((k) => [k, d(k)]));
+      console.log(`  more flights this window: ${w.ok + w.okReload} ok, ${w.rejected} rejected (by load ${w.rejByTry.join('/')}; ok by load ${w.okByTry.join('/')}), ${w.lost} lost, ${w.failed} no reply; slot s: ${Math.round(w.msOk / 1e3)} on ok, ${Math.round(w.msRejected / 1e3)} on rejected, ${Math.round(w.msReload / 1e3)} on reloads`);
+      lastMore = JSON.parse(JSON.stringify(m));
+    }).catch(() => {});
     try { save(); } catch (e) { console.log(`  search runner: save failed: ${e.message}`); }
   }, 300e3);
 
