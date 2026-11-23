@@ -63,6 +63,18 @@ test('booking candidates: past the board, other outbounds after the tier\'s own 
   assert.deepStrictEqual(filters.map((t) => t.flights.out.legs.at(-1).code), ['PR318', 'CX865', 'PR300']);
 });
 
+test('booking candidates: an other outbound with a fruitless last page waits for a listed-price move; its own ticket doesn\'t', () => {
+  const other = [leg('PR117', 'YVR', 'MNL', '2027-09-10'), leg('PR300', 'MNL', 'HKG', '2027-09-12')];
+  const q = JSON.stringify({ from: 'YVR', to: 'HKG', out: '2027-09-10', cabin: 'J', ret: '2027-09-25' });
+  const rows = (price) => new Map([[q, [{ price: 4870, legs: OUT }, { price, legs: other }]]]);
+  const altKey = keyOf({ ...ticket, flights: { out: { legs: other }, back: { legs: BACK } } });
+  const map = new Map();
+  map.prev = new Map([[altKey, { price: null, listed: 4870, at: '2026-11-23T10:00:00Z', n: 3 }], [keyOf(ticket), { price: null, listed: 4870, at: '2026-11-23T10:00:00Z', n: 3 }]]);
+  const codes = (r) => bookingCandidates([ticket], (k) => r.get(k) ?? null, map, ['YVR']).map((t) => t.flights.out.legs.at(-1).code);
+  assert.deepStrictEqual(codes(rows(4870)), ['PR318']);
+  assert.deepStrictEqual(codes(rows(4500)), ['PR318', 'PR300']); // listed price moved
+});
+
 test('booking candidates: the board\'s tickets, hops too, before any filter\'s', () => {
   const hop = { kind: 'ow', from: 'HKG', to: 'SGN', date: '2027-09-13', cabin: 'Y', price: 413, flights: { out: { legs: [leg('VN595', 'HKG', 'SGN', '2027-09-13')] } } };
   const band = { ...ticket, price: 3000, flights: { out: { legs: [leg('CX865', 'YVR', 'HKG', '2027-09-10')] }, back: { legs: [leg('CX888', 'HKG', 'YVR', '2027-09-25')] } } };

@@ -147,7 +147,11 @@ function bookingCandidates(tiers, rowsOf, map, homes, now = Date.now()) {
   // Booked within its hours, at the listed price it's queued at: not due. Listed at another price
   // since: due now (a fare moved; a sale shows here first).
   const known = (k, t) => { if (!map.has(k)) return false; const b = map.get(k); return b == null || b.listed == null || near(b.listed, listedOf(t)); };
-  const add = (t) => { if (!t.flights?.out?.legs?.length || (t.ret && !t.flights.back?.legs?.length)) return; const k = keyOf(t); if (!seen.has(k) && !known(k, t)) { seen.add(k); (altsLast && t.alt ? alts : quiet(k, t) ? later : tier).push(t); } };
+  // An other outbound whose last page (map.prev, up to PREV_HOURS) had no seller in its cabin or
+  // lacked the listed offer, listed at the same price since: not asked again until then. Such
+  // retries priced 1 of 249 pages; an own ticket's, ~1 in 5 (4 pm Vancouver, Nov 23).
+  const fruitless = (k, t) => { const p = map.prev?.get(k); return !!p && !p.short && (p.price == null || p.partial) && near(p.listed, listedOf(t)); };
+  const add = (t) => { if (!t.flights?.out?.legs?.length || (t.ret && !t.flights.back?.legs?.length)) return; const k = keyOf(t); if (!seen.has(k) && !known(k, t) && !(t.alt && fruitless(k, t))) { seen.add(k); (altsLast && t.alt ? alts : quiet(k, t) ? later : tier).push(t); } };
   const long = (t) => homes.includes(t.from) || homes.includes(t.to);
   for (const tickets of lists) {
     const ok = tickets.filter((t) => (t.kind === 'rt' || t.kind === 'ow') && CABIN[t.cabin]);
