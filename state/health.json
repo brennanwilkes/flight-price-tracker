@@ -1,7 +1,36 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-23T12:06:02Z",
+ "lastSuccess": "2026-11-23T13:06:51Z",
  "runs": [
+  {
+   "at": "2026-11-23T13:06:51Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 230,
+   "failed": 5,
+   "cells": 9016,
+   "priced": 8948,
+   "changes": 2464,
+   "errors": [
+    "YVR-TPE-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-OSA-J 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Osaka KIX ITM Filters Al",
+    "OSA-SGN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "KHH-HUI-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "CEB-DPS-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 372,
+   "pages": 3,
+   "skipped": 137,
+   "secondOk": 28,
+   "seconds": 1471,
+   "success": true
+  },
   {
    "at": "2026-11-23T12:06:02Z",
    "egress": "vpn",
@@ -595,28 +624,6 @@
    "skipped": 131,
    "secondOk": 16,
    "seconds": 1595,
-   "success": true
-  },
-  {
-   "at": "2026-11-22T13:05:45Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 112,
-   "failed": 0,
-   "cells": 3636,
-   "priced": 3389,
-   "changes": 290,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 112,
-   "pages": 3,
-   "secondOk": 4,
-   "seconds": 733,
    "success": true
   }
  ]
