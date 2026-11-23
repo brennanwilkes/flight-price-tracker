@@ -203,7 +203,7 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gat
   // Telemetry: sellers a page (by count: few looks like the short view), fares without cabins, and
   // why a price came out dearer than listed (mixed: the listed fare is in another cabin; partial:
   // the listed offer isn't on the page at all).
-  const s = { checked: 0, cheaper: 0, dearer: 0, mixed: 0, partial: 0, gone: 0, none: 0, noCabins: 0, short: 0, failed: 0, left: 0, ms: 0, sellers: { '1-5': 0, '6-10': 0, '11+': 0 }, partialBy: {}, again: {}, againHours: [], quietDrop: null, by: {} };
+  const s = { checked: 0, cheaper: 0, dearer: 0, mixed: 0, partial: 0, gone: 0, none: 0, noCabins: 0, short: 0, failed: 0, left: 0, ms: 0, sellers: { '1-5': 0, '6-10': 0, '11+': 0 }, partialBy: {}, retried: {}, again: {}, againHours: [], quietDrop: null, by: {} };
   // Telemetry: the pages a ticket's own flights take beside its other outbounds' (alt), and what
   // each found: an other outbound booked under its ticket's price makes the trip cheaper.
   const by = (t, what) => { const b = (s.by[t.alt ? 'other outbounds' : 'own flights'] ??= { pages: 0 }); b[what] = (b[what] ?? 0) + 1; };
@@ -230,6 +230,10 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gat
       const L = listedOf(t);
       // `guess`: a return guessed, not listed with its outbound (trips/ties.js): no listed price to hold the page to.
       const last = map.get(keyOf(t)) ?? map.prev?.get(keyOf(t));
+      // Telemetry: what a page asked again after a fruitless one finds (Nov 23: ~140 board and
+      // ~1,400 filters pages a run went to these retries; does a retry ever price the ticket?).
+      const retry = last && !last.short ? (last.partial ? 'lacked the offer' : last.price == null ? 'no seller' : null) : null;
+      const tally = (what) => { if (!retry) return; const r = (s.retried[`${retry} last time, ${t.alt ? 'other outbounds' : 'own flights'}`] ??= {}); r[what] = (r[what] ?? 0) + 1; };
       // `hold(t)`: hours for this ticket whatever its page found (the board's groups, BOARD_HOURS):
       // the "no listed offer, price applied" and "no seller in its cabin" pages too (they kept 12 h,
       // a third of YVR business board tickets over 6 h old at a run's start, Nov 19).
@@ -238,6 +242,7 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gat
       if (any && L && !t.guess && any.price > L * LISTED_GONE) {
         s.partial++;
         by(t, 'without the listed offer');
+        tally('lacked it');
         // Telemetry: is it the same tickets every 3 h (times running), a thin page (sellers), and
         // how far over the listed price is the cheapest seller? A ticket whose every page lacks
         // the listed offer never gets a booking price and takes a page every PARTIAL_HOURS.
@@ -268,6 +273,7 @@ async function bookingPass(itins, sellers, map, { until, pages = 4, inCabin, gat
       // every run until BOOKING_HOURS.
       // Without flight lengths (a queue saved before they were kept) every leg had to be in the
       // cabin: not kept then, it's asked again once the queue has them.
+      tally(!best ? 'no seller' : best.price < L ? 'cheaper than listed' : 'priced');
       if (!best) { s.none++; by(t, 'no seller in its cabin'); if (legs.every((l) => Number.isFinite(l?.min))) map.set(keyOf(t), { price: null, seller: null, at: now(), listed: L, byLength: true, ...seen, ...ownHold }); continue; }
       // Against its last check (fresh, or expired and kept in map.prev): did the listed price move,
       // did the booking price? A drop with the listed price unmoved is a sale only a recheck finds.
@@ -372,7 +378,12 @@ function freshLine(tickets, map, homes, now = Date.now()) {
   }).join('; ');
 }
 
-const passLine = (s) => `sellers a page ${s.sellers['1-5']} with 1-5, ${s.sellers['6-10']} with 6-10, ${s.sellers['11+']} with 11+; ${s.partial} without the listed offer (${s.gone ?? 0} of them the ${GONE_PAGES}nd page running or later on the full list: the page's price applied, held ${BOOKING_HOURS} h; the rest held ${PARTIAL_HOURS} h, unapplied${Object.keys(s.partialBy ?? {}).length ? `: ${Object.entries(s.partialBy).sort((a, b) => b[1] - a[1]).map(([w, n]) => `${n} ${w}`).join(', ')}` : ''}),${s.mixed} dearer in the cabin than the listed fare (listed in another cabin), ${s.noCabins} fares without cabins (not counted), ${s.short} checked while the IP got the short list (held ${SHORT_HOURS} h)${againLine(s)}`;
+const passLine = (s) => `sellers a page ${s.sellers['1-5']} with 1-5, ${s.sellers['6-10']} with 6-10, ${s.sellers['11+']} with 11+; ${s.partial} without the listed offer (${s.gone ?? 0} of them the ${GONE_PAGES}nd page running or later on the full list: the page's price applied, held ${BOOKING_HOURS} h; the rest held ${PARTIAL_HOURS} h, unapplied${Object.keys(s.partialBy ?? {}).length ? `: ${Object.entries(s.partialBy).sort((a, b) => b[1] - a[1]).map(([w, n]) => `${n} ${w}`).join(', ')}` : ''}),${s.mixed} dearer in the cabin than the listed fare (listed in another cabin), ${s.noCabins} fares without cabins (not counted), ${s.short} checked while the IP got the short list (held ${SHORT_HOURS} h)${retriedLine(s)}${againLine(s)}`;
+// Pages asked again after a fruitless one (bookingPass s.retried), by what the last found and what this one did.
+const retriedLine = (s) => {
+  const e = Object.entries(s.retried ?? {});
+  return e.length ? `; asked again: ${e.sort().map(([k, r]) => `${k} ${Object.values(r).reduce((a, b) => a + b, 0)} (${Object.entries(r).sort((a, b) => b[1] - a[1]).map(([w, n]) => `${n} ${w}`).join(', ')})`).join('; ')}` : '';
+};
 // Rechecks against their last check (bookingPass s.again): what scheduling by listed-price moves would miss.
 function againLine(s) {
   const n = Object.values(s.again ?? {}).reduce((a, b) => a + b, 0);
