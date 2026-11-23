@@ -1,7 +1,38 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-23T09:05:46Z",
+ "lastSuccess": "2026-11-23T10:06:18Z",
  "runs": [
+  {
+   "at": "2026-11-23T10:06:18Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 212,
+   "failed": 6,
+   "cells": 7233,
+   "priced": 7231,
+   "changes": 1044,
+   "errors": [
+    "YVR-HKG-J 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-TYO-Y 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Tokyo NRT HND Filters All",
+    "YVR-BJS-J 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-OSA-Y 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Osaka KIX ITM Filters All",
+    "YVR-BJS-Y 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Beijing PEK PKX Filters A",
+    "YVR-BJS-Y 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Beijing PEK PKX Filters A"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 237,
+   "pages": 3,
+   "pauses": 3,
+   "skipped": 19,
+   "secondOk": 10,
+   "seconds": 1615,
+   "success": true
+  },
   {
    "at": "2026-11-23T09:05:46Z",
    "egress": "vpn",
@@ -584,39 +615,6 @@
    "skipped": 184,
    "secondOk": 1,
    "seconds": 1561,
-   "success": true
-  },
-  {
-   "at": "2026-11-22T10:06:55Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 70,
-   "failed": 7,
-   "cells": 2196,
-   "priced": 2194,
-   "changes": 47,
-   "errors": [
-    "YVR-SGN-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-BKK-J 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-BKK-J 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-KUL-J 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-KUL-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-BKK-J 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-OSA-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "controlTries": 5,
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 345,
-   "pages": 3,
-   "pauses": 3,
-   "skipped": 268,
-   "secondOk": 11,
-   "seconds": 1291,
    "success": true
   }
  ]
