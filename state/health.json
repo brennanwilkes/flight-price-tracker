@@ -1,7 +1,34 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-23T14:06:38Z",
+ "lastSuccess": "2026-11-23T15:06:56Z",
  "runs": [
+  {
+   "at": "2026-11-23T15:06:56Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 207,
+   "failed": 2,
+   "cells": 7048,
+   "priced": 6795,
+   "changes": 1000,
+   "errors": [
+    "YVR-BJS-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-DAD-Y 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Da Nang DAD Filters All f"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 382,
+   "pages": 3,
+   "pauses": 2,
+   "skipped": 173,
+   "secondOk": 29,
+   "seconds": 1559,
+   "success": true
+  },
   {
    "at": "2026-11-23T14:06:38Z",
    "egress": "vpn",
@@ -597,34 +624,6 @@
    "pauses": 1,
    "secondOk": 13,
    "seconds": 922,
-   "success": true
-  },
-  {
-   "at": "2026-11-22T15:06:16Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 209,
-   "failed": 4,
-   "cells": 7837,
-   "priced": 7704,
-   "changes": 678,
-   "errors": [
-    "YYJ-KUL-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "SGN-SIN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "DLI-HUI-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Da Lat DLI Hue HUI Filters All filters Sto",
-    "SGN-PNH-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 213,
-   "pages": 3,
-   "pauses": 1,
-   "secondOk": 22,
-   "seconds": 1431,
    "success": true
   }
  ]
