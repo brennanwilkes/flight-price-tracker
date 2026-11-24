@@ -149,9 +149,14 @@ const hashOf = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) h
     // first) within each. In queue order alone a run's ~900 pages went to the front of the queue
     // as it came due again (every 3 h where a page lacked the listed offer), and 8,184 of 14,554
     // tickets had no check in 48 h (10:05 pm Vancouver Nov 15) at ~21,000 filter pages a day.
-    const last = (t) => (bookings.has(keyOf(t)) ? '0' : bookings.prev?.get(keyOf(t))?.at ?? '1');
+    // Other outbounds after every own ticket ('a' < 'b'), but for a listed-price move ('0'): this
+    // sort undid bookingCandidates' order (other outbounds last, Nov 18), and they took 861 of 1,984
+    // filters pages for 49 under their ticket's price, own flights 628 of 1,123 below listed (Nov 23).
+    const last = (t) => { const l = bookings.has(keyOf(t)) ? '0' : bookings.prev?.get(keyOf(t))?.at ?? '1'; return l === '0' ? l : `${t.alt ? 'b' : 'a'}${l}`; };
     const ordered = (keep) => all.slice(nBoard).filter((t) => keep(t) && !(bookings.get(keyOf(t))?.at >= started))
       .map((t, i) => [last(t), i, t]).sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : a[1] - b[1])).map((x) => x[2]);
+    // From the tail: the own tickets' end first, other outbounds still last.
+    const fromTail = (l) => { const isAlt = (t) => t.alt && last(t) !== '0'; return [...l.filter((t) => !isAlt(t)).reverse(), ...l.filter(isAlt).reverse()]; };
     const filters = ordered(mine);
     console.log(`booking runner, filters in order, the first 900: ${dueLine(filters.slice(0, 900), bookings)}`);
     // YVR's every 6 h, YYJ's 12 h (bookings.js FILTER_HOURS); the hops as before.
@@ -159,7 +164,7 @@ const hashOf = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) h
     // Time left on a later shard: the first shard's filters from their tail, the end it doesn't
     // reach (it does the unchecked dates too: ~300 of its filters left a run while shard 2 sat
     // idle its last ~5 min, Nov 19 8:05 pm). The two meet near the middle; a ticket both check costs a page.
-    if (shard > 0 && Date.now() < until - 60e3) await pass("filters, the first shard's from its tail", ordered((t) => !mine(t) && hashOf(keyOf(t)) % shards === 0).reverse(), until, FILTER_LISTED_HOURS, boardHold(homes, FILTER_HOURS));
+    if (shard > 0 && Date.now() < until - 60e3) await pass("filters, the first shard's from its tail", fromTail(ordered((t) => !mine(t) && hashOf(keyOf(t)) % shards === 0)), until, FILTER_LISTED_HOURS, boardHold(homes, FILTER_HOURS));
   } finally {
     clearInterval(tick); clearInterval(watch);
     // Where the page slots' time went (page-stats.js lines, then the slot split): pages, waiting on a
