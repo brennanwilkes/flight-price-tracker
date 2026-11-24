@@ -1005,7 +1005,7 @@ async function main() {
       console.log(`search queue: ${list.length} browser searches for the search runner (${wanted.length} left out of time, ${wanted.filter((w) => w.had).length} of them served stale; never searched: ${wanted.filter((w) => !w.had && w.prio < 5 * TRIES).length} for board cells, ${wanted.filter((w) => !w.had && w.prio >= 5 * TRIES && w.prio < FAST_PRIO).length} for via cells, ${wanted.filter((w) => !w.had && w.prio >= FAST_PRIO).length} for long-haul caps)`);
     }
     await warmBooking;
-    if (warm) { console.log(`checks beside the scrape: ${details.searches} searches (${details.browser} in a browser, ${details.failed} failed, ${details.late} left)`); return; }
+    if (warm) { const se = Number(process.env.SCRAPE_UNTIL) * 1000; console.log(`checks beside the scrape: ${details.searches} searches (${details.browser} in a browser, ${details.failed} failed, ${details.late} left); done ${Math.round((Date.now() - t0) / 1000)} s in, ${Math.round((Date.now() - warm) / 1000)} s past their deadline${se ? `, ${Math.round((Date.now() - se) / 1000)} s past the scrape's` : ''}`); return; }
     fs.mkdirSync(path.dirname(checkedFile), { recursive: true });
     fs.writeFileSync(checkedFile, JSON.stringify(checkedLog));
     saveBookings(bookingFile, bookings);
