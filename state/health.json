@@ -1,7 +1,37 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-24T16:06:46Z",
+ "lastSuccess": "2026-11-24T17:06:58Z",
  "runs": [
+  {
+   "at": "2026-11-24T17:06:58Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 182,
+   "failed": 5,
+   "cells": 6985,
+   "priced": 6815,
+   "changes": 2678,
+   "errors": [
+    "TYO-YYJ-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "GUM-YYJ-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Guam GUM Victoria YYJ Filters All filters ",
+    "YYJ-TPE-Y 18d: no Price graph button after 3 loads; page says:  About this page Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen? IP address",
+    "YYJ-OSA-Y 17d: no Price graph button after 3 loads; page says:  About this page Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen? IP address",
+    "YYJ-OSA-Y 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Osaka KIX ITM Filters All "
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 297,
+   "pages": 3,
+   "skipped": 110,
+   "secondOk": 10,
+   "pauses": 1,
+   "seconds": 1458,
+   "success": true
+  },
   {
    "at": "2026-11-24T16:06:46Z",
    "egress": "vpn",
@@ -634,28 +664,6 @@
    "skipped": 431,
    "secondOk": 9,
    "seconds": 1587,
-   "success": true
-  },
-  {
-   "at": "2026-11-23T17:06:44Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 157,
-   "failed": 0,
-   "cells": 6020,
-   "priced": 5724,
-   "changes": 2063,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 157,
-   "pages": 3,
-   "secondOk": 5,
-   "seconds": 713,
    "success": true
   }
  ]
