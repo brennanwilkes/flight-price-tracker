@@ -1,7 +1,32 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-24T15:06:29Z",
+ "lastSuccess": "2026-11-24T16:06:46Z",
  "runs": [
+  {
+   "at": "2026-11-24T16:06:46Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 234,
+   "failed": 1,
+   "cells": 8605,
+   "priced": 8234,
+   "changes": 2207,
+   "errors": [
+    "YYJ-KUL-Y 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Federal Territory of Kuala"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 308,
+   "pages": 3,
+   "skipped": 73,
+   "secondOk": 6,
+   "seconds": 1346,
+   "success": true
+  },
   {
    "at": "2026-11-24T15:06:29Z",
    "egress": "vpn",
@@ -631,29 +656,6 @@
    "pages": 3,
    "secondOk": 5,
    "seconds": 713,
-   "success": true
-  },
-  {
-   "at": "2026-11-23T16:06:21Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 154,
-   "failed": 0,
-   "cells": 6545,
-   "priced": 6405,
-   "changes": 3986,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 254,
-   "pages": 3,
-   "skipped": 100,
-   "secondOk": 7,
-   "seconds": 1276,
    "success": true
   }
  ]
