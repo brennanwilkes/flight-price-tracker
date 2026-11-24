@@ -470,7 +470,7 @@ function breathe() {
 
 async function verify(byHome, trips, { cache, browser, listed, deadline, pages, warm = false }) {
   const t0 = Date.now();
-  const st = { cells: 0, replaced: 0, unresolved: 0, unknown: 0, searches: 0, failed: 0, late: 0, none: 0, stay: 0, detailsMs: 0, standIn: 0, standInNone: 0, standInOver: [] };
+  const st = { cells: 0, cut: 0, replaced: 0, unresolved: 0, unknown: 0, searches: 0, failed: 0, late: 0, none: 0, stay: 0, detailsMs: 0, standIn: 0, standInNone: 0, standInOver: [] };
   const cellsOf = (r, base) => CLASSES.filter((c) => r[c]).flatMap((cls) => [
     { rank: base + (r.top?.[cls] ? 0 : r.city?.[cls] ? 1 : 2), cls, cands: r.cands[cls], cand: r[cls], put: (t) => { r[cls] = t; } },
     ...Object.entries(r.months).filter(([, m]) => m[cls]).map(([month, m]) => {
@@ -533,7 +533,11 @@ async function verify(byHome, trips, { cache, browser, listed, deadline, pages, 
   // check in one go, holding the event loop seconds at a time.
   const queue = cells.slice().sort((a, b) => a.rank - b.rank);
   let next = 0;
+  // Beside the scrape only searches count (its cells aren't kept): past the deadline the walk stops.
+  // Walked on, a plan done late (796 s in) held the scrape step 31 min of 26 and the sweep job past
+  // its 58 (8:05 am Vancouver, Nov 24: 921 s of checks for 6 searches).
   await Promise.all(Array.from({ length: WALKS }, async () => { for (let p; (p = queue[next++]);) {
+    if (warm && Date.now() > deadline) { st.cut++; continue; }
     do {
       await breathe();
       const s = await addDetails([p.cand], cache, browser, listed, deadline, { prio: p.rank * TRIES + p.i, pages });
@@ -755,7 +759,9 @@ async function main() {
       const b = await openBrowserThread({ lean: true });
       try {
         const t1 = Date.now();
-        const r = await searchTies(list, { browser: (q, o) => b.shoppingResults(q, o), until: Date.now() + BOOKING_WARM_MS, bookings, homes });
+        // Done before the scrape's budget (SCRAPE_UNTIL, sweep.yml) ends, however late they start.
+        const scrapeEnd = Number(process.env.SCRAPE_UNTIL) * 1000 || Infinity;
+        const r = await searchTies(list, { browser: (q, o) => b.shoppingResults(q, o), until: Math.min(Date.now() + BOOKING_WARM_MS, scrapeEnd - 90e3), bookings, homes });
         fs.writeFileSync(arg('booking-ties'), JSON.stringify({ at: generatedAt, itins: r.itins.map((t) => ({ ...slim(t), guess: true, tie: t.tie, graph: t.graph })), tried: r.tried }));
         console.log(`unchecked dates beside the scrape: ${list.length} business round trips on the graph not queued, tried in ${TRIED_HOURS} h or proven in ${BOOKING_HOURS} h; ${new Set(r.itins.map((t) => t.tie)).size} with flights both ways (${r.itins.length} itineraries for the booking runner), ${r.tried.length} without; ${Math.round((Date.now() - t1) / 1000)} s`);
       } finally { await b.close(); }
@@ -803,7 +809,7 @@ async function main() {
         for (const [k, price] of session.listed) checkedLog[k] = { price, at: generatedAt, searched: session.listed.at?.get(k) ?? generatedAt };
         session.listed.clear();
         session.listed.at?.clear();
-        console.log(`details round ${details.rounds}: ${s.cells} cells, ${s.replaced} moved to another trip (connects, or cheaper as listed), ${s.unresolved} with none that connects, ${s.unknown} hidden with no flights checked; ${s.searches} searches${s.late ? ` (${s.late} skipped, out of time)` : ''}, ${s.none} flights not listed yet, ${s.stay} trips with a short Hoi An stay; ${moved.length} fares listed at a new price; ${s.ms}ms (checks ${Math.round(s.detailsMs / 1000)} s, event loop delay ${s.lag}, long-haul caps ${Math.round(s.fastMs / 1000)} s, past the search deadline ${Math.round(Math.max(0, Date.now() - session.deadline) / 1000)} s)`);
+        console.log(`details round ${details.rounds}: ${s.cells} cells${s.cut ? ` (${s.cut} not walked, past the deadline)` : ''}, ${s.replaced} moved to another trip (connects, or cheaper as listed), ${s.unresolved} with none that connects, ${s.unknown} hidden with no flights checked; ${s.searches} searches${s.late ? ` (${s.late} skipped, out of time)` : ''}, ${s.none} flights not listed yet, ${s.stay} trips with a short Hoi An stay; ${moved.length} fares listed at a new price; ${s.ms}ms (checks ${Math.round(s.detailsMs / 1000)} s, event loop delay ${s.lag}, long-haul caps ${Math.round(s.fastMs / 1000)} s, past the search deadline ${Math.round(Math.max(0, Date.now() - session.deadline) / 1000)} s)`);
         const over = s.standInOver.toSorted((a, b) => a - b);
         console.log(`details round ${details.rounds}, cells whose best trip's return isn't searched yet: ${s.standIn} show their best proven trip meanwhile${over.length ? ` (over the best's unproven price: ${(100 * over[Math.floor(over.length / 2)]).toFixed(1)}% median, ${(100 * over.at(-1)).toFixed(1)}% most)` : ''}, ${s.standInNone} had one picked that didn't prove; the rest stay hidden (priced as listed: return not searched)`);
         if (warm || !moved.length || details.rounds >= ROUNDS || Date.now() > session.deadline) break;
