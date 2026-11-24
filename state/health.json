@@ -1,7 +1,36 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-24T04:07:25Z",
+ "lastSuccess": "2026-11-24T05:06:38Z",
  "runs": [
+  {
+   "at": "2026-11-24T05:06:38Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 311,
+   "failed": 5,
+   "cells": 10928,
+   "priced": 9641,
+   "changes": 2069,
+   "errors": [
+    "YVR-TPE-J 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-DAD-Y 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-BKK-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-DAD-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Da Nang DAD Filters All f",
+    "CXR-HUI-Y 13d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Nha Trang CXR Hue HUI Filters All filte"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 504,
+   "pages": 6,
+   "skipped": 188,
+   "secondOk": 24,
+   "seconds": 1434,
+   "success": true
+  },
   {
    "at": "2026-11-24T04:07:25Z",
    "egress": "vpn",
@@ -645,29 +674,6 @@
    "pages": 3,
    "secondOk": 2,
    "seconds": 617,
-   "success": true
-  },
-  {
-   "at": "2026-11-23T05:06:28Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 274,
-   "failed": 0,
-   "cells": 9210,
-   "priced": 9207,
-   "changes": 1754,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 313,
-   "pages": 3,
-   "skipped": 39,
-   "secondOk": 4,
-   "seconds": 1278,
    "success": true
   }
  ]
