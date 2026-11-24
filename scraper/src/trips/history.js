@@ -1,7 +1,8 @@
 'use strict';
 /* Price history of the dashboard's cells, for the ▲/▼ vs 24 h and the history page:
  *
- *   derived/history/<YYYY-MM>.csv   generated_at,home,class,in,out,total   (month = generated_at)
+ *   derived/history/<YYYY-MM-DD>.csv   generated_at,home,class,in,out,total   (day = generated_at's;
+ *   <YYYY-MM>.csv a month to Nov 24, 2026)
  *
  * One cell = the cheapest trip for (home, class, board row) over all dates; out holds the row's
  * throw-ins too, "+"-joined after it ("DPS+HAN+SIN", build.js rowId). A row is
@@ -18,12 +19,22 @@ const monthBefore = (ym) => {
   return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`;
 };
 
+// A file a day (<YYYY-MM-DD>.csv) from Nov 24, 2026; a file a month (<YYYY-MM>.csv) before. A
+// month's grew ~4.7 MB a day (Nov 24): December's would pass GitHub's 100 MB file limit by the 20th.
+// In time order: a month's file before its days' (it ends where they start).
+const order = (f) => (f.length === 'YYYY-MM.csv'.length ? `${f.slice(0, 7)}-00` : f);
+function historyFiles(dataDir, fromYm, toDay) {
+  const dir = path.join(dataDir, 'derived', 'history');
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir).filter((f) => /^\d{4}-\d{2}(-\d{2})?\.csv$/.test(f))
+    .filter((f) => f.slice(0, 7) >= fromYm && order(f).slice(0, 10) <= toDay)
+    .sort((a, b) => (order(a) < order(b) ? -1 : 1)).map((f) => path.join(dir, f));
+}
+
 /** Each cell's total as of `at` (ISO), from this month's and last month's files. Map key → total. */
 function valuesAt(dataDir, at) {
   const values = new Map();
-  for (const ym of [monthBefore(at.slice(0, 7)), at.slice(0, 7)]) {
-    const file = path.join(dataDir, 'derived', 'history', `${ym}.csv`);
-    if (!fs.existsSync(file)) continue;
+  for (const file of historyFiles(dataDir, monthBefore(at.slice(0, 7)), at.slice(0, 10))) {
     for (const line of fs.readFileSync(file, 'utf8').trim().split('\n').slice(1)) {
       const [when, home, cls, inn, out, total] = line.split(',');
       if (when > at) break;
@@ -60,7 +71,7 @@ function recordHistory(dataDir, generatedAt, cells) {
   for (const [key, total] of now) if (last.get(key) !== total) rows.push(`${generatedAt},${key},${total}`);
   for (const [key, total] of last) if (total != null && !now.has(key)) rows.push(`${generatedAt},${key},`);
   if (rows.length) {
-    const file = path.join(dataDir, 'derived', 'history', `${generatedAt.slice(0, 7)}.csv`);
+    const file = path.join(dataDir, 'derived', 'history', `${generatedAt.slice(0, 10)}.csv`);
     fs.mkdirSync(path.dirname(file), { recursive: true });
     if (!fs.existsSync(file)) fs.writeFileSync(file, HEADER);
     fs.appendFileSync(file, `${rows.sort().join('\n')}\n`);

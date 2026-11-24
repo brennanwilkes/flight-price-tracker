@@ -1,4 +1,4 @@
-// History tab: the board's top routes over time, from derived/history/<YYYY-MM>.csv (a row whenever
+// History tab: the board's top routes over time, from derived/history/<YYYY-MM[-DD]>.csv (a row whenever
 // a cell's total changes). Business and economy sit an order of magnitude apart, so each class
 // gets its own chart (one axis each); in each, the MAX_SERIES long-haul pairs (in, out) with the
 // lowest prices ever recorded, one line per pair, its rows with throw-ins folded in (the
@@ -11,6 +11,7 @@ import { rowName } from './cities.js';
 
 const CHART_JS = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
 const FIRST_MONTH = '2026-10'; // the first history file
+const FIRST_DAY = '2026-11-24'; // the first day's file (a file a month before)
 const MAX_SERIES = 8; // the categorical palette's size; more lines stop being tellable apart
 const CLASSES = [['hybrid', 'Business'], ['economy', 'Economy']];
 // Fixed y ranges, so the axis holds still as lines are shown and hidden; a price outside runs
@@ -35,9 +36,11 @@ const loadChartJs = () => (chartJs ??= new Promise((ok, fail) => {
 const cache = new Map(); // base → Promise<Map("home,cls,in,out[+set]" → [[ms, total|null]])>
 function loadHistory(base) {
   if (cache.has(base)) return cache.get(base);
-  const months = [];
-  for (let d = new Date(`${FIRST_MONTH}-01T00:00:00Z`); d <= new Date(); d.setUTCMonth(d.getUTCMonth() + 1)) months.push(d.toISOString().slice(0, 7));
-  const p = Promise.all(months.map((m) => fetch(`${base}/derived/history/${m}.csv`, { cache: 'no-cache' }).then((r) => (r.ok ? r.text() : ''), () => ''))).then((texts) => {
+  // A file a month to FIRST_DAY's month, a file a day from FIRST_DAY (scraper/src/trips/history.js).
+  const names = [];
+  for (let d = new Date(`${FIRST_MONTH}-01T00:00:00Z`); d.toISOString().slice(0, 7) <= FIRST_DAY.slice(0, 7); d.setUTCMonth(d.getUTCMonth() + 1)) names.push(d.toISOString().slice(0, 7));
+  for (let d = new Date(`${FIRST_DAY}T00:00:00Z`); d <= new Date(); d.setUTCDate(d.getUTCDate() + 1)) names.push(d.toISOString().slice(0, 10));
+  const p = Promise.all(names.map((m) => fetch(`${base}/derived/history/${m}.csv`, { cache: 'no-cache' }).then((r) => (r.ok ? r.text() : ''), () => ''))).then((texts) => {
     const series = new Map();
     for (const text of texts) {
       for (const line of text.trim().split('\n').slice(1)) {
