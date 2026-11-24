@@ -1,7 +1,34 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-24T02:05:48Z",
+ "lastSuccess": "2026-11-24T03:06:23Z",
  "runs": [
+  {
+   "at": "2026-11-24T03:06:23Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 208,
+   "failed": 3,
+   "cells": 7298,
+   "priced": 6956,
+   "changes": 1856,
+   "errors": [
+    "HUI-CXR-Y 4d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Nha Trang CXR Filters All filte",
+    "HUI-CXR-Y 8d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Nha Trang CXR Filters All filte",
+    "CXR-HUI-Y 6d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Nha Trang CXR Hue HUI Filters All filte"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 382,
+   "pages": 3,
+   "skipped": 171,
+   "secondOk": 15,
+   "seconds": 1435,
+   "success": true
+  },
   {
    "at": "2026-11-24T02:05:48Z",
    "egress": "vpn",
@@ -629,45 +656,6 @@
    ],
    "controlTries": 6,
    "seconds": 1087,
-   "success": false
-  },
-  {
-   "at": "2026-11-23T03:06:12Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 3,
-   "failed": 14,
-   "cells": 141,
-   "priced": 141,
-   "changes": 65,
-   "errors": [
-    "LGK-JOG-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "CNX-SYX-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "REP-CXR-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "PNH-CXR-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "REP-DLI-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-GUM-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-GUM-Y 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-HNL-Y 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-HNL-Y 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-GUM-Y 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-GUM-Y 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-GUM-Y 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-GUM-Y 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-GUM-Y 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 27,
-   "pages": 3,
-   "pauses": 11,
-   "secondOk": 1,
-   "skipped": 10,
-   "seconds": 1603,
    "success": false
   }
  ]
