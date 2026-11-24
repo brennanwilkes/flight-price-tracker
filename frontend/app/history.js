@@ -1,5 +1,6 @@
-// History tab: the board's top routes over time, from derived/history/<YYYY-MM[-DD]>.csv (a row whenever
-// a cell's total changes). Business and economy sit an order of magnitude apart, so each class
+// History tab: the board's top routes over time, from derived/history-days-<HOME>.json (each
+// cell's daily low, from the build's derived/history/*.csv: a row whenever a cell's total changes).
+// Business and economy sit an order of magnitude apart, so each class
 // gets its own chart (one axis each); in each, the MAX_SERIES long-haul pairs (in, out) with the
 // lowest prices ever recorded, one line per pair, its rows with throw-ins folded in (the
 // cheapest at each moment; a price holds until the next change). Drawn one point a day, the
@@ -10,8 +11,6 @@
 import { rowName } from './cities.js';
 
 const CHART_JS = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
-const FIRST_MONTH = '2026-10'; // the first history file
-const FIRST_DAY = '2026-11-24'; // the first day's file (a file a month before)
 const MAX_SERIES = 8; // the categorical palette's size; more lines stop being tellable apart
 const CLASSES = [['hybrid', 'Business'], ['economy', 'Economy']];
 // Fixed y ranges, so the axis holds still as lines are shown and hidden; a price outside runs
@@ -33,96 +32,39 @@ const loadChartJs = () => (chartJs ??= new Promise((ok, fail) => {
   document.head.appendChild(s);
 }));
 
-const cache = new Map(); // base → Promise<Map("home,cls,in,out[+set]" → [[ms, total|null]])>
-function loadHistory(base) {
-  if (cache.has(base)) return cache.get(base);
-  // A file a month to FIRST_DAY's month, a file a day from FIRST_DAY (scraper/src/trips/history.js).
-  const names = [];
-  for (let d = new Date(`${FIRST_MONTH}-01T00:00:00Z`); d.toISOString().slice(0, 7) <= FIRST_DAY.slice(0, 7); d.setUTCMonth(d.getUTCMonth() + 1)) names.push(d.toISOString().slice(0, 7));
-  for (let d = new Date(`${FIRST_DAY}T00:00:00Z`); d <= new Date(); d.setUTCDate(d.getUTCDate() + 1)) names.push(d.toISOString().slice(0, 10));
-  const p = Promise.all(names.map((m) => fetch(`${base}/derived/history/${m}.csv`, { cache: 'no-cache' }).then((r) => (r.ok ? r.text() : ''), () => ''))).then((texts) => {
-    const series = new Map();
-    for (const text of texts) {
-      for (const line of text.trim().split('\n').slice(1)) {
-        const [at, home, cls, inn, out, total] = line.split(',');
-        const key = `${home},${cls},${inn},${out}`;
-        if (!series.has(key)) series.set(key, []);
-        series.get(key).push([Date.parse(at), total === '' ? null : Number(total)]);
-      }
-    }
-    return series;
+// The build's daily lows (derived/history-days-<HOME>.json, scraper/src/trips/history.js
+// writeHistoryDays): "cls,in,out[+set]" → [first day, last day if gone else null, [low|null a day]],
+// days since 1970 in Vancouver (UTC-7). Replaced replaying every history row here (62 MB, Nov 24).
+const VAN_MS = 7 * 3600e3;
+const dayMs = (d) => d * 864e5 + VAN_MS; // that day's Vancouver midnight
+const cache = new Map(); // base|home → Promise<{ keys }>
+function loadHistory(base, home) {
+  const k = `${base}|${home}`;
+  if (cache.has(k)) return cache.get(k);
+  const p = fetch(`${base}/derived/history-days-${home}.json`, { cache: 'no-cache' }).then((r) => {
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
   });
-  cache.set(base, p);
+  p.catch(() => cache.delete(k));
+  cache.set(k, p);
   return p;
 }
 
-/** Every series on one time grid (each change time, then now), value held between changes, so the
- * hover tooltip (index mode) lines all routes up at the same moment. A sweep that didn't build a
- * route's trip records an empty price; the line holds its last price through those (dashed: `held`)
- * and ends only when the route's latest record is empty. */
-function onGrid(list) {
-  const times = [...new Set(list.flatMap((pts) => pts.map(([t]) => t)))].sort((a, b) => a - b);
-  times.push(Date.now());
-  const held = list.map(() => []);
-  const values = list.map((pts, k) => {
-    let i = -1;
-    let last = null;
-    return times.map((t, j) => {
-      while (i + 1 < pts.length && pts[i + 1][0] <= t) last = pts[++i][1] ?? last;
-      held[k][j] = i >= 0 && pts[i][1] == null;
-      return i < 0 || (i === pts.length - 1 && pts[i][1] == null) ? null : last;
-    });
-  });
-  return { times, values, held };
-}
-
-/** Routes' series as one: at each change time the cheapest of those with a live price (a held one,
- * not built that sweep, counts only when all are held: then the line holds, dashed). `who`: time →
- * the route that was cheapest then. */
-function envelope(members) {
-  const { times, values, held } = onGrid(members.map((m) => m.pts));
-  times.pop(); // onGrid's "now"
-  const who = new Map();
-  const pts = times.map((t, j) => {
-    let best = null;
-    for (let k = 0; k < members.length; k++) {
-      const y = values[k][j];
-      if (y != null && !held[k][j] && (best == null || y < values[best][j])) best = k;
+/** A pair's rows (members: { r, s, last, v }) as one value a day over `days`: the cheapest live low
+ * among them, with the row that had it. None live: held at the last low (dashed) while any row
+ * still stands; nothing once every row is gone, or before the first. */
+function pairDays(members, days) {
+  let last = null;
+  return days.map((d) => {
+    let y = null, who = null, standing = false;
+    for (const m of members) {
+      if (d < m.s) continue;
+      const v = m.v[Math.min(d - m.s, m.v.length - 1)];
+      if (v != null) { if (y == null || v < y) { y = v; who = m.r; } continue; }
+      if (m.last == null || d < m.last) standing = true;
     }
-    if (best == null) return [t, null];
-    who.set(t, members[best].r);
-    return [t, values[best][j]];
-  });
-  return { pts, who };
-}
-
-/** Local midnights from the day of `t0` through today. */
-function dayGrid(t0) {
-  const days = [];
-  const d = new Date(t0);
-  d.setHours(0, 0, 0, 0);
-  for (; d.getTime() <= Date.now(); d.setDate(d.getDate() + 1)) days.push(d.getTime());
-  return days;
-}
-
-/** A series (envelope's pts and who) as one value a day: the lowest live price in effect at any
- * time that day, the price carried in from the day before included. A day with none holds the
- * last low (`held`, drawn dashed); before the first record, and after a last record with no price
- * (the route gone), nothing. `who`: the row that had the day's low. */
-function daily(pts, who, days) {
-  let i = 0, cur = null, curWho = null, last = null;
-  return days.map((d, j) => {
-    const end = days[j + 1] ?? Infinity;
-    let low = cur, lowWho = curWho;
-    while (i < pts.length && pts[i][0] < end) {
-      const [t, y] = pts[i++];
-      cur = y; curWho = who.get(t) ?? curWho;
-      if (y != null && (low == null || y < low)) { low = y; lowWho = curWho; }
-    }
-    if (i === 0) return { y: null, held: false, who: null };
-    if (low != null) { last = low; return { y: low, held: false, who: lowWho }; }
-    if (i === pts.length && cur == null) return { y: null, held: false, who: null };
-    return { y: last, held: last != null, who: null };
+    if (y != null) { last = y; return { y, held: false, who }; }
+    return standing && last != null ? { y: last, held: true, who: null } : { y: null, held: false, who: null };
   });
 }
 
@@ -137,7 +79,7 @@ const charts = [];
 export async function renderHistory(el, base, home, view, priority = 'hybrid', live = () => true) {
   el.innerHTML = '<p class="note">Loading…</p>';
   let Chart, series;
-  try { [Chart, series] = await Promise.all([loadChartJs(), loadHistory(base)]); } catch (e) {
+  try { [Chart, series] = await Promise.all([loadChartJs(), loadHistory(base, home).then((h) => Object.entries(h.keys ?? {}))]); } catch (e) {
     if (live()) el.innerHTML = `<p class="note">Couldn't load the history: ${esc(e.message)}</p>`;
     return;
   }
@@ -149,14 +91,15 @@ export async function renderHistory(el, base, home, view, priority = 'hybrid', l
     // the one in the via view (seen: a route's overall $6,440 beside its via cell's other price).
     const overall = new Map((view.main ?? []).map((r) => [routeOf(r), r[cls]]));
     const same = (route) => !view.via || overall.get(route)?.total === shown.get(route)?.total;
-    const routes = [...series].flatMap(([key, pts]) => {
-      const [h, c, inn, ends] = key.split(',');
+    const routes = series.flatMap(([key, [s, last, v]]) => {
+      const [c, inn, ends] = key.split(',');
+      if (c !== cls) return [];
       const route = `${inn},${ends}`;
       const [out, ...set] = ends.split('+');
-      const low = Math.min(...pts.map(([, y]) => y ?? Infinity));
-      if (h !== home || c !== cls || low === Infinity) return [];
+      const low = Math.min(...v.map((y) => y ?? Infinity));
+      if (low === Infinity) return [];
       if ((onBoard.has(route) || view.via) && (!shown.get(route) || !same(route))) return [];
-      return [{ r: { in: inn, out, set: set.join('+') }, trip: shown.get(route), pts, low }];
+      return [{ r: { in: inn, out, set: set.join('+') }, trip: shown.get(route), s, last, v, low }];
     });
     // One line per long-haul pair (in, out), its throw-in rows folded in: the cheapest of them at
     // each moment. Otherwise one headline pair filled the chart with its throw-in combinations.
@@ -169,8 +112,7 @@ export async function renderHistory(el, base, home, view, priority = 'hybrid', l
       p.low = Math.min(p.low, x.low);
       if (x.trip && (!p.trip || x.trip.total < p.trip.total)) { p.trip = x.trip; p.tripOf = x.r; }
     }
-    const top = [...pairs.values()].sort((a, b) => a.low - b.low).slice(0, MAX_SERIES)
-      .map((p) => ({ ...p, ...envelope(p.members) }));
+    const top = [...pairs.values()].sort((a, b) => a.low - b.low).slice(0, MAX_SERIES);
     return { cls, name, top };
   });
   el.innerHTML = picks.map(({ cls, name, top }) => `
@@ -188,8 +130,11 @@ export async function renderHistory(el, base, home, view, priority = 'hybrid', l
   for (const { cls, top } of picks) {
     const canvas = el.querySelector(`canvas[data-cls="${cls}"]`);
     if (!canvas) continue;
-    const times = dayGrid(Math.min(...top.map((x) => x.pts[0]?.[0] ?? Date.now())));
-    const days = top.map(({ pts, who }) => daily(pts, who, times));
+    const d0 = Math.min(...top.flatMap((x) => x.members.map((m) => m.s)));
+    const d1 = Math.max(...top.flatMap((x) => x.members.map((m) => m.s + m.v.length - 1)));
+    const grid = Array.from({ length: Math.max(1, d1 - d0 + 1) }, (_, j) => d0 + j);
+    const times = grid.map(dayMs);
+    const days = top.map(({ members }) => pairDays(members, grid));
     const [lo, hi] = RANGE[cls];
     const clip = (y) => (y == null ? null : Math.min(hi, Math.max(lo, y)));
     const chart = new Chart(canvas, {

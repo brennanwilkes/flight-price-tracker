@@ -60,7 +60,7 @@ const { loadFares, bundleOf, fareOf, fareKey } = require('../src/trips/fares');
 const { graphTickets, searchTies, TRIED_HOURS } = require('../src/trips/ties');
 const { similarCount, scoreOf, rowId, bandOf } = require('../../frontend/app/build.js');
 const { CITIES, airportsOf, isPacific } = require('../../frontend/app/cities.js');
-const { recordHistory, valuesAt, keyOf } = require('../src/trips/history');
+const { recordHistory, valuesAt, keyOf, writeHistoryDays } = require('../src/trips/history');
 const { viewOf, addDetails, returnsDone, returnsFor, returnsReady, searched, capped, longestOf, listedOnly, unlistedWhy, useBookings } = require('../src/trips/details');
 const { loadBookings, saveBookings, applyBookings, stripBookings, bookingCandidates, bookingPass, passLine, listedOf, keyOf: bookingKey, boardHold, BOOKING_HOURS } = require('../src/trips/bookings');
 const { inCabin, bookingUrl, canary } = require('../src/gflights/booking');
@@ -1122,6 +1122,7 @@ async function main() {
     console.log(`${home}: ${rows.length} rows${top ? `, best hybrid ${rowId(rows[0])} ${top.total} (${top.depart}…${top.ret})` : ''}`);
   }
   const changed = recordHistory(dataDir, generatedAt, cells);
+  try { writeHistoryDays(dataDir, homes, generatedAt); } catch (e) { console.log(`history days: not written (${e.message})`); }
   fs.writeFileSync(path.join(dataDir, 'derived', 'fares.json'), JSON.stringify({ ...bundleOf(fares), tiers: alertConfig.tiers }));
   fs.writeFileSync(path.join(dataDir, 'derived', 'status.json'), JSON.stringify({ generatedAt, details, frontier: fares.departures.at(-1) ?? null, routes: freshness(dataDir), alerts: alertConfig }));
   console.log(`built ${trips.length} trips, ${changed} cells changed, from ${fares.departures.length} departure days in ${Date.now() - t0}ms`);

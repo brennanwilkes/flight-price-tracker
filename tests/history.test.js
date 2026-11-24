@@ -4,7 +4,20 @@ const assert = require('node:assert');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { recordHistory, valuesAt } = require('../scraper/src/trips/history');
+const { recordHistory, valuesAt, writeHistoryDays } = require('../scraper/src/trips/history');
+
+test('history days: each Vancouver day\'s low, the carried-in total counted; a gone cell\'s last day', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hist-'));
+  const c = (out, total) => ({ home: 'YVR', cls: 'hybrid', in: 'ICN', out, total });
+  recordHistory(dir, '2026-11-24T08:00:00Z', [c('DAD', 4000), c('HAN', 5000)]); // Nov 24, 1 am Vancouver
+  recordHistory(dir, '2026-11-24T20:00:00Z', [c('DAD', 4200), c('HAN', 5000)]);
+  recordHistory(dir, '2026-11-25T10:00:00Z', [c('DAD', 4100)]); // HAN gone
+  writeHistoryDays(dir, ['YVR'], '2026-11-26T10:00:00Z');
+  const { keys } = JSON.parse(fs.readFileSync(path.join(dir, 'derived/history-days-YVR.json'), 'utf8'));
+  const d = Math.floor((Date.parse('2026-11-24T08:00:00Z') - 7 * 3600e3) / 864e5);
+  assert.deepStrictEqual(keys['hybrid,ICN,DAD'], [d, null, [4000, 4100, 4100]]); // Nov 25: 4,200 carried in, 4,100 low
+  assert.deepStrictEqual(keys['hybrid,ICN,HAN'], [d, d + 1, [5000, 5000, null]]);
+});
 
 test('history: rows only on change, gone cells recorded empty, replays to any time', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hist-'));

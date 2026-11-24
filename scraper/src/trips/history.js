@@ -79,4 +79,42 @@ function recordHistory(dataDir, generatedAt, cells) {
   return rows.length;
 }
 
-module.exports = { recordHistory, valuesAt, lowestEver, keyOf };
+/**
+ * The History tab's file (derived/history-days-<HOME>.json): each cell's lowest live total each
+ * Vancouver day (UTC-7), the total carried in at midnight counted; it fetched and replayed every
+ * row (62 MB, 1.3M lines on Nov 24) in the phone to draw one point a day. Per home:
+ * { keys: { "cls,in,out[+set]": [first day, last day if gone else null, [low|null a day]] } }, a day
+ * being days since 1970-01-01 in Vancouver; null: no live price all day (held, or gone after `last`).
+ */
+const VAN_MS = 7 * 3600e3;
+const dayOf = (iso) => Math.floor((Date.parse(iso) - VAN_MS) / 864e5);
+function writeHistoryDays(dataDir, homes, generatedAt) {
+  const today = dayOf(generatedAt);
+  const by = new Map(homes.map((h) => [h, {}]));
+  for (const file of historyFiles(dataDir, '0000-00', '9999-99-99')) {
+    for (const line of fs.readFileSync(file, 'utf8').trim().split('\n').slice(1)) {
+      const [when, home, cls, inn, out, total] = line.split(',');
+      const keys = by.get(home);
+      if (!keys) continue;
+      const d = dayOf(when);
+      const y = total === '' ? null : Number(total);
+      const k = `${cls},${inn},${out}`;
+      const st = (keys[k] ??= { s: d, day: d, cur: null, v: [null] });
+      for (; st.day < d; st.day++) st.v.push(st.cur); // days carried through, then this one's carried-in
+      st.cur = y;
+      st.at = d;
+      const i = d - st.s;
+      if (y != null && (st.v[i] == null || y < st.v[i])) st.v[i] = y;
+    }
+  }
+  for (const [home, keys] of by) {
+    const out = {};
+    for (const [k, st] of Object.entries(keys)) {
+      for (; st.day < today; st.day++) st.v.push(st.cur);
+      out[k] = [st.s, st.cur == null ? st.at : null, st.v];
+    }
+    fs.writeFileSync(path.join(dataDir, 'derived', `history-days-${home}.json`), JSON.stringify({ generatedAt, keys: out }));
+  }
+}
+
+module.exports = { recordHistory, valuesAt, lowestEver, keyOf, writeHistoryDays };
