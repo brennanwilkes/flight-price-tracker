@@ -352,7 +352,10 @@ function dropUnlisted(byHome) {
   // ids: each hidden cell (view, row, holder, class, cap) → its `where`, to tell from build to
   // build how long a cell stays hidden (main: hidden cells by time hidden).
   const ids = new Map();
-  const hid = (view, kind, id) => { const w = `${view.endsWith('|') ? 'board' : 'via'} ${kind}`; where[w] = (where[w] ?? 0) + 1; ids.set(id, w); };
+  // sigs: each hidden cell's trip (its tickets' fares), to tell a cell hidden on the same trip next
+  // build (its return search not made) from one that moved to another (main).
+  const sigs = new Map();
+  const hid = (view, kind, id, t) => { const w = `${view.endsWith('|') ? 'board' : 'via'} ${kind}`; where[w] = (where[w] ?? 0) + 1; ids.set(id, w); try { sigs.set(id, t.tickets.map(fareKey).join(',')); } catch {} };
   for (const [view, rows] of byHome) {
     for (const r of rows) {
       const months = Object.entries(r.months ?? {});
@@ -362,13 +365,13 @@ function dropUnlisted(byHome) {
           const c = h[cls];
           if (!c) continue;
           const id = `${view}#${r.in}-${r.out}#${r.set ?? ''}#${name}#${cls}`;
-          if (!ok(c)) { h[cls] = null; hid(view, !i ? 'overall' : i <= months.length ? 'month' : 'length', id); continue; }
-          for (const [k, t] of Object.entries(c.fast ?? {})) if (t && !ok(t)) { c.fast[k] = null; hid(view, 'long-haul cap', `${id}#${k}`); }
+          if (!ok(c)) { h[cls] = null; hid(view, !i ? 'overall' : i <= months.length ? 'month' : 'length', id, c); continue; }
+          for (const [k, t] of Object.entries(c.fast ?? {})) if (t && !ok(t)) { c.fast[k] = null; hid(view, 'long-haul cap', `${id}#${k}`, t); }
         }
       }
     }
   }
-  return { dropped, why, where, ids };
+  return { dropped, why, where, ids, sigs };
 }
 
 function arg(name, def) {
@@ -712,7 +715,7 @@ async function main() {
       const last = JSON.parse(fs.readFileSync(arg('runner-queue'), 'utf8'));
       const head = (last.searches ?? []).slice(0, RUNNER_REACH);
       searches.cache.runnerKeys = new Set(head.flatMap((s) => s.keys));
-      searches.last = { head, used: last.used ?? null, hidden: last.hidden ?? null, all: last.searches ?? [], at: last.at ?? null };
+      searches.last = { head, used: last.used ?? null, hidden: last.hidden ?? null, hiddenSigs: last.hiddenSigs ?? null, all: last.searches ?? [], at: last.at ?? null };
       console.log(`search runner's queue: ${head.length} searches left to it`);
     } catch (e) { console.log(`search runner's queue unread: ${e.message}`); }
   }
@@ -1046,11 +1049,22 @@ async function main() {
       const fmt = (o) => Object.entries(o).map(([k, n]) => `${k} ${n}`).join(', ') || 'none';
       console.log(`hidden cells by time hidden: ${Object.entries(by).map(([w, o]) => `${w}: ${fmt(o)}`).join('; ') || 'none'}; no longer hidden since the last build ${shown.length} (after ${fmt(shownAfter)})`);
       for (const [h, id] of stuck.sort((a, b) => b[0] - a[0]).slice(0, 6)) console.log(`  hidden ${Math.round(h)} h: ${id}`);
+      // Hidden last build too: on the same trip (its return search still not made: the runner short or
+      // refused) or another (the plan moved it: churn, a new return to search), by where.
       const file = JSON.parse(fs.readFileSync(arg('search-queue'), 'utf8'));
-      fs.writeFileSync(arg('search-queue'), JSON.stringify({ ...file, hidden }));
+      const wasSig = searches.last?.hiddenSigs ?? {}; // the file is this build's queue by now
+      const again = {};
+      for (const [id, w] of unlisted.ids) {
+        if (!(id in was) || !(id in wasSig)) continue;
+        const k = wasSig[id] === unlisted.sigs.get(id) ? 'same trip' : 'another trip';
+        ((again[w] ??= {})[k] = (again[w][k] ?? 0) + 1);
+      }
+      console.log(`hidden cells hidden last build too: ${Object.entries(again).map(([w, o]) => `${w}: ${fmt(o)}`).join('; ') || 'none (or no trips recorded last build)'}`);
+      fs.writeFileSync(arg('search-queue'), JSON.stringify({ ...file, hidden, hiddenSigs: Object.fromEntries(unlisted.sigs) }));
     } catch (e) { console.log(`hidden cells by time hidden: not worked out (${e.message})`); }
   }
   delete unlisted.ids;
+  delete unlisted.sigs;
   if (details) details.unlisted = unlisted;
   // Stay ranges on every shown trip; lowest-ever marks.
   for (const rows of byHome.values()) {
