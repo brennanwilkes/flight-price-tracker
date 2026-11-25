@@ -1,7 +1,33 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-24T23:06:50Z",
+ "lastSuccess": "2026-11-25T00:06:21Z",
  "runs": [
+  {
+   "at": "2026-11-25T00:06:21Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 116,
+   "failed": 2,
+   "cells": 5197,
+   "priced": 3780,
+   "changes": 3403,
+   "errors": [
+    "HUI-HKT-Y 13d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "SHA-HKT-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 316,
+   "pages": 3,
+   "skipped": 198,
+   "secondOk": 17,
+   "seconds": 1396,
+   "success": true
+  },
   {
    "at": "2026-11-24T23:06:50Z",
    "egress": "vpn",
@@ -606,38 +632,6 @@
    "skipped": 192,
    "secondOk": 6,
    "seconds": 1264,
-   "success": true
-  },
-  {
-   "at": "2026-11-24T00:06:11Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 255,
-   "failed": 6,
-   "cells": 9340,
-   "priced": 8490,
-   "changes": 3570,
-   "errors": [
-    "HUI-SYX-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Hue HUI Sanya SYX · Haikou HAK Filters All",
-    "PQC-HUI-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Phú Quốc PQC Hue HUI Filters All filters S",
-    "DAD-SYX-Y 3d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Sanya SYX · Haikou HAK Filt",
-    "DAD-SYX-Y 6d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Sanya SYX · Haikou HAK Filt",
-    "DAD-SYX-Y 8d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Sanya SYX · Haikou HAK Filt",
-    "DAD-SYX-Y 10d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Sanya SYX · Haikou HAK Filt"
-   ],
-   "controlTries": 2,
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 438,
-   "pages": 6,
-   "pauses": 2,
-   "skipped": 177,
-   "secondOk": 23,
-   "seconds": 1528,
    "success": true
   }
  ]
