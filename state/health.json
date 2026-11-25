@@ -1,7 +1,37 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-25T17:06:42Z",
+ "lastSuccess": "2026-11-25T18:07:21Z",
  "runs": [
+  {
+   "at": "2026-11-25T18:07:21Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 96,
+   "failed": 4,
+   "cells": 4075,
+   "priced": 3643,
+   "changes": 2476,
+   "errors": [
+    "YYJ-HAN-J 18d: no Price graph button after 3 loads; page says:  About this page Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen? IP address",
+    "YVR-TYO-Y 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "SGN-HAN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-DPS-Y 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "controlTries": 2,
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 1185,
+   "pages": 6,
+   "pauses": 2,
+   "skipped": 1085,
+   "secondOk": 25,
+   "seconds": 1567,
+   "success": true
+  },
   {
    "at": "2026-11-25T17:06:42Z",
    "egress": "vpn",
@@ -586,29 +616,6 @@
    "skipped": 83,
    "secondOk": 14,
    "seconds": 1305,
-   "success": true
-  },
-  {
-   "at": "2026-11-24T18:06:05Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 106,
-   "failed": 0,
-   "cells": 4343,
-   "priced": 4187,
-   "changes": 2662,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 125,
-   "pages": 3,
-   "skipped": 19,
-   "secondOk": 15,
-   "seconds": 1443,
    "success": true
   }
  ]
