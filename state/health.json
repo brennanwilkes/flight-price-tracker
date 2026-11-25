@@ -1,7 +1,35 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-25T01:06:31Z",
+ "lastSuccess": "2026-11-25T02:06:17Z",
  "runs": [
+  {
+   "at": "2026-11-25T02:06:17Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 174,
+   "failed": 3,
+   "cells": 7838,
+   "priced": 7395,
+   "changes": 6162,
+   "errors": [
+    "OSA-YYJ-J-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Business Osaka KIX ITM Victoria YYJ Filters All fi",
+    "YYJ-BJS-J 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Beijing PEK PKX Filters A",
+    "YYJ-JKT-Y 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 694,
+   "pages": 6,
+   "pauses": 3,
+   "skipped": 517,
+   "secondOk": 5,
+   "seconds": 1591,
+   "success": true
+  },
   {
    "at": "2026-11-25T01:06:31Z",
    "egress": "vpn",
@@ -609,29 +637,6 @@
    "skipped": 171,
    "secondOk": 15,
    "seconds": 1435,
-   "success": true
-  },
-  {
-   "at": "2026-11-24T02:05:48Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 223,
-   "failed": 0,
-   "cells": 8078,
-   "priced": 7736,
-   "changes": 3235,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 317,
-   "pages": 3,
-   "skipped": 94,
-   "secondOk": 1,
-   "seconds": 1297,
    "success": true
   }
  ]
