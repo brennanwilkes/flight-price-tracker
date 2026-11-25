@@ -1,7 +1,34 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-25T00:06:21Z",
+ "lastSuccess": "2026-11-25T01:06:31Z",
  "runs": [
+  {
+   "at": "2026-11-25T01:06:31Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 263,
+   "failed": 2,
+   "cells": 9439,
+   "priced": 9433,
+   "changes": 1232,
+   "errors": [
+    "YVR-DAD-J 15d: no Price graph button after 3 loads; page says:  About this page Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen? IP address",
+    "YYJ-OSA-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 914,
+   "pages": 6,
+   "pauses": 2,
+   "skipped": 649,
+   "secondOk": 24,
+   "seconds": 1526,
+   "success": true
+  },
   {
    "at": "2026-11-25T00:06:21Z",
    "egress": "vpn",
@@ -605,33 +632,6 @@
    "skipped": 94,
    "secondOk": 1,
    "seconds": 1297,
-   "success": true
-  },
-  {
-   "at": "2026-11-24T01:06:15Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 142,
-   "failed": 3,
-   "cells": 5461,
-   "priced": 4855,
-   "changes": 3983,
-   "errors": [
-    "DAD-SYX-Y 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "SYX-DAD-Y 7d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "HUI-PQC-Y 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 337,
-   "pages": 3,
-   "skipped": 192,
-   "secondOk": 6,
-   "seconds": 1264,
    "success": true
   }
  ]
