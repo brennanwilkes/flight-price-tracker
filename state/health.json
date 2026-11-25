@@ -1,7 +1,34 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-25T06:06:08Z",
+ "lastSuccess": "2026-11-25T07:06:30Z",
  "runs": [
+  {
+   "at": "2026-11-25T07:06:30Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 288,
+   "failed": 2,
+   "cells": 10669,
+   "priced": 10612,
+   "changes": 2364,
+   "errors": [
+    "HAN-BJS-Y 12d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "HAN-BJS-Y 7d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hanoi HAN Beijing PEK PKX Filters All f"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 709,
+   "pages": 6,
+   "pauses": 1,
+   "skipped": 419,
+   "secondOk": 18,
+   "seconds": 1485,
+   "success": true
+  },
   {
    "at": "2026-11-25T06:06:08Z",
    "egress": "vpn",
@@ -582,35 +609,6 @@
    "pauses": 2,
    "secondOk": 10,
    "seconds": 1156,
-   "success": true
-  },
-  {
-   "at": "2026-11-24T07:08:26Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 155,
-   "failed": 3,
-   "cells": 5621,
-   "priced": 5618,
-   "changes": 911,
-   "errors": [
-    "YVR-HAN-J 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-TYO-J 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Tokyo NRT HND Filters Al",
-    "YVR-OSA-J 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "controlTries": 3,
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 228,
-   "pages": 3,
-   "pauses": 5,
-   "skipped": 70,
-   "secondOk": 32,
-   "seconds": 1442,
    "success": true
   }
  ]
