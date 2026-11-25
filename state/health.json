@@ -1,7 +1,40 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-25T19:05:49Z",
+ "lastSuccess": "2026-11-25T20:06:35Z",
  "runs": [
+  {
+   "at": "2026-11-25T20:06:35Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 300,
+   "failed": 8,
+   "cells": 11355,
+   "priced": 11309,
+   "changes": 3152,
+   "errors": [
+    "YYJ-SHA-J 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Shanghai PVG SHA Filters ",
+    "YYJ-BJS-J 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Beijing PEK PKX Filters A",
+    "YYJ-BJS-J 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Beijing PEK PKX Filters A",
+    "YYJ-SHA-J 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Shanghai PVG SHA Filters ",
+    "YYJ-CAN-J 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Guangzhou CAN Filters All",
+    "YYJ-CAN-J 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Guangzhou CAN Filters All",
+    "YYJ-CAN-J 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Guangzhou CAN Filters All",
+    "YYJ-JKT-J 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Jakarta CGK Filters All f"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 1405,
+   "pages": 6,
+   "pauses": 4,
+   "skipped": 1097,
+   "secondOk": 3,
+   "seconds": 1470,
+   "success": true
+  },
   {
    "at": "2026-11-25T19:05:49Z",
    "egress": "vpn",
@@ -595,28 +628,6 @@
    "pages": 3,
    "secondOk": 3,
    "seconds": 870,
-   "success": true
-  },
-  {
-   "at": "2026-11-24T20:06:37Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 140,
-   "failed": 0,
-   "cells": 6082,
-   "priced": 4858,
-   "changes": 4250,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 140,
-   "pages": 3,
-   "secondOk": 2,
-   "seconds": 908,
    "success": true
   }
  ]
