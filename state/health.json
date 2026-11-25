@@ -1,7 +1,37 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-25T09:05:49Z",
+ "lastSuccess": "2026-11-25T10:07:07Z",
  "runs": [
+  {
+   "at": "2026-11-25T10:07:07Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 266,
+   "failed": 5,
+   "cells": 9903,
+   "priced": 9846,
+   "changes": 2281,
+   "errors": [
+    "YVR-SHA-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-DPS-Y 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-DPS-J 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "CXR-HAN-Y 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-DAD-J 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Da Nang DAD Filters All "
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 734,
+   "pages": 6,
+   "pauses": 4,
+   "skipped": 463,
+   "secondOk": 47,
+   "seconds": 1400,
+   "success": true
+  },
   {
    "at": "2026-11-25T09:05:49Z",
    "egress": "vpn",
@@ -582,36 +612,6 @@
    "skipped": 9,
    "secondOk": 16,
    "seconds": 1545,
-   "success": true
-  },
-  {
-   "at": "2026-11-24T10:07:02Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 216,
-   "failed": 5,
-   "cells": 7831,
-   "priced": 6979,
-   "changes": 1476,
-   "errors": [
-    "HUI-KUL-Y 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Federal Territory of Kuala Lump",
-    "KUL-HUI-Y 9d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Federal Territory of Kuala Lumpur KUL H",
-    "KUL-HUI-Y 10d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Federal Territory of Kuala Lumpur KUL H",
-    "KUL-HUI-Y 13d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Federal Territory of Kuala Lumpur KUL H",
-    "KUL-HUI-Y 12d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Federal Territory of Kuala Lumpur KUL H"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 256,
-   "pages": 3,
-   "pauses": 2,
-   "skipped": 35,
-   "secondOk": 15,
-   "seconds": 1577,
    "success": true
   }
  ]
