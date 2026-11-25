@@ -1,7 +1,36 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-25T02:06:17Z",
+ "lastSuccess": "2026-11-25T04:09:22Z",
  "runs": [
+  {
+   "at": "2026-11-25T04:09:22Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 284,
+   "failed": 4,
+   "cells": 10613,
+   "priced": 10459,
+   "changes": 2626,
+   "errors": [
+    "HKT-HUI-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Phuket HKT Hue HUI Filters All filters Sto",
+    "HUI-HKT-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Hue HUI Phuket HKT Filters All filters Sto",
+    "HUI-PQC-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Hue HUI Phú Quốc PQC Filters All filters S",
+    "GUM-YYJ-J-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Business Guam GUM Victoria YYJ Filters All filters"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 961,
+   "pages": 6,
+   "pauses": 2,
+   "skipped": 673,
+   "secondOk": 37,
+   "seconds": 1418,
+   "success": true
+  },
   {
    "at": "2026-11-25T02:06:17Z",
    "egress": "vpn",
@@ -582,61 +611,6 @@
    "skipped": 188,
    "secondOk": 24,
    "seconds": 1434,
-   "success": true
-  },
-  {
-   "at": "2026-11-24T04:07:25Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 97,
-   "failed": 3,
-   "cells": 3454,
-   "priced": 3453,
-   "changes": 1270,
-   "errors": [
-    "YVR-DPS-J 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-OSA-Y 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-DPS-J 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 361,
-   "pages": 3,
-   "pauses": 7,
-   "skipped": 261,
-   "secondOk": 31,
-   "seconds": 1457,
-   "success": true
-  },
-  {
-   "at": "2026-11-24T03:06:23Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 208,
-   "failed": 3,
-   "cells": 7298,
-   "priced": 6956,
-   "changes": 1856,
-   "errors": [
-    "HUI-CXR-Y 4d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Nha Trang CXR Filters All filte",
-    "HUI-CXR-Y 8d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Nha Trang CXR Filters All filte",
-    "CXR-HUI-Y 6d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Nha Trang CXR Hue HUI Filters All filte"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 382,
-   "pages": 3,
-   "skipped": 171,
-   "secondOk": 15,
-   "seconds": 1435,
    "success": true
   }
  ]
