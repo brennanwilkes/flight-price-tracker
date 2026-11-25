@@ -1,7 +1,33 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-25T21:06:10Z",
+ "lastSuccess": "2026-11-25T22:06:38Z",
  "runs": [
+  {
+   "at": "2026-11-25T22:06:38Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 323,
+   "failed": 2,
+   "cells": 13704,
+   "priced": 13602,
+   "changes": 13265,
+   "errors": [
+    "YYJ-ICN-J 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Seoul ICN Filters All fil",
+    "YYJ-ICN-J 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Seoul ICN Filters All fil"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 1192,
+   "pages": 6,
+   "skipped": 867,
+   "secondOk": 1,
+   "seconds": 1442,
+   "success": true
+  },
   {
    "at": "2026-11-25T21:06:10Z",
    "egress": "vpn",
@@ -605,30 +631,6 @@
    "skipped": 86,
    "secondOk": 7,
    "seconds": 1280,
-   "success": true
-  },
-  {
-   "at": "2026-11-24T22:07:13Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 372,
-   "failed": 0,
-   "cells": 13913,
-   "priced": 13837,
-   "changes": 3784,
-   "errors": [],
-   "controlTries": 2,
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 465,
-   "pages": 6,
-   "skipped": 93,
-   "secondOk": 9,
-   "seconds": 1355,
    "success": true
   }
  ]
