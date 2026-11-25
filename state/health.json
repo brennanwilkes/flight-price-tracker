@@ -1,7 +1,40 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-25T15:06:24Z",
+ "lastSuccess": "2026-11-25T17:06:42Z",
  "runs": [
+  {
+   "at": "2026-11-25T17:06:42Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 275,
+   "failed": 8,
+   "cells": 10157,
+   "priced": 10155,
+   "changes": 1937,
+   "errors": [
+    "YVR-SIN-J 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-BKK-J 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-OSA-J 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-BKK-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-HAN-J 20d: no Price graph button after 3 loads; page says:  About this page Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen? IP address",
+    "YVR-CAN-Y 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-BJS-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-DAD-J 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Da Nang DAD Filters All f"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 1148,
+   "pages": 6,
+   "pauses": 5,
+   "skipped": 865,
+   "secondOk": 15,
+   "seconds": 1616,
+   "success": true
+  },
   {
    "at": "2026-11-25T15:06:24Z",
    "egress": "vpn",
@@ -576,61 +609,6 @@
    "skipped": 19,
    "secondOk": 15,
    "seconds": 1443,
-   "success": true
-  },
-  {
-   "at": "2026-11-24T17:06:58Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 182,
-   "failed": 5,
-   "cells": 6985,
-   "priced": 6815,
-   "changes": 2678,
-   "errors": [
-    "TYO-YYJ-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "GUM-YYJ-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Guam GUM Victoria YYJ Filters All filters ",
-    "YYJ-TPE-Y 18d: no Price graph button after 3 loads; page says:  About this page Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen? IP address",
-    "YYJ-OSA-Y 17d: no Price graph button after 3 loads; page says:  About this page Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen? IP address",
-    "YYJ-OSA-Y 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Osaka KIX ITM Filters All "
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 297,
-   "pages": 3,
-   "skipped": 110,
-   "secondOk": 10,
-   "pauses": 1,
-   "seconds": 1458,
-   "success": true
-  },
-  {
-   "at": "2026-11-24T16:06:46Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 234,
-   "failed": 1,
-   "cells": 8605,
-   "priced": 8234,
-   "changes": 2207,
-   "errors": [
-    "YYJ-KUL-Y 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Federal Territory of Kuala"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 308,
-   "pages": 3,
-   "skipped": 73,
-   "secondOk": 6,
-   "seconds": 1346,
    "success": true
   }
  ]
