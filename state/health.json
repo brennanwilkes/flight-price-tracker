@@ -1,7 +1,40 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-25T22:06:38Z",
+ "lastSuccess": "2026-11-25T23:06:08Z",
  "runs": [
+  {
+   "at": "2026-11-25T23:06:08Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 231,
+   "failed": 8,
+   "cells": 8605,
+   "priced": 8593,
+   "changes": 1750,
+   "errors": [
+    "YVR-CEB-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-DPS-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-TPE-J 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Taipei City TPE Filters A",
+    "YYJ-TPE-J 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Taipei City TPE Filters A",
+    "YYJ-TPE-J 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Taipei City TPE Filters A",
+    "YYJ-KUL-J 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Federal Territory of Kual",
+    "YYJ-ICN-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Seoul ICN Filters All filt",
+    "YYJ-ICN-Y 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Seoul ICN Filters All filt"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 960,
+   "pages": 6,
+   "pauses": 7,
+   "skipped": 721,
+   "secondOk": 3,
+   "seconds": 1550,
+   "success": true
+  },
   {
    "at": "2026-11-25T22:06:38Z",
    "egress": "vpn",
@@ -606,31 +639,6 @@
    "skipped": 198,
    "secondOk": 17,
    "seconds": 1396,
-   "success": true
-  },
-  {
-   "at": "2026-11-24T23:06:50Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 177,
-   "failed": 1,
-   "cells": 6699,
-   "priced": 6680,
-   "changes": 3649,
-   "errors": [
-    "DAD-PEN-Y 13d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 264,
-   "pages": 3,
-   "skipped": 86,
-   "secondOk": 7,
-   "seconds": 1280,
    "success": true
   }
  ]
