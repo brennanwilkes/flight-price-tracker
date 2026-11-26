@@ -1,7 +1,38 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-26T15:06:27Z",
+ "lastSuccess": "2026-11-26T16:07:00Z",
  "runs": [
+  {
+   "at": "2026-11-26T16:07:00Z",
+   "egress": "direct",
+   "control": 7,
+   "ok": 126,
+   "failed": 5,
+   "cells": 4908,
+   "priced": 4905,
+   "changes": 1022,
+   "errors": [
+    "YVR-DAD-J 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Da Nang DAD Filters All ",
+    "YVR-DAD-J 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Da Nang DAD Filters All ",
+    "YVR-DAD-Y 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Da Nang DAD Filters All f",
+    "YVR-DAD-Y 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Da Nang DAD Filters All f",
+    "YVR-DAD-J 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Da Nang DAD Filters All "
+   ],
+   "controlTries": 2,
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 263,
+   "pages": 3,
+   "pauses": 2,
+   "skipped": 132,
+   "secondOk": 11,
+   "seconds": 1518,
+   "success": true
+  },
   {
    "at": "2026-11-26T15:06:27Z",
    "egress": "vpn",
