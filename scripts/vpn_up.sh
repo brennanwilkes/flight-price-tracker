@@ -14,10 +14,26 @@
 
 set -uo pipefail
 
+# Never hangs: the whole script runs under `timeout -k 10 240` (the step's own timeout-minutes did
+# not fire on Nov 13 and Nov 25 03:05 UTC: the VPN step sat until the job's 58 min limit). Killed or
+# failed, the routing it half set up is undone and the script exits 0 without `vpn_ok`: the job
+# goes on over its direct egress.
+if [[ -z "${VPN_UP_INNER:-}" ]]; then
+	VPN_UP_INNER=1 timeout -k 10 240 "$0" "$@"
+	rc=$?
+	if (( rc != 0 )); then
+		echo "::warning::vpn_up.sh ended with status $rc (240 s limit is 124/137); running direct"
+		sudo timeout -k 2 10 ip -4 rule del not fwmark 51820 table 51820 2>/dev/null
+		sudo timeout -k 2 10 ip -4 rule del table main suppress_prefixlength 0 2>/dev/null
+		sudo timeout -k 2 10 ip link del wg0 2>/dev/null
+	fi
+	exit 0
+fi
+
 VPN_DIAG_FILE="$(mktemp)"
 echo "vpn_diag_file=$VPN_DIAG_FILE" >> "${GITHUB_OUTPUT:-/dev/null}"
 diag() { echo "$1" | tee -a "$VPN_DIAG_FILE"; }
-teardown() { sudo ip link del wg0 2>/dev/null || true; }
+teardown() { sudo timeout -k 2 10 ip link del wg0 2>/dev/null || true; }
 
 if [[ -z "${WG_CONF:-}" ]]; then
 	echo "::warning::PROTONVPN_WG_CONF secret not set; running direct"
@@ -29,8 +45,8 @@ DIRECT_IP="$(timeout 12 curl -fsS --max-time 8 https://api.ipify.org 2>/dev/null
 
 if ! command -v wg >/dev/null 2>&1; then
 	export DEBIAN_FRONTEND=noninteractive
-	sudo -E timeout 120 apt-get update -qq >/dev/null 2>&1
-	sudo -E timeout 180 apt-get install -y -qq wireguard-tools >/dev/null 2>&1
+	sudo -E timeout -k 5 100 apt-get update -qq >/dev/null 2>&1
+	sudo -E timeout -k 5 120 apt-get install -y -qq wireguard-tools >/dev/null 2>&1
 	if ! command -v wg >/dev/null 2>&1; then
 		echo "::warning::wireguard-tools install failed; running direct"
 		diag "vpn: off (wireguard-tools install failed)"
@@ -71,16 +87,16 @@ if [[ -z "$hs" || "$hs" == "0" ]]; then
 	exit 0
 fi
 
-sudo wg set wg0 fwmark 51820
-sudo ip -4 rule add not fwmark 51820 table 51820
-sudo ip -4 rule add table main suppress_prefixlength 0
-sudo ip -4 route add 0.0.0.0/0 dev wg0 table 51820
-printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\n' | sudo tee /etc/resolv.conf >/dev/null
+sudo timeout -k 2 10 wg set wg0 fwmark 51820
+sudo timeout -k 2 10 ip -4 rule add not fwmark 51820 table 51820
+sudo timeout -k 2 10 ip -4 rule add table main suppress_prefixlength 0
+sudo timeout -k 2 10 ip -4 route add 0.0.0.0/0 dev wg0 table 51820
+printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\n' | sudo timeout -k 2 10 tee /etc/resolv.conf >/dev/null
 
 EGRESS_IP="$(timeout 12 curl -fsS --max-time 8 https://api.ipify.org 2>/dev/null || echo "")"
 if [[ -z "$EGRESS_IP" || "$EGRESS_IP" == "$DIRECT_IP" ]]; then
-	sudo ip -4 rule del not fwmark 51820 table 51820 2>/dev/null
-	sudo ip -4 rule del table main suppress_prefixlength 0 2>/dev/null
+	sudo timeout -k 2 10 ip -4 rule del not fwmark 51820 table 51820 2>/dev/null
+	sudo timeout -k 2 10 ip -4 rule del table main suppress_prefixlength 0 2>/dev/null
 	teardown
 	echo "::warning::tunnel up but egress unusable (direct=$DIRECT_IP tunnel=${EGRESS_IP:-none}); running direct"
 	diag "vpn: off (egress unusable: direct=$DIRECT_IP tunnel=${EGRESS_IP:-none})"

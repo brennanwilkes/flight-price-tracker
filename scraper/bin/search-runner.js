@@ -83,7 +83,7 @@ const pct = (a, q) => (a.length ? `${(a.toSorted((x, y) => x - y)[Math.floor(q *
       const m = t?.more; if (!m) return;
       const d = (k) => (Array.isArray(m[k]) ? m[k].map((v, i) => v - (lastMore[k]?.[i] ?? 0)) : m[k] - (lastMore[k] ?? 0));
       const w = Object.fromEntries(Object.keys(m).map((k) => [k, d(k)]));
-      console.log(`  more flights this window: ${w.ok + w.okReload} ok, ${w.rejected} rejected (by load ${w.rejByTry.join('/')}; ok by load ${w.okByTry.join('/')}), ${w.lost} lost, ${w.failed} no reply; slot s: ${Math.round(w.msOk / 1e3)} on ok, ${Math.round(w.msRejected / 1e3)} on rejected, ${Math.round(w.msReload / 1e3)} on reloads`);
+      console.log(`  more flights this window: ${w.ok + w.okReload} ok, ${w.rejected} rejected (by load ${w.rejByTry.join('/')}; ok by load ${w.okByTry.join('/')}), ${w.lost} lost, ${w.failed} no reply; slot s: ${Math.round(w.msOk / 1e3)} on ok, ${Math.round(w.msRejected / 1e3)} on rejected, ${Math.round(w.msReload / 1e3)} on reloads; egress ${process.env.EGRESS_IP || 'unknown'}, load ${require('node:os').loadavg()[0].toFixed(1)}, ${all.pages} pages this IP so far`);
       lastMore = JSON.parse(JSON.stringify(m));
     }).catch(() => {});
     try { save(); } catch (e) { console.log(`  search runner: save failed: ${e.message}`); }

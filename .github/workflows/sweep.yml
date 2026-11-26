@@ -440,6 +440,8 @@ jobs:
       # Done ~47 min into the run, before the sweep job (~50), which merges its rows next run.
       - name: Search pages
         if: steps.vpn.outputs.vpn_ok == 'true'
+        env:
+          EGRESS_IP: ${{ steps.vpn.outputs.vpn_egress_ip }}
         run: |
           echo "$(nproc) CPUs"
           node scraper/bin/search-runner.js --queue .search-queue.json --out .search-extra.json.gz --until $(( $(date +%s) + 43 * 60 )) --pages 7 --gap 1500 --session-pages 300 2>&1 | sed -u 's/^/[search] /' &
