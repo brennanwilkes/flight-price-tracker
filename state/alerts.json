@@ -224,6 +224,21 @@
    "total": 3929,
    "tier": "good",
    "at": "2026-11-26T19:29:22Z"
+  },
+  "YVR,hybrid,OSA,OSA": {
+   "total": 3633,
+   "tier": "good",
+   "at": "2026-11-26T21:31:44Z"
+  },
+  "YVR,hybrid,KUL,TYO": {
+   "total": 3736,
+   "tier": "good",
+   "at": "2026-11-26T21:31:44Z"
+  },
+  "YVR,hybrid,TYO,JKT": {
+   "total": 3886,
+   "tier": "good",
+   "at": "2026-11-26T21:31:44Z"
   }
  }
 }
