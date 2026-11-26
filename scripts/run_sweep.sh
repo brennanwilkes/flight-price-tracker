@@ -37,8 +37,13 @@ restore_derived() { # dir: the release's files over the branch's
 	if fetch_derived && tar -xzf "$DERIVED_TAR" -C "$1"; then
 		echo "derived/: restored from release $RELEASE_TAG ($(stat -c %s "$DERIVED_TAR") B)"
 		touch "$REPO_ROOT/.derived-off"
-	else
+	elif [[ -d "$1/derived/history" ]]; then
 		echo "derived/: no release $RELEASE_TAG to restore (first run, or the download failed): using the data branch's"
+	else
+		# The branch no longer holds derived/: building on nothing would upload a history-less
+		# derived/ over the release's.
+		echo "derived/: release $RELEASE_TAG not restored and the data branch has no derived/: stopping" >&2
+		exit 1
 	fi
 }
 upload_derived() { # the build's derived/ to the release, then Pages redeploys with it
