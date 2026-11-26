@@ -11,9 +11,9 @@
    "at": "2026-11-13T10:38:12Z"
   },
   "YVR,hybrid,KUL,KUL": {
-   "total": 3231,
-   "tier": "buy",
-   "at": "2026-11-13T11:29:39Z"
+   "total": 3032,
+   "tier": "great",
+   "at": "2026-11-26T19:29:22Z"
   },
   "YVR,hybrid,HKG,HKG": {
    "total": 2997,
@@ -214,6 +214,16 @@
    "total": 3989,
    "tier": "good",
    "at": "2026-11-26T17:27:58Z"
+  },
+  "YVR,hybrid,HAN,HAN": {
+   "total": 3471,
+   "tier": "great",
+   "at": "2026-11-26T19:29:22Z"
+  },
+  "YVR,hybrid,TYO,DPS": {
+   "total": 3929,
+   "tier": "good",
+   "at": "2026-11-26T19:29:22Z"
   }
  }
 }
