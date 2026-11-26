@@ -16,6 +16,7 @@
  */
 const fs = require('node:fs');
 const zlib = require('node:zlib');
+const { hiddenFirst } = require('../src/trips/hidden-queue');
 const { parseResults, dedupe } = require('../src/gflights/flights');
 const { openBrowserThread } = require('../src/gflights/browser-thread');
 
@@ -57,6 +58,9 @@ const pct = (a, q) => (a.length ? `${(a.toSorted((x, y) => x - y)[Math.floor(q *
   const queued = queue.length;
   queue = queue.filter((s) => !s.keys.every((k) => done.has(k)));
   console.log(`search runner: ${queued - queue.length} of the queue searched by the last run since its build read the runner's rows (to ${seenTo || 'none read'}), skipped; ${rows.length} rows kept`);
+  // Hidden cells' searches first (the build marks them: a cell is hidden until its return search is made).
+  queue = hiddenFirst(queue);
+  console.log(`search runner: ${queue.filter((s) => s.hidden).length} of ${queue.length} are of hidden cells' trips, taken first`);
   if (!queue.length) return;
   const save = () => {
     fs.writeFileSync(`${out}.tmp`, zlib.gzipSync(rows.map((r) => JSON.stringify(r)).join('\n')));

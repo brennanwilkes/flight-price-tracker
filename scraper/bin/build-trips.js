@@ -56,6 +56,7 @@ const path = require('node:path');
 const zlib = require('node:zlib');
 const config = require('../config/sweep.json');
 const { staleAfterHours } = require('../src/sweep/plan');
+const { markHidden } = require('../src/trips/hidden-queue');
 const { loadFares, bundleOf, fareOf, fareKey } = require('../src/trips/fares');
 const { graphTickets, searchTies, TRIED_HOURS } = require('../src/trips/ties');
 const { similarCount, scoreOf, rowId, bandOf } = require('../../frontend/app/build.js');
@@ -1060,7 +1061,11 @@ async function main() {
         ((again[w] ??= {})[k] = (again[w][k] ?? 0) + 1);
       }
       console.log(`hidden cells hidden last build too: ${Object.entries(again).map(([w, o]) => `${w}: ${fmt(o)}`).join('; ') || 'none (or no trips recorded last build)'}`);
-      fs.writeFileSync(arg('search-queue'), JSON.stringify({ ...file, hidden, hiddenSigs: Object.fromEntries(unlisted.sigs) }));
+      // The searches of hidden cells' trips marked, for the runner to take first.
+      const sigs = Object.fromEntries(unlisted.sigs);
+      const marked = markHidden(file.searches ?? [], sigs, searches.cache.fareKeys);
+      console.log(`search queue: ${marked} of ${(file.searches ?? []).length} searches are of hidden cells' trips, marked for the runner's head`);
+      fs.writeFileSync(arg('search-queue'), JSON.stringify({ ...file, hidden, hiddenSigs: sigs }));
     } catch (e) { console.log(`hidden cells by time hidden: not worked out (${e.message})`); }
   }
   delete unlisted.ids;
