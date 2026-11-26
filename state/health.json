@@ -1,7 +1,40 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-26T01:06:27Z",
+ "lastSuccess": "2026-11-26T02:06:25Z",
  "runs": [
+  {
+   "at": "2026-11-26T02:06:25Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 272,
+   "failed": 8,
+   "cells": 10034,
+   "priced": 10015,
+   "changes": 1318,
+   "errors": [
+    "YYJ-CEB-J 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-OSA-Y 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Osaka KIX ITM Filters All",
+    "YVR-OSA-Y 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Osaka KIX ITM Filters All",
+    "YVR-SHA-Y 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Shanghai PVG SHA Filters ",
+    "YVR-OSA-Y 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Osaka KIX ITM Filters All",
+    "YVR-SHA-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Shanghai PVG SHA Filters ",
+    "YVR-SHA-Y 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Shanghai PVG SHA Filters ",
+    "YVR-SHA-Y 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Shanghai PVG SHA Filters "
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 665,
+   "pages": 6,
+   "pauses": 6,
+   "skipped": 385,
+   "secondOk": 10,
+   "seconds": 1638,
+   "success": true
+  },
   {
    "at": "2026-11-26T01:06:27Z",
    "egress": "vpn",
@@ -608,34 +641,6 @@
    "skipped": 673,
    "secondOk": 37,
    "seconds": 1418,
-   "success": true
-  },
-  {
-   "at": "2026-11-25T02:06:17Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 174,
-   "failed": 3,
-   "cells": 7838,
-   "priced": 7395,
-   "changes": 6162,
-   "errors": [
-    "OSA-YYJ-J-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Business Osaka KIX ITM Victoria YYJ Filters All fi",
-    "YYJ-BJS-J 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Beijing PEK PKX Filters A",
-    "YYJ-JKT-Y 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 694,
-   "pages": 6,
-   "pauses": 3,
-   "skipped": 517,
-   "secondOk": 5,
-   "seconds": 1591,
    "success": true
   }
  ]
