@@ -1,7 +1,38 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-26T20:05:48Z",
+ "lastSuccess": "2026-11-26T21:05:53Z",
  "runs": [
+  {
+   "at": "2026-11-26T21:05:53Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 160,
+   "failed": 6,
+   "cells": 6716,
+   "priced": 6714,
+   "changes": 1546,
+   "errors": [
+    "YVR-SIN-J 21d: no Price graph button after 3 loads; page says:  About this page Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen? IP address",
+    "YVR-KUL-J 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "KUL-YVR-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "KUL-YVR-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-DAD-J 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Da Nang DAD Filters All ",
+    "YVR-HAN-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 201,
+   "pages": 3,
+   "skipped": 35,
+   "secondOk": 6,
+   "pauses": 2,
+   "seconds": 1546,
+   "success": true
+  },
   {
    "at": "2026-11-26T20:05:48Z",
    "egress": "vpn",
@@ -631,29 +662,6 @@
    "skipped": 867,
    "secondOk": 1,
    "seconds": 1442,
-   "success": true
-  },
-  {
-   "at": "2026-11-25T21:06:10Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 339,
-   "failed": 0,
-   "cells": 15106,
-   "priced": 14666,
-   "changes": 14233,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 1210,
-   "pages": 6,
-   "skipped": 871,
-   "secondOk": 6,
-   "seconds": 1320,
    "success": true
   }
  ]
