@@ -1,7 +1,34 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-26T00:06:25Z",
+ "lastSuccess": "2026-11-26T01:06:27Z",
  "runs": [
+  {
+   "at": "2026-11-26T01:06:27Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 238,
+   "failed": 3,
+   "cells": 10264,
+   "priced": 10100,
+   "changes": 8727,
+   "errors": [
+    "MNL-DPS-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-SGN-Y 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "FUK-SGN-Y 12d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Fukuoka FUK Ho Chi Minh City SGN Filter"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 780,
+   "pages": 6,
+   "skipped": 539,
+   "secondOk": 4,
+   "seconds": 1458,
+   "success": true
+  },
   {
    "at": "2026-11-26T00:06:25Z",
    "egress": "vpn",
@@ -609,33 +636,6 @@
    "skipped": 517,
    "secondOk": 5,
    "seconds": 1591,
-   "success": true
-  },
-  {
-   "at": "2026-11-25T01:06:31Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 263,
-   "failed": 2,
-   "cells": 9439,
-   "priced": 9433,
-   "changes": 1232,
-   "errors": [
-    "YVR-DAD-J 15d: no Price graph button after 3 loads; page says:  About this page Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen? IP address",
-    "YYJ-OSA-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 914,
-   "pages": 6,
-   "pauses": 2,
-   "skipped": 649,
-   "secondOk": 24,
-   "seconds": 1526,
    "success": true
   }
  ]
