@@ -1,7 +1,31 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-26T03:06:38Z",
+ "lastSuccess": "2026-11-26T04:06:22Z",
  "runs": [
+  {
+   "at": "2026-11-26T04:06:22Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 359,
+   "failed": 0,
+   "cells": 13867,
+   "priced": 13166,
+   "changes": 4750,
+   "errors": [],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 473,
+   "pages": 6,
+   "pauses": 2,
+   "skipped": 114,
+   "secondOk": 19,
+   "seconds": 1407,
+   "success": true
+  },
   {
    "at": "2026-11-26T03:06:38Z",
    "egress": "vpn",
@@ -646,35 +670,6 @@
    "skipped": 425,
    "secondOk": 15,
    "seconds": 1406,
-   "success": true
-  },
-  {
-   "at": "2026-11-25T04:09:22Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 284,
-   "failed": 4,
-   "cells": 10613,
-   "priced": 10459,
-   "changes": 2626,
-   "errors": [
-    "HKT-HUI-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Phuket HKT Hue HUI Filters All filters Sto",
-    "HUI-HKT-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Hue HUI Phuket HKT Filters All filters Sto",
-    "HUI-PQC-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Hue HUI Phú Quốc PQC Filters All filters S",
-    "GUM-YYJ-J-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Business Guam GUM Victoria YYJ Filters All filters"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 961,
-   "pages": 6,
-   "pauses": 2,
-   "skipped": 673,
-   "secondOk": 37,
-   "seconds": 1418,
    "success": true
   }
  ]
