@@ -1,7 +1,36 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-26T22:06:12Z",
+ "lastSuccess": "2026-11-26T23:06:11Z",
  "runs": [
+  {
+   "at": "2026-11-26T23:06:11Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 183,
+   "failed": 5,
+   "cells": 6945,
+   "priced": 6888,
+   "changes": 798,
+   "errors": [
+    "YVR-SGN-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-SGN-Y 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-ICN-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "SGN-HAN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-DPS-J 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 188,
+   "pages": 3,
+   "pauses": 1,
+   "secondOk": 15,
+   "seconds": 1155,
+   "success": true
+  },
   {
    "at": "2026-11-26T22:06:12Z",
    "egress": "vpn",
@@ -629,39 +658,6 @@
    "skipped": 508,
    "secondOk": 8,
    "seconds": 1369,
-   "success": true
-  },
-  {
-   "at": "2026-11-25T23:06:08Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 231,
-   "failed": 8,
-   "cells": 8605,
-   "priced": 8593,
-   "changes": 1750,
-   "errors": [
-    "YVR-CEB-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-DPS-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-TPE-J 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Taipei City TPE Filters A",
-    "YYJ-TPE-J 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Taipei City TPE Filters A",
-    "YYJ-TPE-J 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Taipei City TPE Filters A",
-    "YYJ-KUL-J 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Federal Territory of Kual",
-    "YYJ-ICN-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Seoul ICN Filters All filt",
-    "YYJ-ICN-Y 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Seoul ICN Filters All filt"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 960,
-   "pages": 6,
-   "pauses": 7,
-   "skipped": 721,
-   "secondOk": 3,
-   "seconds": 1550,
    "success": true
   }
  ]
