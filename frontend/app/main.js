@@ -90,8 +90,11 @@ async function dataSha() {
 /** A trips file: "YVR" → derived/trips-YVR.json, "YVR-BKK" → derived/via/trips-YVR-BKK.json. */
 const dataBase = (sha) => DATA_OVERRIDE ?? `https://raw.githubusercontent.com/${REPO}/${sha}`;
 
+// The derived files (trips, filters, history, status) are the site's own, same-origin: Pages
+// deploys them from the `derived-latest` release after each sweep (state/ stays on the data branch).
+const siteBase = () => DATA_OVERRIDE ?? './data';
 async function fetchTrips(sha, key) {
-  const base = dataBase(sha);
+  const base = siteBase();
   const res = await fetch(`${base}/derived/${key.includes('-') ? 'via/' : ''}trips-${key}.json`, { cache: 'no-cache' });
   if (res.status === 404 && key.includes('-')) return { rows: [] }; // a city with no trips this build (older builds wrote no file)
   if (!res.ok) throw new Error(`trips-${key}.json: HTTP ${res.status}`);
@@ -108,7 +111,7 @@ const filtering = () => state.cap != null || state.len[0] > 14 || state.len[1] <
 async function load() {
   state.data[state.home] ??= await fetchTrips(state.sha, state.home);
   if (filtering() && !state.data[`filters-${state.home}`]) {
-    const res = await fetch(`${dataBase(state.sha)}/derived/filters-${state.home}.json`, { cache: 'no-cache' }).catch(() => null);
+    const res = await fetch(`${siteBase()}/derived/filters-${state.home}.json`, { cache: 'no-cache' }).catch(() => null);
     state.data[`filters-${state.home}`] = res?.ok ? unpack(await res.json()) : { rows: {} }; // older builds: the trips' own cells, filtered
   }
   const known = state.data[state.home].vias ?? [];
@@ -294,14 +297,14 @@ function render() {
   for (const b of document.querySelectorAll('.toggle button')) b.setAttribute('aria-pressed', String(b.dataset.home === state.home));
   if (tab === 'health') {
     renderSheet();
-    if (state.sha) renderHealth($('#view'), dataBase(state.sha), live);
+    if (state.sha) renderHealth($('#view'), dataBase(state.sha), live, siteBase());
     else loading(); // show() renders again once the data commit is known
     return;
   }
   if (tab === 'history') {
     renderSheet();
     const data = state.data[viewKey()];
-    if (data) { fillFilters(data); renderHistory($('#view'), dataBase(state.sha), state.home, { rows: rows(data), all: data.rows, via: state.vias.length > 0, main: state.data[state.home]?.rows ?? [] }, state.priority, live); }
+    if (data) { fillFilters(data); renderHistory($('#view'), siteBase(), state.home, { rows: rows(data), all: data.rows, via: state.vias.length > 0, main: state.data[state.home]?.rows ?? [] }, state.priority, live); }
     else loading();
     return;
   }

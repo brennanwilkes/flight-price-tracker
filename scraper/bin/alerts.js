@@ -36,7 +36,7 @@ function gatewaysOf(deals) {
 const focusParam = (deals) => { const g = gatewaysOf(deals); return g.length ? `&focus=${g.join(',')}` : ''; };
 
 function dealUrl(d, sha) {
-  return `${config.dashboard}?home=${d.home}${focusParam([d])}&v=${sha}#trip=${rowId(d)}~${d.cls}`;
+  return `${config.dashboard}?home=${d.home}${focusParam([d])}${sha ? `&v=${sha}` : ''}#trip=${rowId(d)}~${d.cls}`;
 }
 
 // Two lines, as the board's title line has it: the route, then class and price.
@@ -61,8 +61,10 @@ async function send(msg) {
 }
 
 async function main() {
+  // --sha: pin the link to a data commit (older pages); none: the link opens the live site, whose
+  // derived files come from the release (deploy-pages.yml).
   const dataDir = arg('data'), sha = arg('sha');
-  if (!dataDir || !sha) throw new Error('--data <dir> --sha <commit> are required');
+  if (!dataDir) throw new Error('--data <dir> is required (--sha <commit> optional)');
   const ledgerFile = path.join(dataDir, 'state', 'alerts.json');
   const seeding = !fs.existsSync(ledgerFile);
   const ledger = readJson(ledgerFile, { deals: {} });
@@ -91,7 +93,7 @@ async function main() {
   const health = readJson(path.join(dataDir, 'state', 'health.json'), null);
   if (health?.consecutiveFailures === 2) {
     const err = health.runs?.[0]?.errors?.[0] ?? 'no error recorded';
-    await send({ title: 'Scraper failed 2 runs in a row', body: String(err).slice(0, 180), url: `${config.dashboard}?v=${sha}`, tag: 'scraper' });
+    await send({ title: 'Scraper failed 2 runs in a row', body: String(err).slice(0, 180), url: `${config.dashboard}${sha ? `?v=${sha}` : ''}`, tag: 'scraper' });
   }
 
   const deals = findDeals(config, rows, lows(dataDir, config.lowsSince, generatedAt), generatedAt);

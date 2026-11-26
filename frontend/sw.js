@@ -59,6 +59,7 @@ self.addEventListener('fetch', (e) => {
   if (UNSTAMPED) return;
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
+  if (new URL(req.url).pathname.includes('/data/')) return; // the sweep's files change every deploy: never the shell cache
   e.respondWith((async () => {
     const cache = await caches.open(SHELL);
     // The cached index.html wins for navigations (any query string, e.g. from an alert), so

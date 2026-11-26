@@ -21,6 +21,41 @@ DATA_DIR="${DATA_DIR:-$REPO_ROOT/.worktrees/data}"
 cd "$REPO_ROOT"
 WARM_DIR="$REPO_ROOT/.worktrees/warm"
 
+# derived/ lives in the release `derived-latest` (asset derived.tar.gz), not in the data branch's
+# new commits (docs/derived-off-git.md). The data branch's own derived/ is the fallback until the
+# release exists, so a first run loses nothing. CI only (gh and GH_TOKEN).
+RELEASE_TAG=derived-latest
+DERIVED_TAR="$REPO_ROOT/.derived.tar.gz"
+have_gh() { command -v gh >/dev/null 2>&1 && [[ -n "${GH_TOKEN:-}" ]]; }
+fetch_derived() {
+	[[ -s "$DERIVED_TAR" ]] && gzip -t "$DERIVED_TAR" 2>/dev/null && return 0
+	rm -f "$DERIVED_TAR"
+	have_gh || return 1
+	timeout -k 10 300 gh release download "$RELEASE_TAG" -p derived.tar.gz -O "$DERIVED_TAR" --clobber 2>/dev/null && gzip -t "$DERIVED_TAR" 2>/dev/null || { rm -f "$DERIVED_TAR"; return 1; }
+}
+restore_derived() { # dir: the release's files over the branch's
+	if fetch_derived && tar -xzf "$DERIVED_TAR" -C "$1"; then
+		echo "derived/: restored from release $RELEASE_TAG ($(stat -c %s "$DERIVED_TAR") B)"
+		touch "$REPO_ROOT/.derived-off"
+	else
+		echo "derived/: no release $RELEASE_TAG to restore (first run, or the download failed): using the data branch's"
+	fi
+}
+upload_derived() { # the build's derived/ to the release, then Pages redeploys with it
+	have_gh && [[ -d "$DATA_DIR/derived" ]] || { echo "derived/ upload skipped (no gh token, or no derived/)"; return 0; }
+	local up="$REPO_ROOT/.upload"
+	rm -rf "$up" && mkdir -p "$up"
+	tar -czf "$up/derived.tar.gz" -C "$DATA_DIR" derived || { echo "derived/ upload: tar failed"; return 0; }
+	timeout -k 10 120 gh release view "$RELEASE_TAG" >/dev/null 2>&1 || timeout -k 10 120 gh release create "$RELEASE_TAG" --title "derived/ (latest sweep build)" --notes "The newest build's derived/ files (trips, filters, history, status). Replaced each sweep; Pages deploys them." --prerelease >/dev/null 2>&1 || true
+	if timeout -k 10 400 gh release upload "$RELEASE_TAG" "$up/derived.tar.gz" --clobber; then
+		echo "derived/ uploaded to release $RELEASE_TAG ($(stat -c %s "$up/derived.tar.gz") B)"
+		touch "$REPO_ROOT/.derived-off"
+		timeout -k 10 60 gh workflow run deploy-pages.yml --ref main >/dev/null 2>&1 && echo "Pages deploy dispatched" || echo "Pages deploy dispatch failed (the next push to frontend/ or the next sweep deploys it)"
+	else
+		echo "derived/ upload FAILED: derived/ stays in the data branch's commit this run"
+	fi
+}
+
 if [[ "${1:-}" == snapshot ]]; then
 	rm -rf "$WARM_DIR" && mkdir -p "$WARM_DIR"
 	# Shallow: the data branch's history grows every hour, and a full fetch over the VPN took up
@@ -28,6 +63,7 @@ if [[ "${1:-}" == snapshot ]]; then
 	t=$SECONDS
 	for n in 1 2; do git fetch -q --depth 1 origin "$DATA_BRANCH" 2>/dev/null && break; echo "data snapshot: fetch failed (try $n)"; done
 	if git rev-parse -q --verify "origin/$DATA_BRANCH" >/dev/null; then git archive "origin/$DATA_BRANCH" | tar -x -C "$WARM_DIR"; fi
+	restore_derived "$WARM_DIR"
 	echo "data snapshot: $((SECONDS - t)) s"
 	exit 0
 fi
@@ -51,8 +87,17 @@ if [[ ! -d "$DATA_DIR/.git" && ! -f "$DATA_DIR/.git" ]]; then
 else
 	git -C "$DATA_DIR" pull -q --rebase origin "$DATA_BRANCH" 2>/dev/null || true
 fi
+# After the checkout and any pull (a pull would refuse over the restored files): the release's
+# derived/ over the branch's, once per job.
+if [[ ! -f "$REPO_ROOT/.derived-restored" ]]; then restore_derived "$DATA_DIR"; touch "$REPO_ROOT/.derived-restored"; fi
 
 commit_push() { # message
+	# derived/ is in the release (restored from it, or uploaded this run): out of the commit, and
+	# out of the branch's tip once (git history is kept).
+	if [[ -f "$REPO_ROOT/.derived-off" ]]; then
+		grep -qx 'derived/' "$DATA_DIR/.gitignore" 2>/dev/null || echo 'derived/' >> "$DATA_DIR/.gitignore"
+		git -C "$DATA_DIR" rm -r -q --cached --ignore-unmatch derived >/dev/null
+	fi
 	git -C "$DATA_DIR" add -A
 	if git -C "$DATA_DIR" diff --cached --quiet; then
 		echo "no data changes"
@@ -89,13 +134,15 @@ if [[ $step == all || $step == build ]]; then
 set +e
 node scraper/bin/build-trips.js --data "$DATA_DIR" ${BUILD_DEADLINE:+--deadline "$BUILD_DEADLINE"} --search-cache "$REPO_ROOT/.search-cache.json.gz" --search-extra "$REPO_ROOT/.search-extra.json.gz" --runner-queue "$REPO_ROOT/.search-queue-runner.json" --search-queue "$REPO_ROOT/.search-queue.json" --booking-cache "$REPO_ROOT/.booking-cache.json" --booking-queue "$REPO_ROOT/.booking-queue.json" --booking-extra "$REPO_ROOT/.booking-extra.json,$REPO_ROOT/.booking-extra-2.json" --booking-checked "$REPO_ROOT/.booking-checked.json" --booking-ties "$REPO_ROOT/.booking-ties.json" || rc=1
 set -e
+# A build that failed may have left derived/ half written: not uploaded.
+if [[ $rc == 0 ]]; then upload_derived; else echo "derived/ upload skipped: the build failed"; fi
 commit_push "build $(date -u +%FT%TZ)"
 fi
 
 if [[ $step == all || $step == alerts ]]; then
 cd "$DATA_DIR"
-# Deal alerts, linking to the commit just pushed; then the ledger they wrote.
-if node "$REPO_ROOT/scraper/bin/alerts.js" --data "$DATA_DIR" --sha "$(git rev-parse HEAD)"; then
+# Deal alerts, linking to the live site (its data is the release's, deployed after the build's upload); then the ledger they wrote.
+if node "$REPO_ROOT/scraper/bin/alerts.js" --data "$DATA_DIR"; then
 	git add -A state/alerts.json
 	if ! git diff --cached --quiet; then
 		git -c user.name="flight-tracker-bot" -c user.email="flight-tracker-bot@users.noreply.github.com" commit -q -m "alerts $(date -u +%FT%TZ)"

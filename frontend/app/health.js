@@ -29,10 +29,10 @@ async function get(base, file) {
 /**
  * Render the tab into `el`; base: the data branch at the dashboard's commit.
  */
-export async function renderHealth(el, base, live = () => true) {
+export async function renderHealth(el, base, live = () => true, site = base) {
   el.innerHTML = '<p class="note">Loading…</p>';
   const [health, ledger, status, alerts] = await Promise.all([
-    get(base, 'state/health.json'), get(base, 'state/alerts.json'), get(base, 'derived/status.json'), alertState(),
+    get(base, 'state/health.json'), get(base, 'state/alerts.json'), get(site, 'derived/status.json'), alertState(),
   ]);
   if (!live()) return; // another tab (or render) since: leave its page alone
   const runs = (health?.runs ?? []).filter((r, i) => !i || hours(r.at) <= 24);

@@ -17,7 +17,7 @@ on:
 
 permissions:
   contents: write  # push to the data branch
-  actions: read  # gh cache list (Search cache worth saving)
+  actions: write  # gh cache list (Search cache worth saving); gh workflow run deploy-pages.yml after the derived/ upload (contents: write also covers the release)
 
 concurrency:
   group: sweep
@@ -125,6 +125,8 @@ jobs:
       # it the fetch failed twice on 2026-11-12, 9:05 am and 2:05 pm Vancouver: 83 s, then no
       # checks or booking pages beside the scrape at all).
       - name: Data snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}  # derived/ from the release derived-latest (run_sweep.sh restore_derived)
         run: scripts/run_sweep.sh snapshot
 
       # 4:05 pm Vancouver, 2026-11-13: this step hung until the job's 58 min ran out (every command in
@@ -145,6 +147,7 @@ jobs:
       - name: Scrape
         env:
           EGRESS: ${{ steps.vpn.outputs.vpn_ok == 'true' && 'vpn' || 'direct' }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           echo "BUILD_DEADLINE=$(( $(date +%s) + 49 * 60 ))" >> "$GITHUB_ENV"  # this step starts ~1 min in: leaves ~8 min to commit, push, alert
           export SCRAPE_UNTIL=$(( $(date +%s) + 26 * 60 ))  # the scrape budget ends here even if it starts late
@@ -164,6 +167,8 @@ jobs:
       # Even after a failed scrape: trips from whatever fares are current.
       - name: Build trips
         if: ${{ !cancelled() && steps.vpn.outcome != 'skipped' }}
+        env:
+          GH_TOKEN: ${{ github.token }}  # uploads derived/ to the release, then dispatches Pages
         run: scripts/run_sweep.sh build 2>&1 | tee -a sweep.log
 
       - name: Alerts
@@ -262,6 +267,8 @@ jobs:
           key: booking-extra2-${{ github.run_id }}
           restore-keys: booking-extra2-
       - name: Data snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}  # derived/ from the release derived-latest (run_sweep.sh restore_derived)
         run: scripts/run_sweep.sh snapshot
 
       - name: VPN up
@@ -364,6 +371,8 @@ jobs:
           key: booking-extra2-${{ github.run_id }}
           restore-keys: booking-extra2-
       - name: Data snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}  # derived/ from the release derived-latest (run_sweep.sh restore_derived)
         run: scripts/run_sweep.sh snapshot
 
       - name: VPN up

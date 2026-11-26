@@ -5,3 +5,7 @@ node_modules/
 *.log
 .worktrees/
 .search-cache.json.gz
+.derived.tar.gz
+.derived-off
+.derived-restored
+.upload/

@@ -1,5 +1,6 @@
-# Dashboard to GitHub Pages. Deploys only when frontend/ changes: the page reads its data live
-# from the data branch (raw.githubusercontent.com), so new sweeps need no deploy.
+# Dashboard to GitHub Pages: on a frontend/ change, and after each sweep's build (it uploads
+# derived/ to the release derived-latest and dispatches this workflow). The site carries those
+# files under ./data/; state/ (health, alerts) is still read from the data branch.
 name: Deploy Pages
 
 on:
@@ -31,6 +32,25 @@ jobs:
         with:
           node-version: 24
       - run: cp -r frontend _site && node scripts/stamp-pwa.mjs _site
+      # The sweep's derived/ files, same-origin beside the frontend (a browser can't fetch a Release
+      # asset: the download 302s to a host without CORS). The release derived-latest, which the
+      # sweep's build uploads and then dispatches this workflow; until the first upload, the data
+      # branch's derived/. Fails the deploy if neither has it: the last good site stays live.
+      - name: Derived files
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p _site/data dl
+          if gh release download derived-latest -p derived.tar.gz -D dl && gzip -t dl/derived.tar.gz; then
+            tar -xzf dl/derived.tar.gz -C _site/data
+            echo "derived/ from release derived-latest"
+          else
+            echo "no release yet: derived/ from the data branch"
+            git fetch -q --depth 1 origin data
+            git archive origin/data derived | tar -x -C _site/data
+          fi
+          test -s _site/data/derived/trips-YVR.json || { echo "derived/trips-YVR.json missing: not deploying"; exit 1; }
+          du -sh _site/data
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
