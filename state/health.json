@@ -1,7 +1,33 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-26T14:06:29Z",
+ "lastSuccess": "2026-11-26T15:06:27Z",
  "runs": [
+  {
+   "at": "2026-11-26T15:06:27Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 104,
+   "failed": 2,
+   "cells": 4588,
+   "priced": 4509,
+   "changes": 1383,
+   "errors": [
+    "CEB-CTS-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-TPE-J 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 106,
+   "pages": 3,
+   "pauses": 1,
+   "secondOk": 6,
+   "seconds": 816,
+   "success": true
+  },
   {
    "at": "2026-11-26T14:06:29Z",
    "egress": "vpn",
@@ -614,40 +640,6 @@
    "skipped": 865,
    "secondOk": 15,
    "seconds": 1616,
-   "success": true
-  },
-  {
-   "at": "2026-11-25T15:06:24Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 171,
-   "failed": 9,
-   "cells": 7283,
-   "priced": 7239,
-   "changes": 6750,
-   "errors": [
-    "HAN-KBV-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "KUL-HAN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "MNL-DAD-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "SHA-SGN-Y 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "TYO-SGN-Y 13d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Tokyo NRT HND Ho Chi Minh City SGN Filt",
-    "TYO-SGN-Y 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-JKT-J 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Jakarta CGK Filters All f",
-    "BJS-SGN-Y 11d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "SGN-BJS-Y 3d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Ho Chi Minh City SGN Beijing PEK PKX Fi"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 556,
-   "pages": 6,
-   "pauses": 3,
-   "skipped": 376,
-   "secondOk": 10,
-   "seconds": 1516,
    "success": true
   }
  ]
