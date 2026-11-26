@@ -1,7 +1,37 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-26T10:06:28Z",
+ "lastSuccess": "2026-11-26T11:07:09Z",
  "runs": [
+  {
+   "at": "2026-11-26T11:07:09Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 145,
+   "failed": 5,
+   "cells": 5611,
+   "priced": 5604,
+   "changes": 967,
+   "errors": [
+    "YYJ-DAD-J 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Da Nang DAD Filters All f",
+    "YYJ-HAN-J 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Hanoi HAN Filters All fil",
+    "YYJ-HAN-J 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Hanoi HAN Filters All fil",
+    "YYJ-SGN-J 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Ho Chi Minh City SGN Filt",
+    "YYJ-SGN-J 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Ho Chi Minh City SGN Filt"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 303,
+   "pages": 3,
+   "pauses": 3,
+   "skipped": 153,
+   "secondOk": 3,
+   "seconds": 1563,
+   "success": true
+  },
   {
    "at": "2026-11-26T10:06:28Z",
    "egress": "vpn",
@@ -626,40 +656,6 @@
    "skipped": 507,
    "secondOk": 7,
    "seconds": 1595,
-   "success": true
-  },
-  {
-   "at": "2026-11-25T11:06:54Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 216,
-   "failed": 9,
-   "cells": 8566,
-   "priced": 8556,
-   "changes": 8275,
-   "errors": [
-    "KBV-HAN-Y 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "KBV-HAN-Y 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "KBV-HAN-Y 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "PEN-HAN-Y 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-BKK-J 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Bangkok BKK DMK Filters A",
-    "YYJ-DPS-J 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Denpasar DPS Filters All ",
-    "YYJ-SIN-J 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Singapore SIN Filters All",
-    "PEN-HAN-Y 9d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "HAN-PEN-Y 8d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 597,
-   "pages": 6,
-   "pauses": 4,
-   "skipped": 372,
-   "secondOk": 6,
-   "seconds": 1605,
    "success": true
   }
  ]
