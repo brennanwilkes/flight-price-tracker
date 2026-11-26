@@ -1,7 +1,39 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-26T12:06:36Z",
+ "lastSuccess": "2026-11-26T13:07:04Z",
  "runs": [
+  {
+   "at": "2026-11-26T13:07:04Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 122,
+   "failed": 8,
+   "cells": 4785,
+   "priced": 4784,
+   "changes": 446,
+   "errors": [
+    "YVR-SHA-Y 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-SGN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-ICN-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-HKG-Y 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-TYO-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-MNL-Y 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-SIN-Y 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-BKK-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 130,
+   "pages": 3,
+   "secondOk": 17,
+   "pauses": 1,
+   "seconds": 719,
+   "success": true
+  },
   {
    "at": "2026-11-26T12:06:36Z",
    "egress": "vpn",
@@ -617,37 +649,6 @@
    "skipped": 484,
    "secondOk": 4,
    "seconds": 1518,
-   "success": true
-  },
-  {
-   "at": "2026-11-25T13:06:57Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 278,
-   "failed": 6,
-   "cells": 10182,
-   "priced": 10179,
-   "changes": 2151,
-   "errors": [
-    "YVR-TYO-Y 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-DPS-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-DAD-Y 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Da Nang DAD Filters All f",
-    "YVR-DAD-Y 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Da Nang DAD Filters All f",
-    "YVR-DAD-Y 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Da Nang DAD Filters All f",
-    "SYX-HAN-Y 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Sanya SYX · Haikou HAK Hanoi HAN Filter"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 724,
-   "pages": 6,
-   "pauses": 3,
-   "skipped": 440,
-   "secondOk": 58,
-   "seconds": 1493,
    "success": true
   }
  ]
