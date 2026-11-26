@@ -196,9 +196,9 @@
    "at": "2026-11-26T13:28:55Z"
   },
   "YVR,hybrid,BKK,BKK": {
-   "total": 3612,
-   "tier": "good",
-   "at": "2026-11-26T15:29:16Z"
+   "total": 3493,
+   "tier": "great",
+   "at": "2026-11-26T22:29:00Z"
   },
   "YVR,hybrid,JKT,JKT": {
    "total": 3342,
@@ -239,6 +239,16 @@
    "total": 3886,
    "tier": "good",
    "at": "2026-11-26T21:31:44Z"
+  },
+  "YVR,hybrid,OSA,TYO": {
+   "total": 3897,
+   "tier": "good",
+   "at": "2026-11-26T22:29:00Z"
+  },
+  "YVR,hybrid,HAN,TYO": {
+   "total": 3973,
+   "tier": "good",
+   "at": "2026-11-26T22:29:00Z"
   }
  }
 }
