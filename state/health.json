@@ -1,7 +1,38 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-27T05:06:21Z",
+ "lastSuccess": "2026-11-27T06:06:15Z",
  "runs": [
+  {
+   "at": "2026-11-27T06:06:15Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 216,
+   "failed": 6,
+   "cells": 9159,
+   "priced": 8445,
+   "changes": 3943,
+   "errors": [
+    "YVR-HKG-Y 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-HNL-J 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-BKK-Y 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Bangkok BKK DMK Filters Al",
+    "YYJ-KUL-Y 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Federal Territory of Kuala",
+    "CNX-HUI-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Chiang Mai CNX Hue HUI Filters All filters",
+    "CXR-HUI-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Nha Trang CXR Hue HUI Filters All filters "
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 424,
+   "pages": 6,
+   "pauses": 2,
+   "skipped": 202,
+   "secondOk": 21,
+   "seconds": 1607,
+   "success": true
+  },
   {
    "at": "2026-11-27T05:06:21Z",
    "egress": "vpn",
@@ -663,31 +694,6 @@
    "pages": 3,
    "secondOk": 6,
    "seconds": 513,
-   "success": true
-  },
-  {
-   "at": "2026-11-26T06:06:50Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 231,
-   "failed": 2,
-   "cells": 8517,
-   "priced": 8514,
-   "changes": 846,
-   "errors": [
-    "YVR-DAD-Y 14d: no Price graph button after 3 loads; page says:  About this page Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen? IP address",
-    "YVR-BKK-J 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 233,
-   "pages": 3,
-   "secondOk": 19,
-   "seconds": 1146,
    "success": true
   }
  ]
