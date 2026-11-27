@@ -226,9 +226,9 @@
    "at": "2026-11-26T19:29:22Z"
   },
   "YVR,hybrid,OSA,OSA": {
-   "total": 3633,
-   "tier": "good",
-   "at": "2026-11-26T21:31:44Z"
+   "total": 3467,
+   "tier": "great",
+   "at": "2026-11-27T10:28:28Z"
   },
   "YVR,hybrid,KUL,TYO": {
    "total": 3736,
@@ -251,9 +251,9 @@
    "at": "2026-11-26T22:29:00Z"
   },
   "YVR,hybrid,SHA,SHA": {
-   "total": 3643,
-   "tier": "good",
-   "at": "2026-11-26T23:28:17Z"
+   "total": 3471,
+   "tier": "great",
+   "at": "2026-11-27T10:28:28Z"
   },
   "YVR,hybrid,ICN,ICN": {
    "total": 3470,
@@ -264,6 +264,11 @@
    "total": 3616,
    "tier": "good",
    "at": "2026-11-27T07:33:51Z"
+  },
+  "YVR,hybrid,SIN,TYO": {
+   "total": 3885,
+   "tier": "good",
+   "at": "2026-11-27T10:28:28Z"
   }
  }
 }
