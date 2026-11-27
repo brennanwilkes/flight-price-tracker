@@ -1,7 +1,35 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-27T22:05:45Z",
+ "lastSuccess": "2026-11-27T23:05:50Z",
  "runs": [
+  {
+   "at": "2026-11-27T23:05:50Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 219,
+   "failed": 4,
+   "cells": 8852,
+   "priced": 8794,
+   "changes": 2194,
+   "errors": [
+    "HKG-YVR-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-BJS-Y 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-DAD-J 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Da Nang DAD Filters All ",
+    "DLI-HUI-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Da Lat DLI Hue HUI Filters All filters Sto"
+   ],
+   "network": {
+    "checked": 100,
+    "kept": 42,
+    "failed": 20,
+    "routes": 1274
+   },
+   "due": 931,
+   "pages": 6,
+   "skipped": 708,
+   "secondOk": 22,
+   "seconds": 1475,
+   "success": true
+  },
   {
    "at": "2026-11-27T22:05:45Z",
    "egress": "vpn",
@@ -679,35 +707,6 @@
    "skipped": 83,
    "secondOk": 27,
    "seconds": 1510,
-   "success": true
-  },
-  {
-   "at": "2026-11-26T23:06:11Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 183,
-   "failed": 5,
-   "cells": 6945,
-   "priced": 6888,
-   "changes": 798,
-   "errors": [
-    "YVR-SGN-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-SGN-Y 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-ICN-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "SGN-HAN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-DPS-J 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 188,
-   "pages": 3,
-   "pauses": 1,
-   "secondOk": 15,
-   "seconds": 1155,
    "success": true
   }
  ]
