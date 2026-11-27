@@ -1,7 +1,37 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-27T08:06:28Z",
+ "lastSuccess": "2026-11-27T09:06:21Z",
  "runs": [
+  {
+   "at": "2026-11-27T09:06:21Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 212,
+   "failed": 5,
+   "cells": 8362,
+   "priced": 8298,
+   "changes": 1607,
+   "errors": [
+    "YYJ-OSA-Y 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Osaka KIX ITM Filters All ",
+    "YYJ-OSA-Y 14d: no Price graph button after 3 loads; page says:  About this page Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen? IP address",
+    "YYJ-OSA-Y 18d: no Price graph button after 3 loads; page says:  About this page Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen? IP address",
+    "YYJ-OSA-Y 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Osaka KIX ITM Filters All ",
+    "YYJ-OSA-Y 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Osaka KIX ITM Filters All "
+   ],
+   "network": {
+    "checked": 100,
+    "kept": 95,
+    "failed": 2,
+    "routes": 1277
+   },
+   "due": 229,
+   "pages": 3,
+   "pauses": 3,
+   "secondOk": 1,
+   "skipped": 12,
+   "seconds": 1501,
+   "success": true
+  },
   {
    "at": "2026-11-27T08:06:28Z",
    "egress": "vpn",
@@ -671,34 +701,6 @@
    "due": 32,
    "pages": 3,
    "seconds": 218,
-   "success": true
-  },
-  {
-   "at": "2026-11-26T09:06:58Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 235,
-   "failed": 3,
-   "cells": 8774,
-   "priced": 8722,
-   "changes": 1511,
-   "errors": [
-    "YVR-BKK-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Bangkok BKK DMK Filters A",
-    "YYJ-SHA-Y 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Shanghai PVG SHA Filters A",
-    "DLI-LGK-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Da Lat DLI Langkawi LGK Filters All filter"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 254,
-   "pages": 3,
-   "pauses": 3,
-   "skipped": 16,
-   "secondOk": 30,
-   "seconds": 1477,
    "success": true
   }
  ]
