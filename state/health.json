@@ -1,7 +1,40 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-27T14:05:55Z",
+ "lastSuccess": "2026-11-27T15:05:55Z",
  "runs": [
+  {
+   "at": "2026-11-27T15:05:55Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 193,
+   "failed": 8,
+   "cells": 8128,
+   "priced": 7889,
+   "changes": 3014,
+   "errors": [
+    "YVR-HKG-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-TYO-Y 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-KUL-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "OSA-YVR-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-DAD-J 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Da Nang DAD Filters All ",
+    "YVR-CAN-J 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-CEB-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-DAD-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Da Nang DAD Filters All f"
+   ],
+   "network": {
+    "checked": 96,
+    "kept": 79,
+    "failed": 0,
+    "routes": 1271
+   },
+   "due": 285,
+   "pages": 3,
+   "skipped": 84,
+   "secondOk": 6,
+   "pauses": 1,
+   "seconds": 1606,
+   "success": true
+  },
   {
    "at": "2026-11-27T14:05:55Z",
    "egress": "vpn",
@@ -678,32 +711,6 @@
    "skipped": 132,
    "secondOk": 11,
    "seconds": 1518,
-   "success": true
-  },
-  {
-   "at": "2026-11-26T15:06:27Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 104,
-   "failed": 2,
-   "cells": 4588,
-   "priced": 4509,
-   "changes": 1383,
-   "errors": [
-    "CEB-CTS-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-TPE-J 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 106,
-   "pages": 3,
-   "pauses": 1,
-   "secondOk": 6,
-   "seconds": 816,
    "success": true
   }
  ]
