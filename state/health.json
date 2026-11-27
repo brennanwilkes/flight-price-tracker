@@ -1,7 +1,43 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-27T04:06:00Z",
+ "lastSuccess": "2026-11-27T05:06:21Z",
  "runs": [
+  {
+   "at": "2026-11-27T05:06:21Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 225,
+   "failed": 10,
+   "cells": 9216,
+   "priced": 9192,
+   "changes": 3485,
+   "errors": [
+    "YVR-BKK-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "SGN-YVR-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-CEB-Y 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-HKG-J 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-SGN-J 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-HKG-J 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Hong Kong HKG Filters All",
+    "SIN-BKK-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "SHA-SYX-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-BKK-J 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Bangkok BKK DMK Filters A",
+    "YYJ-BJS-J 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Beijing PEK PKX Filters A"
+   ],
+   "controlTries": 2,
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 529,
+   "pages": 6,
+   "pauses": 4,
+   "skipped": 294,
+   "secondOk": 11,
+   "seconds": 1549,
+   "success": true
+  },
   {
    "at": "2026-11-27T04:06:00Z",
    "egress": "vpn",
@@ -652,29 +688,6 @@
    "pages": 3,
    "secondOk": 19,
    "seconds": 1146,
-   "success": true
-  },
-  {
-   "at": "2026-11-26T05:06:39Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 135,
-   "failed": 1,
-   "cells": 5527,
-   "priced": 4977,
-   "changes": 3888,
-   "errors": [
-    "YVR-GUM-Y 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 136,
-   "pages": 3,
-   "seconds": 994,
    "success": true
   }
  ]
