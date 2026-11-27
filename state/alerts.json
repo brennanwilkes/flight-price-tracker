@@ -191,9 +191,9 @@
    "at": "2026-11-26T09:31:41Z"
   },
   "YVR,hybrid,DPS,DPS": {
-   "total": 3744,
+   "total": 3526,
    "tier": "good",
-   "at": "2026-11-26T13:28:55Z"
+   "at": "2026-11-27T12:33:01Z"
   },
   "YVR,hybrid,BKK,BKK": {
    "total": 3493,
@@ -216,9 +216,9 @@
    "at": "2026-11-26T17:27:58Z"
   },
   "YVR,hybrid,HAN,HAN": {
-   "total": 3471,
+   "total": 3254,
    "tier": "great",
-   "at": "2026-11-26T19:29:22Z"
+   "at": "2026-11-27T12:33:01Z"
   },
   "YVR,hybrid,TYO,DPS": {
    "total": 3929,
@@ -269,6 +269,11 @@
    "total": 3885,
    "tier": "good",
    "at": "2026-11-27T10:28:28Z"
+  },
+  "YVR,hybrid,SGN,SGN": {
+   "total": 3368,
+   "tier": "great",
+   "at": "2026-11-27T12:33:01Z"
   }
  }
 }
