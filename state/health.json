@@ -1,7 +1,38 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-27T20:05:58Z",
+ "lastSuccess": "2026-11-27T21:06:26Z",
  "runs": [
+  {
+   "at": "2026-11-27T21:06:26Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 156,
+   "failed": 6,
+   "cells": 6385,
+   "priced": 5514,
+   "changes": 1917,
+   "errors": [
+    "DAD-BWN-Y 7d: no Price graph button after 3 loads; page says:  About this page Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen? IP address",
+    "BWN-DAD-Y 6d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Bandar Seri Begawan BWN Da Nang DAD Fil",
+    "DAD-BWN-Y 3d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Bandar Seri Begawan BWN Fil",
+    "YVR-ICN-J 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Seoul ICN Filters All fi",
+    "DAD-BWN-Y 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Bandar Seri Begawan BWN Fil",
+    "BWN-DAD-Y 19d: no Price graph button after 3 loads; page says:  About this page Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen? IP address"
+   ],
+   "network": {
+    "checked": 100,
+    "kept": 58,
+    "failed": 21,
+    "routes": 1272
+   },
+   "due": 610,
+   "pages": 6,
+   "skipped": 448,
+   "pauses": 2,
+   "secondOk": 4,
+   "seconds": 1618,
+   "success": true
+  },
   {
    "at": "2026-11-27T20:05:58Z",
    "egress": "vpn",
@@ -674,37 +705,6 @@
    "skipped": 5,
    "secondOk": 25,
    "seconds": 1365,
-   "success": true
-  },
-  {
-   "at": "2026-11-26T21:05:53Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 160,
-   "failed": 6,
-   "cells": 6716,
-   "priced": 6714,
-   "changes": 1546,
-   "errors": [
-    "YVR-SIN-J 21d: no Price graph button after 3 loads; page says:  About this page Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen? IP address",
-    "YVR-KUL-J 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "KUL-YVR-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "KUL-YVR-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-DAD-J 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Da Nang DAD Filters All ",
-    "YVR-HAN-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 201,
-   "pages": 3,
-   "skipped": 35,
-   "secondOk": 6,
-   "pauses": 2,
-   "seconds": 1546,
    "success": true
   }
  ]
