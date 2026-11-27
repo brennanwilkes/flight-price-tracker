@@ -1,7 +1,36 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-27T18:06:17Z",
+ "lastSuccess": "2026-11-27T19:05:45Z",
  "runs": [
+  {
+   "at": "2026-11-27T19:05:45Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 232,
+   "failed": 5,
+   "cells": 9544,
+   "priced": 9448,
+   "changes": 3420,
+   "errors": [
+    "YYJ-SHA-Y 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Shanghai PVG SHA Filters A",
+    "YYJ-KUL-Y 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Federal Territory of Kuala",
+    "YYJ-TPE-Y 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Taipei City TPE Filters Al",
+    "YYJ-JKT-Y 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Jakarta CGK Filters All fi",
+    "YYJ-JKT-Y 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Jakarta CGK Filters All fi"
+   ],
+   "network": {
+    "checked": 100,
+    "kept": 67,
+    "failed": 0,
+    "routes": 1269
+   },
+   "due": 316,
+   "pages": 3,
+   "pauses": 3,
+   "skipped": 79,
+   "seconds": 1534,
+   "success": true
+  },
   {
    "at": "2026-11-27T18:06:17Z",
    "egress": "vpn",
@@ -684,29 +713,6 @@
    "pauses": 1,
    "secondOk": 6,
    "seconds": 1438,
-   "success": true
-  },
-  {
-   "at": "2026-11-26T19:06:30Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 199,
-   "failed": 0,
-   "cells": 8240,
-   "priced": 7599,
-   "changes": 2951,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 228,
-   "pages": 3,
-   "skipped": 29,
-   "secondOk": 5,
-   "seconds": 1339,
    "success": true
   }
  ]
