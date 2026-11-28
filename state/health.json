@@ -1,7 +1,49 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-28T13:05:56Z",
+ "lastSuccess": "2026-11-28T14:06:04Z",
  "runs": [
+  {
+   "at": "2026-11-28T14:06:04Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 104,
+   "failed": 16,
+   "cells": 4190,
+   "priced": 3806,
+   "changes": 1304,
+   "errors": [
+    "YVR-HKG-J 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-TYO-J 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-BKK-J 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-SHA-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-CAN-J 20d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-TYO-J 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Tokyo NRT HND Filters Al",
+    "YVR-CEB-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-JKT-J 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "CEB-YVR-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-KUL-Y 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Federal Territory of Kuala",
+    "YYJ-GUM-Y 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Guam GUM Filters All filte",
+    "SGN-SYX-Y 7d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Ho Chi Minh City SGN Sanya SYX · Haikou",
+    "YYJ-SHA-Y 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Shanghai PVG SHA Filters A",
+    "SGN-SYX-Y 4d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Ho Chi Minh City SGN Sanya SYX · Haikou",
+    "SGN-SYX-Y 3d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Ho Chi Minh City SGN Sanya SYX · Haikou",
+    "YYJ-GUM-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Guam GUM Filters All filte"
+   ],
+   "controlTries": 2,
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1287
+   },
+   "due": 993,
+   "pages": 6,
+   "pauses": 8,
+   "skipped": 873,
+   "secondOk": 25,
+   "seconds": 1589,
+   "success": true
+  },
   {
    "at": "2026-11-28T13:05:56Z",
    "egress": "vpn",
@@ -688,34 +730,6 @@
    "secondOk": 6,
    "pauses": 1,
    "seconds": 1606,
-   "success": true
-  },
-  {
-   "at": "2026-11-27T14:05:55Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 146,
-   "failed": 4,
-   "cells": 5944,
-   "priced": 5906,
-   "changes": 1860,
-   "errors": [
-    "YVR-DAD-Y 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Da Nang DAD Filters All f",
-    "YVR-BKK-Y 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-DAD-J 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Da Nang DAD Filters All ",
-    "YVR-HAN-J 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Hanoi HAN Filters All fi"
-   ],
-   "network": {
-    "checked": 100,
-    "kept": 74,
-    "failed": 2,
-    "routes": 1271
-   },
-   "due": 367,
-   "pages": 3,
-   "skipped": 217,
-   "secondOk": 15,
-   "seconds": 1596,
    "success": true
   }
  ]
