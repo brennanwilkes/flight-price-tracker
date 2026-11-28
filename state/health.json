@@ -1,7 +1,39 @@
 {
- "consecutiveFailures": 0,
+ "consecutiveFailures": 1,
  "lastSuccess": "2026-11-28T01:06:30Z",
  "runs": [
+  {
+   "at": "2026-11-28T02:06:25Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 2,
+   "failed": 6,
+   "cells": 83,
+   "priced": 83,
+   "changes": 16,
+   "errors": [
+    "YVR-HKG-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-HKG-J 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Hong Kong HKG Filters Al",
+    "YVR-HKG-Y 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Hong Kong HKG Filters All",
+    "YVR-HKG-J 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Hong Kong HKG Filters Al",
+    "YVR-HKG-J 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Hong Kong HKG Filters Al",
+    "YVR-HKG-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Hong Kong HKG Filters All"
+   ],
+   "controlTries": 2,
+   "network": {
+    "checked": 100,
+    "kept": 32,
+    "failed": 4,
+    "routes": 1281
+   },
+   "due": 1218,
+   "pages": 6,
+   "pauses": 6,
+   "skipped": 1210,
+   "secondOk": 2,
+   "seconds": 1616,
+   "success": false
+  },
   {
    "at": "2026-11-28T01:06:30Z",
    "egress": "vpn",
@@ -688,36 +720,6 @@
    "secondOk": 14,
    "seconds": 1588,
    "success": false
-  },
-  {
-   "at": "2026-11-27T02:06:00Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 155,
-   "failed": 5,
-   "cells": 6476,
-   "priced": 6411,
-   "changes": 2299,
-   "errors": [
-    "YVR-KUL-J 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-OSA-Y 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Osaka KIX ITM Filters All",
-    "YYJ-DAD-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Victoria YYJ Da Nang DAD Filters All filte",
-    "YYJ-HAN-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Hanoi HAN Filters All filt",
-    "YYJ-HAN-Y 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Hanoi HAN Filters All filt"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 375,
-   "pages": 3,
-   "skipped": 215,
-   "pauses": 2,
-   "secondOk": 4,
-   "seconds": 1560,
-   "success": true
   }
  ]
 }
