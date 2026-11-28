@@ -1,7 +1,40 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-28T03:05:49Z",
+ "lastSuccess": "2026-11-28T04:06:15Z",
  "runs": [
+  {
+   "at": "2026-11-28T04:06:15Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 103,
+   "failed": 8,
+   "cells": 4022,
+   "priced": 4009,
+   "changes": 719,
+   "errors": [
+    "YYJ-BKK-Y 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Bangkok BKK DMK Filters Al",
+    "YVR-DAD-J 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Da Nang DAD Filters All ",
+    "YYJ-DAD-J 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Da Nang DAD Filters All f",
+    "YYJ-SHA-J 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Shanghai PVG SHA Filters ",
+    "YYJ-DAD-J 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Da Nang DAD Filters All f",
+    "YYJ-ICN-J 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Seoul ICN Filters All fil",
+    "YYJ-MNL-J 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Manila MNL Filters All fi",
+    "YYJ-MNL-J 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Manila MNL Filters All fi"
+   ],
+   "network": {
+    "checked": 100,
+    "kept": 18,
+    "failed": 1,
+    "routes": 1281
+   },
+   "due": 1255,
+   "pages": 6,
+   "pauses": 4,
+   "skipped": 1144,
+   "secondOk": 3,
+   "seconds": 1594,
+   "success": true
+  },
   {
    "at": "2026-11-28T03:05:49Z",
    "egress": "vpn",
@@ -666,45 +699,6 @@
    "skipped": 294,
    "secondOk": 11,
    "seconds": 1549,
-   "success": true
-  },
-  {
-   "at": "2026-11-27T04:06:00Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 128,
-   "failed": 13,
-   "cells": 4988,
-   "priced": 4954,
-   "changes": 1008,
-   "errors": [
-    "YVR-BJS-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "BJS-YVR-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-OSA-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-CAN-J 18d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-CAN-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-CEB-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-JKT-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-ICN-J 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-HAN-Y 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-MNL-J 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-DAD-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-SGN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-HKG-Y 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "controlTries": 4,
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 499,
-   "pages": 6,
-   "pauses": 4,
-   "skipped": 358,
-   "secondOk": 15,
-   "seconds": 1520,
    "success": true
   }
  ]
