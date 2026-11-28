@@ -1,7 +1,38 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-28T11:06:10Z",
+ "lastSuccess": "2026-11-28T12:06:29Z",
  "runs": [
+  {
+   "at": "2026-11-28T12:06:29Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 238,
+   "failed": 6,
+   "cells": 10189,
+   "priced": 7357,
+   "changes": 6852,
+   "errors": [
+    "SGN-BWN-Y 12d: no Price graph button after 3 loads; page says:  About this page Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen? IP address",
+    "SGN-BWN-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Ho Chi Minh City SGN Bandar Seri Begawa",
+    "BWN-SGN-Y 11d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Bandar Seri Begawan BWN Ho Chi Minh Cit",
+    "HUI-BKK-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Bangkok BKK DMK Filters All fil",
+    "BWN-SGN-Y 13d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Bandar Seri Begawan BWN Ho Chi Minh Cit",
+    "BWN-SGN-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Bandar Seri Begawan BWN Ho Chi Minh Cit"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1287
+   },
+   "due": 1259,
+   "pages": 6,
+   "pauses": 3,
+   "skipped": 1015,
+   "secondOk": 2,
+   "seconds": 1545,
+   "success": true
+  },
   {
    "at": "2026-11-28T11:06:10Z",
    "egress": "vpn",
@@ -683,38 +714,6 @@
    "skipped": 205,
    "secondOk": 5,
    "seconds": 1616,
-   "success": true
-  },
-  {
-   "at": "2026-11-27T12:06:14Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 164,
-   "failed": 6,
-   "cells": 6046,
-   "priced": 5962,
-   "changes": 962,
-   "errors": [
-    "YVR-OSA-J 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Osaka KIX ITM Filters Al",
-    "YVR-SHA-J 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Shanghai PVG SHA Filters",
-    "YVR-BJS-J 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Beijing PEK PKX Filters ",
-    "YYJ-MNL-J 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Manila MNL Filters All fi",
-    "YYJ-CEB-J 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Cebu City CEB Filters All",
-    "YYJ-SIN-J 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Singapore SIN Filters All"
-   ],
-   "controlTries": 2,
-   "network": {
-    "checked": 100,
-    "kept": 67,
-    "failed": 7,
-    "routes": 1274
-   },
-   "due": 335,
-   "pages": 3,
-   "pauses": 3,
-   "skipped": 165,
-   "secondOk": 17,
-   "seconds": 1601,
    "success": true
   }
  ]
