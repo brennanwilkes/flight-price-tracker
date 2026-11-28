@@ -1,7 +1,40 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-28T08:06:08Z",
+ "lastSuccess": "2026-11-28T09:05:58Z",
  "runs": [
+  {
+   "at": "2026-11-28T09:05:58Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 204,
+   "failed": 8,
+   "cells": 9597,
+   "priced": 9245,
+   "changes": 5328,
+   "errors": [
+    "YYJ-TPE-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-BJS-J 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Beijing PEK PKX Filters A",
+    "YYJ-BKK-Y 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Bangkok BKK DMK Filters Al",
+    "HKT-HUI-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Phuket HKT Hue HUI Filters All filters Sto",
+    "HUI-DAD-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Hue HUI Da Nang DAD Filters All filters St",
+    "HUI-HKT-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Hue HUI Phuket HKT Filters All filters Sto",
+    "HUI-PQC-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Hue HUI Phú Quốc PQC Filters All filters S",
+    "PQC-HUI-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Phú Quốc PQC Hue HUI Filters All filters S"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1287
+   },
+   "due": 1476,
+   "pages": 6,
+   "pauses": 3,
+   "skipped": 1264,
+   "secondOk": 16,
+   "seconds": 1602,
+   "success": true
+  },
   {
    "at": "2026-11-28T08:06:08Z",
    "egress": "vpn",
@@ -680,36 +713,6 @@
    "pauses": 2,
    "secondOk": 10,
    "seconds": 1112,
-   "success": true
-  },
-  {
-   "at": "2026-11-27T09:06:21Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 212,
-   "failed": 5,
-   "cells": 8362,
-   "priced": 8298,
-   "changes": 1607,
-   "errors": [
-    "YYJ-OSA-Y 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Osaka KIX ITM Filters All ",
-    "YYJ-OSA-Y 14d: no Price graph button after 3 loads; page says:  About this page Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen? IP address",
-    "YYJ-OSA-Y 18d: no Price graph button after 3 loads; page says:  About this page Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen? IP address",
-    "YYJ-OSA-Y 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Osaka KIX ITM Filters All ",
-    "YYJ-OSA-Y 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Osaka KIX ITM Filters All "
-   ],
-   "network": {
-    "checked": 100,
-    "kept": 95,
-    "failed": 2,
-    "routes": 1277
-   },
-   "due": 229,
-   "pages": 3,
-   "pauses": 3,
-   "secondOk": 1,
-   "skipped": 12,
-   "seconds": 1501,
    "success": true
   }
  ]
