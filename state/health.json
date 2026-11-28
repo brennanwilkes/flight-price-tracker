@@ -1,7 +1,40 @@
 {
- "consecutiveFailures": 0,
+ "consecutiveFailures": 1,
  "lastSuccess": "2026-11-28T05:05:56Z",
  "runs": [
+  {
+   "at": "2026-11-28T06:05:54Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 0,
+   "failed": 8,
+   "cells": 0,
+   "priced": 0,
+   "changes": 0,
+   "errors": [
+    "YVR-DAD-J 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Da Nang DAD Filters All ",
+    "YVR-DAD-J-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Business Vancouver YVR Da Nang DAD Filters All fil",
+    "YVR-DAD-J 21d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Da Nang DAD Filters All ",
+    "DLI-SYX-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Da Lat DLI Sanya SYX · Haikou HAK Filters ",
+    "DAD-YVR-J-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Business Da Nang DAD Vancouver YVR Filters All fil",
+    "YVR-DAD-J 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Da Nang DAD Filters All ",
+    "YVR-DAD-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Da Nang DAD Filters All f",
+    "YVR-DAD-Y 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Da Nang DAD Filters All f"
+   ],
+   "controlTries": 2,
+   "network": {
+    "checked": 60,
+    "kept": 13,
+    "failed": 19,
+    "routes": 1287
+   },
+   "due": 1501,
+   "pages": 6,
+   "pauses": 5,
+   "skipped": 1493,
+   "seconds": 1520,
+   "success": false
+  },
   {
    "at": "2026-11-28T05:05:56Z",
    "egress": "vpn",
@@ -664,37 +697,6 @@
    "secondOk": 3,
    "pauses": 1,
    "seconds": 1663,
-   "success": true
-  },
-  {
-   "at": "2026-11-27T06:06:15Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 216,
-   "failed": 6,
-   "cells": 9159,
-   "priced": 8445,
-   "changes": 3943,
-   "errors": [
-    "YVR-HKG-Y 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-HNL-J 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-BKK-Y 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Bangkok BKK DMK Filters Al",
-    "YYJ-KUL-Y 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Federal Territory of Kuala",
-    "CNX-HUI-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Chiang Mai CNX Hue HUI Filters All filters",
-    "CXR-HUI-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Nha Trang CXR Hue HUI Filters All filters "
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 424,
-   "pages": 6,
-   "pauses": 2,
-   "skipped": 202,
-   "secondOk": 21,
-   "seconds": 1607,
    "success": true
   }
  ]
