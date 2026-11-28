@@ -1,7 +1,44 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-28T07:06:03Z",
+ "lastSuccess": "2026-11-28T08:06:08Z",
  "runs": [
+  {
+   "at": "2026-11-28T08:06:08Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 164,
+   "failed": 11,
+   "cells": 6649,
+   "priced": 6550,
+   "changes": 2088,
+   "errors": [
+    "OSA-YVR-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-CEB-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-SHA-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-BJS-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-OSA-J 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Osaka KIX ITM Filters Al",
+    "YYJ-CAN-J 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Guangzhou CAN Filters All",
+    "YYJ-BJS-J 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Beijing PEK PKX Filters A",
+    "YYJ-CAN-J 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Guangzhou CAN Filters All",
+    "YYJ-BKK-J 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Bangkok BKK DMK Filters A",
+    "YYJ-KUL-J 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Federal Territory of Kual",
+    "YYJ-JKT-J 17d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Jakarta CGK Filters All f"
+   ],
+   "controlTries": 3,
+   "network": {
+    "checked": 2,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1287
+   },
+   "due": 1496,
+   "pages": 6,
+   "pauses": 4,
+   "skipped": 1321,
+   "secondOk": 17,
+   "seconds": 1563,
+   "success": true
+  },
   {
    "at": "2026-11-28T07:06:03Z",
    "egress": "vpn",
@@ -673,30 +710,6 @@
    "secondOk": 1,
    "skipped": 12,
    "seconds": 1501,
-   "success": true
-  },
-  {
-   "at": "2026-11-27T08:06:28Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 62,
-   "failed": 1,
-   "cells": 2456,
-   "priced": 1935,
-   "changes": 750,
-   "errors": [
-    "YYJ-KUL-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 100,
-    "kept": 100,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 63,
-   "pages": 3,
-   "secondOk": 13,
-   "seconds": 477,
    "success": true
   }
  ]
