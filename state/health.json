@@ -1,7 +1,38 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-28T14:06:04Z",
+ "lastSuccess": "2026-11-28T15:06:23Z",
  "runs": [
+  {
+   "at": "2026-11-28T15:06:23Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 161,
+   "failed": 6,
+   "cells": 6746,
+   "priced": 6524,
+   "changes": 5900,
+   "errors": [
+    "SYX-SGN-Y 11d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Sanya SYX · Haikou HAK Ho Chi Minh City",
+    "SGN-SYX-Y 13d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Ho Chi Minh City SGN Sanya SYX · Haikou",
+    "DAD-TYO-Y 8d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "TYO-DAD-Y 13d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Tokyo NRT HND Da Nang DAD Filters All f",
+    "DAD-SYX-Y 5d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Da Nang DAD Sanya SYX · Haikou HAK Filt",
+    "HUI-MNL-Y 5d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Hue HUI Manila MNL Filters All filters "
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1287
+   },
+   "due": 1065,
+   "pages": 6,
+   "pauses": 5,
+   "skipped": 898,
+   "secondOk": 7,
+   "seconds": 1529,
+   "success": true
+  },
   {
    "at": "2026-11-28T14:06:04Z",
    "egress": "vpn",
@@ -697,39 +728,6 @@
    "pages": 3,
    "secondOk": 5,
    "seconds": 911,
-   "success": true
-  },
-  {
-   "at": "2026-11-27T15:05:55Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 193,
-   "failed": 8,
-   "cells": 8128,
-   "priced": 7889,
-   "changes": 3014,
-   "errors": [
-    "YVR-HKG-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-TYO-Y 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-KUL-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "OSA-YVR-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-DAD-J 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Da Nang DAD Filters All ",
-    "YVR-CAN-J 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-CEB-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-DAD-Y 14d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Da Nang DAD Filters All f"
-   ],
-   "network": {
-    "checked": 96,
-    "kept": 79,
-    "failed": 0,
-    "routes": 1271
-   },
-   "due": 285,
-   "pages": 3,
-   "skipped": 84,
-   "secondOk": 6,
-   "pauses": 1,
-   "seconds": 1606,
    "success": true
   }
  ]
