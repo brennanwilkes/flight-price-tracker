@@ -1,7 +1,40 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-28T00:06:12Z",
+ "lastSuccess": "2026-11-28T01:06:30Z",
  "runs": [
+  {
+   "at": "2026-11-28T01:06:30Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 257,
+   "failed": 8,
+   "cells": 10338,
+   "priced": 10125,
+   "changes": 6134,
+   "errors": [
+    "YVR-HAN-Y 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Hanoi HAN Filters All fil",
+    "YVR-DAD-J 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Vancouver YVR Da Nang DAD Filters All ",
+    "YVR-DAD-Y 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Da Nang DAD Filters All f",
+    "SGN-MPH-Y 4d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Ho Chi Minh City SGN Caticlan MPH · Kal",
+    "YVR-DAD-Y 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Vancouver YVR Da Nang DAD Filters All f",
+    "MPH-SGN-Y 9d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Caticlan MPH · Kalibo KLO Ho Chi Minh C",
+    "MPH-SGN-Y 10d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Caticlan MPH · Kalibo KLO Ho Chi Minh C",
+    "MPH-SGN-Y 12d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Caticlan MPH · Kalibo KLO Ho Chi Minh C"
+   ],
+   "network": {
+    "checked": 100,
+    "kept": 41,
+    "failed": 3,
+    "routes": 1280
+   },
+   "due": 1263,
+   "pages": 6,
+   "pauses": 3,
+   "skipped": 998,
+   "secondOk": 1,
+   "seconds": 1516,
+   "success": true
+  },
   {
    "at": "2026-11-28T00:06:12Z",
    "egress": "vpn",
@@ -684,33 +717,6 @@
    "pauses": 2,
    "secondOk": 4,
    "seconds": 1560,
-   "success": true
-  },
-  {
-   "at": "2026-11-27T01:06:00Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 171,
-   "failed": 2,
-   "cells": 7657,
-   "priced": 7297,
-   "changes": 3139,
-   "errors": [
-    "YYJ-OSA-J 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-OSA-J 17d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
-   ],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 242,
-   "pages": 3,
-   "pauses": 2,
-   "skipped": 69,
-   "secondOk": 12,
-   "seconds": 1328,
    "success": true
   }
  ]
