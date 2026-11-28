@@ -1,7 +1,39 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-28T04:06:15Z",
+ "lastSuccess": "2026-11-28T05:05:56Z",
  "runs": [
+  {
+   "at": "2026-11-28T05:05:56Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 196,
+   "failed": 7,
+   "cells": 9746,
+   "priced": 9385,
+   "changes": 7570,
+   "errors": [
+    "KUL-BKI-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-HAN-Y 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Hanoi HAN Filters All filt",
+    "KUL-CAN-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YYJ-SGN-Y 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Ho Chi Minh City SGN Filte",
+    "YYJ-HKG-Y 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Hong Kong HKG Filters All ",
+    "YYJ-SGN-Y 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Ho Chi Minh City SGN Filte",
+    "KUL-HKG-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 56,
+    "kept": 31,
+    "failed": 5,
+    "routes": 1287
+   },
+   "due": 1443,
+   "pages": 6,
+   "pauses": 2,
+   "skipped": 1240,
+   "secondOk": 8,
+   "seconds": 1460,
+   "success": true
+  },
   {
    "at": "2026-11-28T04:06:15Z",
    "egress": "vpn",
@@ -663,42 +695,6 @@
    "skipped": 202,
    "secondOk": 21,
    "seconds": 1607,
-   "success": true
-  },
-  {
-   "at": "2026-11-27T05:06:21Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 225,
-   "failed": 10,
-   "cells": 9216,
-   "priced": 9192,
-   "changes": 3485,
-   "errors": [
-    "YVR-BKK-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "SGN-YVR-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YVR-CEB-Y 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-HKG-J 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-SGN-J 21d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-HKG-J 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Hong Kong HKG Filters All",
-    "SIN-BKK-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "SHA-SYX-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-BKK-J 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Bangkok BKK DMK Filters A",
-    "YYJ-BJS-J 15d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Beijing PEK PKX Filters A"
-   ],
-   "controlTries": 2,
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 529,
-   "pages": 6,
-   "pauses": 4,
-   "skipped": 294,
-   "secondOk": 11,
-   "seconds": 1549,
    "success": true
   }
  ]
