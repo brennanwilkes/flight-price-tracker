@@ -1,7 +1,41 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-28T12:06:29Z",
+ "lastSuccess": "2026-11-28T13:05:56Z",
  "runs": [
+  {
+   "at": "2026-11-28T13:05:56Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 155,
+   "failed": 9,
+   "cells": 6474,
+   "priced": 6359,
+   "changes": 957,
+   "errors": [
+    "YVR-MNL-J 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-MNL-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "TYO-YVR-J-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-TYO-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-TPE-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-MNL-J 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-OSA-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-SIN-J 15d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
+    "YVR-OSA-Y 14d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms"
+   ],
+   "network": {
+    "checked": 0,
+    "kept": 0,
+    "failed": 0,
+    "routes": 1287
+   },
+   "due": 1095,
+   "pages": 6,
+   "pauses": 4,
+   "skipped": 931,
+   "secondOk": 7,
+   "seconds": 1623,
+   "success": true
+  },
   {
    "at": "2026-11-28T12:06:29Z",
    "egress": "vpn",
@@ -682,38 +716,6 @@
    "skipped": 217,
    "secondOk": 15,
    "seconds": 1596,
-   "success": true
-  },
-  {
-   "at": "2026-11-27T13:06:18Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 101,
-   "failed": 7,
-   "cells": 4420,
-   "priced": 4364,
-   "changes": 2758,
-   "errors": [
-    "YVR-BKK-Y 16d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "TYO-SYX-Y-OW: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-SIN-J 19d: open graph: GetCalendarGraph rejected (1 with bgr header), not asked again within 4000ms",
-    "YYJ-SHA-J 16d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Shanghai PVG SHA Filters ",
-    "YYJ-SIN-J 20d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Singapore SIN Filters All",
-    "YYJ-JKT-J 18d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Business Victoria YYJ Jakarta CGK Filters All f",
-    "BJS-CTS-Y-OW: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search One way 1 Economy Beijing PEK PKX Sapporo CTS Filters All fi"
-   ],
-   "network": {
-    "checked": 100,
-    "kept": 51,
-    "failed": 2,
-    "routes": 1272
-   },
-   "due": 313,
-   "pages": 3,
-   "pauses": 2,
-   "skipped": 205,
-   "secondOk": 5,
-   "seconds": 1616,
    "success": true
   }
  ]
