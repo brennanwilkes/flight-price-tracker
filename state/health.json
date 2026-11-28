@@ -1,7 +1,34 @@
 {
  "consecutiveFailures": 0,
- "lastSuccess": "2026-11-27T23:05:50Z",
+ "lastSuccess": "2026-11-28T00:06:12Z",
  "runs": [
+  {
+   "at": "2026-11-28T00:06:12Z",
+   "egress": "vpn",
+   "control": 7,
+   "ok": 248,
+   "failed": 2,
+   "cells": 12583,
+   "priced": 11205,
+   "changes": 9629,
+   "errors": [
+    "TPE-HUI-Y 8d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Taipei City TPE Hue HUI Filters All fil",
+    "YYJ-CAN-Y 19d: no Price graph button after 3 loads; page says: Skip to main content Accessibility feedback Explore Flights Hotels Vacation rentals Change appearance Sign in Loading results Flight search Round trip 1 Economy Victoria YYJ Guangzhou CAN Filters All "
+   ],
+   "network": {
+    "checked": 100,
+    "kept": 56,
+    "failed": 0,
+    "routes": 1277
+   },
+   "due": 1158,
+   "pages": 6,
+   "pauses": 1,
+   "skipped": 908,
+   "secondOk": 9,
+   "seconds": 1376,
+   "success": true
+  },
   {
    "at": "2026-11-27T23:05:50Z",
    "egress": "vpn",
@@ -684,29 +711,6 @@
    "skipped": 69,
    "secondOk": 12,
    "seconds": 1328,
-   "success": true
-  },
-  {
-   "at": "2026-11-27T00:06:24Z",
-   "egress": "vpn",
-   "control": 7,
-   "ok": 195,
-   "failed": 0,
-   "cells": 7558,
-   "priced": 7548,
-   "changes": 2078,
-   "errors": [],
-   "network": {
-    "checked": 0,
-    "kept": 0,
-    "failed": 0,
-    "routes": 1277
-   },
-   "due": 278,
-   "pages": 3,
-   "skipped": 83,
-   "secondOk": 27,
-   "seconds": 1510,
    "success": true
   }
  ]
